@@ -12,6 +12,7 @@ from mikan.core.logger import create_logger, get_version
 from mikan.maya import cmdx as cmdx
 from .lib import *
 from .core import *
+from .ui.widgets import maya_syntax_highlighter_toggle_state, install_maya_syntax_highlighter
 
 # log version
 version = get_version()
@@ -32,7 +33,6 @@ for _p in (
     except:
         pass
 
-# maya color syntaxing in script editor
-# from .ui.widgets import install_maya_syntax_highlighter
-#
-# install_maya_syntax_highlighter()
+# maya logger syntax highlight in script editor
+if maya_syntax_highlighter_toggle_state():
+    install_maya_syntax_highlighter()

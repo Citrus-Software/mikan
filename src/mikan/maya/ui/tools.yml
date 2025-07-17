@@ -175,6 +175,9 @@
 
     - separator: on
     - name: colored script editor
+      toggle: |
+        from mikan.maya.ui.widgets import maya_syntax_highlighter_toggle_state
       py: |
-        from mikan.maya.ui.widgets import install_maya_syntax_highlighter
-        install_maya_syntax_highlighter()
+        from mikan.maya.ui.widgets import toggle_maya_syntax_highlighter
+        toggle_maya_syntax_highlighter()
+        

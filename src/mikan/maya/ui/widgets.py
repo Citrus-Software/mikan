@@ -11,6 +11,7 @@ from mikan.vendor.Qt.QtCore import Qt
 from mikan.vendor.Qt.QtGui import QSyntaxHighlighter
 from mikan.vendor.Qt.QtWidgets import QMainWindow, QDockWidget, QVBoxLayout, QWidget, QDialog, QTextEdit
 from mikan.core.ui.widgets import SafeWidget, SyntaxHighlighter
+from mikan.core.prefs import UserPrefs
 
 import maya.cmds as mc
 from maya.OpenMayaUI import MQtUtil
@@ -22,7 +23,9 @@ __all__ = [
     'MayaWindow', 'MayaDockMixin', 'MayaDockWidget', 'OptVarSettings',
     'SafeUndoInfo', 'safe_undo_info',
     'Callback', 'UndoChunk', 'undo_chunk',
-    'open_url', 'install_maya_syntax_highlighter'
+    'open_url',
+    'install_maya_syntax_highlighter', 'uninstall_maya_syntax_highlighter',
+    'toggle_maya_syntax_highlighter', 'maya_syntax_highlighter_toggle_state',
 ]
 
 log = create_logger(name='mikan.UI')
@@ -476,7 +479,6 @@ def install_maya_syntax_highlighter():
 
     w = script_editor.findChild(QSyntaxHighlighter)
     if w:
-        # w.deleteLater()
         if w.objectName() == SyntaxHighlighter.__name__:
             return w
         else:
@@ -522,6 +524,32 @@ def install_maya_syntax_highlighter():
     syntax.setObjectName(SyntaxHighlighter.__name__)
     syntax.rehighlight()
     return syntax
+
+
+def uninstall_maya_syntax_highlighter():
+    script_editor = find_script_editor_widget()
+    if not script_editor:
+        return
+
+    highlighter = script_editor.findChild(QSyntaxHighlighter, SyntaxHighlighter.__name__)
+    if highlighter:
+        highlighter.setDocument(None)  # Très important pour couper le lien proprement
+        highlighter.deleteLater()
+
+
+def toggle_maya_syntax_highlighter():
+    state = UserPrefs.get('highlighted_script_editor', False)
+    if state:
+        uninstall_maya_syntax_highlighter()
+        UserPrefs.set('highlighted_script_editor', False)
+    else:
+        install_maya_syntax_highlighter()
+        UserPrefs.set('highlighted_script_editor', True)
+
+
+def maya_syntax_highlighter_toggle_state():
+    from mikan.core.prefs import UserPrefs
+    return UserPrefs.get("highlighted_script_editor", False)
 
 
 class SafeUndoInfo(object):
