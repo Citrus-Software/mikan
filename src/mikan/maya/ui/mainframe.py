@@ -191,6 +191,17 @@ class MikanUI(MayaDockMixin):
             if not cmd:
                 continue
 
+            toggle = None
+            if 'toggle' in item:
+                code_obj = compile(item['toggle'], '<string>', 'exec')
+                local = {}
+                exec(code_obj, {}, local)
+
+                for k in local:
+                    if callable(local[k]):
+                        toggle = local[k]
+                        break
+
             name = '   ' + name
 
             icon = None
@@ -208,13 +219,29 @@ class MikanUI(MayaDockMixin):
             if icon:
                 act.setIcon(icon)
 
+            # add checkbox
+            if callable(toggle):
+
+                def refresh_toggle_state(action, toggle_func):
+                    action.setCheckable(True)
+                    try:
+                        action.setChecked(bool(toggle_func()))
+                    except Exception as e:
+                        action.setCheckable(False)
+
+                parent.aboutToShow.connect(lambda a=act, t=toggle: refresh_toggle_state(a, t))
+
+            # connect command
             if len(cmd) == 1:
                 act.triggered.connect(Callback(cmd[0]))
             else:
                 act.triggered.connect(Callback(MikanUI.callback_list, cmd))
 
+            # add tooltip
             if tooltip:
                 act.setToolTip(tooltip)
+
+            # add item
             parent.addAction(act)
 
     # ----- menu ---------------------------------------------------------------
