@@ -11,6 +11,7 @@ import maya.mel
 
 from mikan.core.utils import ordered_load
 from mikan.core.logger import create_logger, get_version
+from mikan.core.prefs import UserPrefs, find_maya_project_root
 
 from mikan.vendor.Qt.QtCore import Qt, QSize
 from mikan.vendor.Qt.QtWidgets import QAction
@@ -23,17 +24,6 @@ from .deformers import DeformerManager
 from .shapes import ShapesManager
 
 log = create_logger()
-
-# check TeamTO env
-_teamto = False
-try:
-    from jad_pipe.core.pipe import Pipe
-
-    if 'TT_PROD_TRIG' in os.environ:
-        _teamto = True
-
-except ImportError:
-    pass
 
 __all__ = ['MikanUI']
 
@@ -75,30 +65,7 @@ class MikanUI(MayaDockMixin):
         self.tabs.setCurrentIndex(self.get_optvar('selected_main_tab', 0))
 
         # menus
-        menu_bar = self.menuBar()
-        menu_tools = menu_bar.addMenu('&Tools')
-        menu_project = menu_bar.addMenu('&Project')
-        menu_help = menu_bar.addMenu('&Help')
-
-        menu_tools.setTearOffEnabled(True)
-        menu_project.setTearOffEnabled(True)
-
-        # tools menu
-        self.load_menu(MikanUI.PATH_TOOLS, menu_tools)
-
-        # project menu
-        path = MikanUI.PATH_TOOLS_PROJECT
-        if path is not None and os.path.exists(path):
-            self.load_menu(path, menu_project)
-
-        # help links
-        act = QAction('Mikan Online Documentation', menu_help)
-        act.triggered.connect(partial(open_url, 'https://citrus-software.github.io/mikan-docs'))
-        menu_help.addAction(act)
-
-        act = QAction('Discord', menu_help)
-        act.triggered.connect(partial(open_url, 'https://discord.gg/beHRwnue'))
-        menu_help.addAction(act)
+        self.build_menu_bar()
 
         # connect signals
         self.tabs.currentChanged.connect(self.tab_changed)
@@ -188,6 +155,9 @@ class MikanUI(MayaDockMixin):
             if 'mel' in item:
                 cmd.append(Callback(maya.mel.eval, item['mel']))
 
+            if 'web' in item:
+                cmd.append(partial(open_url, item['web']))
+
             if not cmd:
                 continue
 
@@ -245,42 +215,69 @@ class MikanUI(MayaDockMixin):
             parent.addAction(act)
 
     # ----- menu ---------------------------------------------------------------
-    sep = os.path.sep
-    base_path = os.path.abspath(__file__).split(sep)
+    def build_menu_bar(self):
+        menu_bar = self.menuBar()
 
-    PATH_UI = sep.join(base_path[:-1])
-    PATH_TOOLS = PATH_UI + sep + 'tools.yml'
+        # clear
+        for action in menu_bar.actions():
+            menu_bar.removeAction(action)
 
-    PATH_MIKAN = sep.join(base_path[:-3])
-    PATH_UTILS = PATH_MIKAN + sep + 'maya' + sep + 'utils'
+        # get paths
+        sep = os.path.sep
+        base_path = os.path.abspath(__file__).split(sep)
+        path_tools = sep.join(base_path[:-1]) + sep + 'tools.yml'
+        path_help = sep.join(base_path[:-1]) + sep + 'help.yml'
 
-    PATH_PROJECT = mc.workspace(q=1, rd=1)
-    if _teamto:
-        try:
-            project = Pipe.getAssetManager().getProjectEntity()
-            PATH_PROJECT = os.path.realpath(project['projectPath']) + sep + os.environ['TT_PROD_TRIG'] + '_maya'
-        except:
-            # log.warning('/!\\ cannot load TeamTO project menu from {}'.format(os.environ['TT_PROD_TRIG']))
-            pass
+        # get prefs
+        menus = []
+        menus.append(('&Tools', path_tools))
+        menus += UserPrefs.get('user_menu_paths', [])
+        menus.append(('&Help', path_help))
 
-    PATH_TOOLS_PROJECT = PATH_PROJECT + sep + 'rig' + sep + 'menu.yml'
+        # update ui
+        for name, path in menus:
+            menu = menu_bar.addMenu(name)
 
-    PATHS = {
-        'mikan': PATH_MIKAN,
-        'ui': PATH_UI,
-        'vendor': PATH_MIKAN + sep + 'vendor',
-        'utils': PATH_UTILS,
-        'scripts': PATH_UTILS + sep + 'scripts',
-        'snippets': PATH_UTILS + sep + 'snippets',
-        'project': PATH_PROJECT,
-        'rig': PATH_PROJECT + sep + 'rig'
-    }
+            MikanUI.PATHS = self.get_paths_dict(path)
+            self.load_menu(path, menu)
+
+            if 'Help' not in name:
+                menu.setTearOffEnabled(True)
+
+    @staticmethod
+    def get_paths_dict(path_yml):
+        sep = os.path.sep
+        base_path = os.path.abspath(__file__).split(sep)
+
+        path_mikan = sep.join(base_path[:-3])
+        path_utils = path_mikan + sep + 'maya' + sep + 'utils'
+        path_ui = sep.join(base_path[:-1])
+
+        # get paths from yml
+        path_menu = os.path.split(path_yml)[0]
+
+        paths = {
+            'mikan': path_mikan,
+            'ui': path_ui,
+            'vendor': path_mikan + sep + 'vendor',
+            'utils': path_utils,
+            'snippets': path_utils + sep + 'snippets',
+            'rig': path_menu,  # legacy
+            'menu': path_menu,
+        }
+
+        # add project path
+        path_project = find_maya_project_root(path_yml)
+        if path_project:
+            paths['project'] = path_project
+
+        return paths
 
     @classmethod
     def fix_path(cls, path):
         path = os.path.relpath(path)
 
-        for r in cls.PATHS.keys():
+        for r in cls.PATHS:
             re = '$' + str(r).strip()
             if re in path:
                 path = path.replace(re, cls.PATHS[r])

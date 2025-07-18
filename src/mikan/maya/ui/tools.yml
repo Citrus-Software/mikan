@@ -127,7 +127,6 @@
     - name: 'reroot handle'
       py: |
         from mikan.maya.lib.rig import transfer_nonlinear
-
         transfer_nonlinear()
       help: transfer handle from the first selected transform to the second
 
@@ -142,8 +141,10 @@
 
 - separator: on
 
-- name: logger
+- name: system
   menu:
+    - separator: 'logger'
+
     - name: 'timed code: ON'
       py: |
         import mikan.core.logger
@@ -153,7 +154,9 @@
         import mikan.core.logger
         mikan.core.logger.set_time_logging(False)
 
+
     - separator: on
+
     - name: 'level: DEBUG'
       py: |
         import mikan.core.logger
@@ -165,19 +168,30 @@
         _logger = mikan.core.logger.create_logger(level='INFO')
         _logger = mikan.core.logger.create_logger('mikan.pose', level='INFO')
 
-    - separator: on
-    - name: ptvsd
-      py: |
-        import ptvsd
-        ptvsd.enable_attach(address=('0.0.0.0', 3500), redirect_output=True)
-      icon: link
-      help: python debugger
 
     - separator: on
+
     - name: colored script editor
       toggle: |
         from mikan.maya.ui.widgets import maya_syntax_highlighter_toggle_state
       py: |
         from mikan.maya.ui.widgets import toggle_maya_syntax_highlighter
         toggle_maya_syntax_highlighter()
-        
+
+
+    - separator: 'config'
+
+    - name: menu editor
+      py: |
+        from mikan.maya.utils.menu_bar_editor import MenuBarEditorUI
+        MenuBarEditorUI().show()
+
+
+    - separator: 'dev'
+
+    - name: ptvsd
+      py: |
+        import ptvsd
+        ptvsd.enable_attach(address=('0.0.0.0', 3500), redirect_output=True)
+      icon: link
+      help: python debugger
