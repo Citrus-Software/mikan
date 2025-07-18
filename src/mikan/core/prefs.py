@@ -5,7 +5,7 @@ import json
 import yaml
 
 from .tree import Tree, Branch
-from .utils import ordered_load, ordered_dump
+from .utils import ordered_load, ordered_dump, unique
 from .logger import create_logger
 
 try:
@@ -123,6 +123,7 @@ class Prefs(object):
     @classmethod
     def get_config_file(cls):
         for path in cls.paths:
+            path = path + os.path.sep + cls.filename
             if os.path.exists(path):
                 return path
 
@@ -138,26 +139,29 @@ class Prefs(object):
             context = Pipe.getContext()
             project_path = context.project['projectPath']
             tri = context.project['trigram']
-            cls.paths.append(os.path.realpath(project_path) + sep + tri + '_maya' + sep + 'rig' + sep + cls.filename)
-            cls.paths.append(os.path.realpath(project_path) + sep + tri + '_tech' + sep + cls.filename)
+            cls.paths.append(os.path.realpath(project_path) + sep + tri + '_maya' + sep + 'rig')
+            cls.paths.append(os.path.realpath(project_path) + sep + tri + '_tech')
         except:
             pass
 
         if 'TT_PROD_TRIG' in os.environ and 'TT_PROD_NAME' in os.environ:
             tri = os.environ['TT_PROD_TRIG']
             name = os.environ['TT_PROD_NAME']
-            cls.paths.append(os.path.realpath(sep + sep + tri + '_server' + sep + 'projets' + sep + name + sep + tri + '_maya' + sep + 'rig' + sep + cls.filename))
-            cls.paths.append(os.path.realpath(sep + sep + tri + '_server' + sep + 'projets' + sep + name + sep + tri + '_tech' + sep + cls.filename))
+            cls.paths.append(os.path.realpath(sep + sep + tri + '_server' + sep + 'projets' + sep + name + sep + tri + '_maya' + sep + 'rig'))
+            cls.paths.append(os.path.realpath(sep + sep + tri + '_server' + sep + 'projets' + sep + name + sep + tri + '_tech'))
 
         if 'MAYA_PROJECT' in os.environ:
-            cls.paths.append(os.path.realpath(os.environ['MAYA_PROJECT'] + sep + 'rig' + sep + cls.filename))
+            cls.paths.append(os.path.realpath(os.environ['MAYA_PROJECT'] + sep + 'rig'))
 
         # maya prefs
         try:
             import maya.cmds as mc
-            cls.paths.append(os.path.realpath(mc.workspace(q=1, rd=1)) + sep + 'rig' + sep + cls.filename)
+            cls.paths.append(os.path.realpath(mc.workspace(q=1, rd=1)) + sep + 'rig')
         except:
             pass
+
+        # unique paths
+        cls.paths = unique(cls.paths)
 
     @classmethod
     def guess_path(cls, path):
@@ -167,7 +171,7 @@ class Prefs(object):
         # maya project?
         workspace = find_maya_project_root(path)
         if workspace:
-            path = os.path.realpath(workspace) + sep + 'rig' + sep + cls.filename
+            path = os.path.realpath(workspace) + sep + 'rig'
             if path not in cls.paths:
                 cls.paths.append(path)
 
@@ -192,6 +196,20 @@ class Prefs(object):
     @classmethod
     def as_dict(cls):
         return Tree.rarefy(cls.prefs)
+
+    @classmethod
+    def get_project_name(cls):
+        # name from prefs
+        name = cls.get('name')
+        if name:
+            return name
+
+        # name from path
+        path = find_maya_project_root(cls.get_config_file())
+        if path:
+            name = os.path.split(path)[-1]
+
+        return name
 
 
 # init paths

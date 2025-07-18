@@ -211,6 +211,13 @@ class TemplateManager(QMainWindow, OptVarSettings):
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         toolbar.addWidget(spacer)
 
+        # env
+        self.wd_env = QLabel()
+        self.wd_env.setStyleSheet('QLabel {font-weight: bold; color: #666;}')
+        toolbar.addWidget(self.wd_env)
+
+        self.update_project_label()
+
         # modes
         self.wd_debug = QToolButton()
         self.wd_debug.setIcon(TemplateManager.ICON_DEBUG)
@@ -239,6 +246,18 @@ class TemplateManager(QMainWindow, OptVarSettings):
         self.wd_dev.toggled.connect(self.mode_dev_changed)
         self.wd_debug.toggled.connect(self.mode_debug_changed)
         self.wd_mode.currentIndexChanged.connect(self.mode_changed)
+
+    def update_project_label(self):
+        self.wd_env.setText(None)
+        self.wd_env.setToolTip(None)
+
+        if not Prefs.loaded:
+            return
+
+        path = Prefs.get_config_file()
+        name = Prefs.get_project_name()
+        self.wd_env.setText('Project: {}  '.format(name))
+        self.wd_env.setToolTip('configuration file: {}'.format(path))
 
     # -- UI slots
 
