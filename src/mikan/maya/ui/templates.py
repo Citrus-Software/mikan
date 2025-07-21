@@ -1326,7 +1326,7 @@ class TemplateModEdit(QTextEdit):
 
         if suffixes:
             def build_num_increment_fn(offset):
-                def replacer(match: re.Match) -> str:
+                def replacer(match):
                     number = match.group(1)
                     new_number = str(int(number) + offset + 1)
                     return match.group(0).replace(number, new_number)
@@ -1334,7 +1334,7 @@ class TemplateModEdit(QTextEdit):
                 return replacer
 
             def build_alpha_increment_fn(offset):
-                def replacer(match: re.Match) -> str:
+                def replacer(match):
                     letter = match.group(1)
                     AZ = string.ascii_uppercase
                     new_index = AZ.index(letter) + offset + 1
