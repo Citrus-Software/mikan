@@ -687,7 +687,12 @@ class TemplateOpts(StackWidget):
                     col_count = 0
 
                 for opt, data in iteritems(tpl.template_data['opts']):
+                    yaml = data.get('yaml', False)
+
                     dv = data.get('value')
+                    if yaml:
+                        dv = ordered_load(dv)
+
                     if connect:
                         dv = tpl.get_opt(opt, default=True)
 
@@ -695,7 +700,6 @@ class TemplateOpts(StackWidget):
                     vmin = data.get('min')
                     vmax = data.get('max')
                     presets = data.get('presets')
-                    yaml = data.get('yaml', False)
 
                     if opt in common_keys:
                         w = self.wd_opts[opt]
