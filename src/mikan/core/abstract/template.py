@@ -89,6 +89,8 @@ class Template(object):
 
     @classmethod
     def get_all_modules(cls, module=mikan.templates.template):
+        cls.modules.clear()
+        cls.classes.clear()
         prefs = Prefs.get('template', {})
 
         def safe_import(modname, importer):

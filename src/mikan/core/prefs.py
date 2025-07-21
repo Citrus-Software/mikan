@@ -84,6 +84,7 @@ class Prefs(object):
 
     @classmethod
     def load(cls):
+        cls.prefs.clear()
 
         data = {}
         path = cls.get_config_file()
@@ -127,7 +128,7 @@ class Prefs(object):
             if os.path.exists(path):
                 return path
 
-        log.warning('/!\\ cannot find any config file for mikan')
+        # log.warning('/!\\ cannot find any config file for mikan')
 
     @classmethod
     def get_paths(cls):

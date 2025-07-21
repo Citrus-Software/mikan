@@ -12,7 +12,6 @@ from six import string_types
 from mikan.core.utils import ordered_load, ordered_dict, re_is_int
 from mikan.core.logger import create_logger
 from mikan.core.prefs import Prefs
-from .node import Nodes
 from .monitor import JobMonitor
 from .template import Template
 
@@ -36,6 +35,8 @@ class Mod(JobMonitor):
 
     @classmethod
     def get_all_modules(cls, module=mikan.templates.mod):
+        cls.modules.clear()
+        cls.classes.clear()
 
         def safe_import(modname):
             if sys.version_info[0] >= 3:
@@ -100,7 +101,7 @@ class Mod(JobMonitor):
         if name in cls.classes:
             return cls.classes[name]
 
-        module = Mod.modules[name]
+        module = cls.modules[name]
 
         for importer, modname, ispkg in pkgutil.iter_modules(module.__path__):
             if modname == cls.software:

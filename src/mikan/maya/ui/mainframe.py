@@ -11,10 +11,13 @@ import maya.mel
 
 from mikan.core.utils import ordered_load
 from mikan.core.logger import create_logger, get_version
-from mikan.core.prefs import UserPrefs, find_maya_project_root
+from mikan.core.prefs import Prefs, UserPrefs, find_maya_project_root
 
+from mikan.vendor.Qt import QtWidgets
 from mikan.vendor.Qt.QtCore import Qt, QSize
 from mikan.vendor.Qt.QtWidgets import QAction
+
+from mikan.maya.core import Template, Mod
 
 from mikan.core.ui.widgets import *
 from .widgets import *
@@ -46,6 +49,11 @@ class MikanUI(MayaDockMixin):
 
         self.setWindowTitle(MikanUI.TITLE)
         self.setWindowFlags(Qt.Tool)
+
+        # refresh prefs
+        Prefs.reload()
+        Template.get_all_modules()
+        Mod.get_all_modules()
 
         # tabs
         self.tabs = TabScrollWidget()
@@ -243,6 +251,26 @@ class MikanUI(MayaDockMixin):
 
             if 'Help' not in name:
                 menu.setTearOffEnabled(True)
+
+        # env
+        self.wd_env = QtWidgets.QLabel()
+        self.wd_env.setStyleSheet('QLabel {font-weight: bold; color: #777;}')
+        menu_bar.setCornerWidget(self.wd_env, Qt.Corner.TopRightCorner)
+
+        self.update_project_label()
+
+    def update_project_label(self):
+        self.wd_env.setText('')
+        self.wd_env.setToolTip('')
+
+        path = Prefs.get_config_file()
+        name = Prefs.get_project_name()
+
+        if not path or not name:
+            return
+
+        self.wd_env.setText('Project: {}  '.format(name))
+        self.wd_env.setToolTip('configuration file: {}'.format(path))
 
     @staticmethod
     def get_paths_dict(path_yml):
