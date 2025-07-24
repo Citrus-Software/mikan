@@ -3,6 +3,7 @@
 import os
 import json
 import yaml
+from six import string_types
 
 from .tree import Tree, Branch
 from .utils import ordered_load, ordered_dump, unique
@@ -225,6 +226,9 @@ def find_maya_project_root(start_path):
     jusqu'à trouver un dossier contenant un fichier 'workspace.mel'.
     Retourne le chemin du dossier trouvé ou None si non trouvé.
     """
+    if not isinstance(start_path, string_types):
+        return
+
     current_path = os.path.abspath(start_path)
 
     while True:
@@ -234,7 +238,6 @@ def find_maya_project_root(start_path):
 
         parent_path = os.path.dirname(current_path)
         if parent_path == current_path:
-            # On est arrivé à la racine du disque
-            return None
+            return
 
         current_path = parent_path
