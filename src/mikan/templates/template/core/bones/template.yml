@@ -1,0 +1,81 @@
+desc: simple fk chain rig with a tip
+help: https://citrus-software.github.io/mikan-docs/references/tpl/core/bones
+base: core.joints
+
+ui:
+  icon: bone
+
+name: bone
+
+guides:
+  number:
+    value: 1
+    min: 1
+  root:
+    value: [ 0, 0.5, 0 ]
+  transform:
+    value: [ 0, 1, 0 ]
+
+
+structure:
+  chain: /*
+  base: chain[:-1]
+  tip: chain[1:]
+
+opts:
+  parent:
+    value: 1
+
+  add_nodes:
+    value: ''
+    yaml: on
+  do_pose:
+    value: off
+  parent_scale:
+    value: off
+
+  rotate_order:
+    value: 0
+    enum: { 0: xyz, 1: yzx, 2: zxy, 3: xzy, 4: yxz, 5: zyx, 6: auto }
+
+  flip_orient:
+    value: off
+  orient:
+    value: 0
+    enum: { 0: copy, 1: auto, 2: world, 3: parent }
+
+  aim_axis:
+    value: y
+  up_axis:
+    value: z
+  up_dir:
+    value: 0
+    enum: { 0: auto, 1: +x, 2: -x, 3: +y, 4: -y, 5: +z, 6: -z }
+  up_auto:
+    value: 0
+    enum: { 0: average, 1: each, 2: first, 3: last }
+
+
+shapes:
+  ctrls.*:
+    parent: base[*]
+    aim: tip[*]
+    do_aim:
+      orient: [ auto ]
+
+    shape: circle
+    color: goldenrod
+
+
+hierarchy:
+  ctrls.0:
+    root: on
+  ctrls:
+    hook: base
+    chain: on
+
+  skin.0:
+    root: on
+  skin:
+    hook: base
+    chain: on

@@ -1,0 +1,23 @@
+desc: projection deformer (shrink wrap)
+help: https://citrus-software.github.io/mikan-docs/references/deformer/project
+
+data:
+  target:
+    value: ''
+    parser: off
+
+  maps:
+    value: { }
+
+  bidirectional:
+    value: on
+  closest_if_no_intersection:
+    value: off
+
+  offset:
+    value: 0.0
+  target_offset:
+    value: 0.0
+
+  target_subdivision:
+    value: 0

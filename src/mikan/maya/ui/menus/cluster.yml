@@ -1,0 +1,53 @@
+# cluster deformer menu
+
+- name: add cluster to controller
+  py: |
+    import mikan.maya.cmdx as mx
+    from mikan.maya.lib.rig import create_cluster
+
+    for obj in mx.ls(sl=True):
+      create_cluster(obj)
+  icon: cross
+  help: add cluster under skin object of the selected controller
+
+- name: add softmod to controller
+  py: |
+    import mikan.maya.cmdx as mx
+    from mikan.maya.lib.rig import create_cluster
+
+    for obj in mx.ls(sl=True):
+      create_cluster(obj, dfm='softMod')
+  icon: cross
+  help: add softmod under skin object of the selected controller
+
+- name: reroot cluster
+  py: |
+    from mikan.maya.lib.rig import reroot_cluster
+    reroot_cluster()
+  help: select handle then new root
+
+
+- separator: on
+- name: transfer clusters
+  file: $snippets/deformers/transfer_clusters.py
+  help: select source mesh then destination mesh
+
+- name: mirror clusters (L > R)
+  file: $snippets/deformers/mirror_clusters.py
+  py: _mirror_cluster()
+  help: select source mesh only
+
+- name: mirror clusters (R > L)
+  file: $snippets/deformers/mirror_clusters.py
+  py: _mirror_cluster(-1)
+  help: select source mesh only
+
+- name: smart mirror clusters (L > R)
+  file: $snippets/deformers/mirror_clusters.py
+  py: _mirror_cluster(smart=True)
+  help: select source mesh only
+
+- name: smart mirror clusters (R > L)
+  file: $snippets/deformers/mirror_clusters.py
+  py: _mirror_cluster(-1, smart=True)
+  help: select source mesh only

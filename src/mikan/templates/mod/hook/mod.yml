@@ -1,0 +1,10 @@
+desc: create/connect transform hook
+help: https://citrus-software.github.io/mikan-docs/references/mod/hook
+
+data:
+  targets:
+    value: [ ]
+  weights:
+    value: [ 1 ]
+  maintain_offset:
+    value: on

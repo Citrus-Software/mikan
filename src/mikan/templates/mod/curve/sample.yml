@@ -1,0 +1,9 @@
+curve:
+  name: ...
+  parent: <parent>::<node>
+  nodes:
+    - <id1>::<node>
+    - <id2>::<node>
+    - <id3>::<node>
+    - ...
+  degree: <1|2|3>

@@ -1,0 +1,20 @@
+# toolbox menu
+
+- name: ptvsd
+  icon: link
+  py: |
+    import ptvsd
+    ptvsd.enable_attach(address=('0.0.0.0', 3500), redirect_output=True)
+
+- name: build abc
+  file: $scripts\build_abc.py
+
+- name: reload
+  py: |
+    import sys
+    for k in list(sys.modules):
+      if 'mikan' in k:
+        del sys.modules[k]
+
+    import mikan.tangerine as mk
+

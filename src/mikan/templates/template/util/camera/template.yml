@@ -1,0 +1,35 @@
+desc: simple camera
+# help: https://citrus-software.github.io/mikan-docs/references/tpl/util/camera
+
+ui:
+  icon: camera
+
+name: camera
+
+guides:
+  transform:
+    value: [ 0, 0, 0 ]
+
+opts:
+  parent:
+    value: 1
+
+  horizontal_aperture:
+    value: 1.28
+  vertical_aperture:
+    value: 0.72
+  focal_length:
+    value: 50.0
+    min: 0.001
+
+  near_clip:
+    value: 1.0
+    min: 0.001
+  far_clip:
+    value: 10000.0
+    min: 0.001
+
+  orthographic:
+    value: off
+  image_plane:
+    value: off

@@ -1,0 +1,39 @@
+desc: wheel legacy
+help: https://citrus-software.github.io/mikan-docs/references/tpl/wheel/legacy
+
+ui:
+  icon: gear
+
+name: wheel
+
+structure:
+  swivel: .
+  axis:
+  ground:
+
+guides:
+  transform:
+    value: [ 0, 0, 0 ]
+
+opts:
+  hook:
+    value: ""
+
+shapes:
+  ctrls.bank:
+    shape: arrow_flat
+    color: pink
+    parent: ground
+
+  ctrls.wheel:
+    axis: x
+    shape: circle
+    color: red
+    parent: axis
+    size: 8
+
+  ctrls.spin:
+    axis: x
+    shape: arrows_cycling
+    color: darkred
+    parent: axis

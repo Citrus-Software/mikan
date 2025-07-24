@@ -1,0 +1,4 @@
+parent:
+  - <child>::<node>
+  - ...  # (children list)
+  - <parent>::<node>

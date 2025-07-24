@@ -1,0 +1,3 @@
+rig.bank:
+  target: <id>::<node>  # controller
+  curve: <curve>->shape

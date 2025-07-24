@@ -1,0 +1,17 @@
+driver.distance:
+  name: test
+  input1: <id1>::<node>
+  input2: <id2>::<node>
+
+  pos1: [0, 0, 0]
+  pos2: [0, 0, 0]
+
+  targets:
+    compression:
+      target_distance: 1
+      falloff_before: 1
+      falloff_after: 1
+      falloff_tangent: flat
+      remaps:
+        <output>::<node>@t.x: [0, 5]
+      op: add

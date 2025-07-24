@@ -1,0 +1,11 @@
+desc: wire deformer
+help: https://citrus-software.github.io/mikan-docs/references/deformer/wire
+
+data:
+  maps:
+    value: { }
+
+  dropoff:
+    value: 1.0
+  rotate:
+    value: on

@@ -1,0 +1,5 @@
+*.py[cod]
+.mayaSwatches
+.vscode
+/.idea
+*.dll

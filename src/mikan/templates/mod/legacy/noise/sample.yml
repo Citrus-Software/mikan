@@ -1,0 +1,2 @@
+legacy.noise:
+  plug: <id>::<node>@t.x

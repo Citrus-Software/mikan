@@ -1,0 +1,60 @@
+desc: default world for prop, add center and squash controllers
+# help: https://citrus-software.github.io/mikan-docs/references/tpl/world/prop
+
+base: world.character
+
+ui:
+  icon: world
+  hooks:
+    root: root
+
+name: world
+names:
+  world: world
+  move: move
+  fly: center
+  scale: scale
+
+guides:
+  height:
+    value: 5.0
+
+structure:
+  root: /1
+
+opts:
+  group:
+    value: all
+  parent:
+    value: merge up
+
+  fly:
+    value: on
+  scale:
+    value: on
+
+shapes:
+  ctrls.world:
+    shape: square
+    color: yellow
+    size: 10
+
+  ctrls.move:
+    shape: square
+    color: saddlebrown
+    size: 8
+
+  ctrls.fly:
+    shape: cross
+    color: saddlebrown
+    parent: root
+    size: 6
+
+  ctrls.scale:
+    shape: scale
+    size: 1.5
+
+hierarchy:
+  ctrls.move:
+    parent: ctrls.world
+    hook: .

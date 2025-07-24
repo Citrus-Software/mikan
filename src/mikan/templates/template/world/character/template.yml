@@ -1,0 +1,63 @@
+desc: default world for character, add a fly and squash controllers
+help: https://citrus-software.github.io/mikan-docs/references/tpl/world/character
+
+ui:
+  icon: world
+  hooks:
+    root: root
+
+name: world
+names:
+  world: world
+  move: move
+  fly: fly
+  scale: scale
+
+guides:
+  height:
+    value: 10.0
+
+structure:
+  root: /1
+
+opts:
+  group:
+    value: all
+  parent:
+    value: merge up
+
+  fly:
+    value: on
+  scale:
+    value: on
+
+shapes:
+  ctrls.world:
+    shape: circle
+    color: yellow
+    size: 10
+
+  ctrls.move:
+    shape: move
+    color: saddlebrown
+    size: 7.5
+
+  ctrls.fly:
+    shape: fly
+    color: saddlebrown
+    parent: root
+    size: 7.5
+
+  ctrls.scale:
+    shape: scale
+    size: 1.5
+
+hierarchy:
+  ctrls.move:
+    parent: ctrls.world
+    hook: .
+  ctrls.fly:
+    parent: ctrls.move
+  ctrls.scale:
+    parent: ctrls.fly
+    hook: root

@@ -1,0 +1,33 @@
+desc: simple controller
+# help: https://citrus-software.github.io/mikan-docs/references/tpl/core/ctrl
+
+ui:
+  icon: shapes
+
+name: ctrl
+
+guides:
+  transform:
+    value: [ 0, 0, 0 ]
+
+opts:
+  parent:
+    value: 1
+
+  rotate_order:
+    value: 0
+    enum: { 0: xyz, 1: yzx, 2: zxy, 3: xzy, 4: yxz, 5: zyx }
+  local_orient:
+    value: off
+  flip_orient:
+    value: off
+
+  copy_shapes:
+    value: on
+  locator:
+    value: off
+
+hierarchy:
+  ctrl:
+    root: on
+    hook: .

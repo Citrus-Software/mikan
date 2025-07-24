@@ -1,0 +1,34 @@
+desc: default root for rig
+help: https://citrus-software.github.io/mikan-docs/references/tpl/world/default
+
+ui:
+  icon: world
+
+name: world
+names:
+  world: world
+  move: move
+
+opts:
+  group:
+    value: all
+  parent:
+    value: merge up
+  hook:
+    value: off
+
+shapes:
+  ctrls.world:
+    shape: square
+    color: yellow
+    size: 10
+
+  ctrls.move:
+    shape: square
+    color: saddlebrown
+    size: 8
+
+hierarchy:
+  ctrls.move:
+    parent: ctrls.world
+    hook: .

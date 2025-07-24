@@ -1,0 +1,12 @@
+constraint:
+  type: <point|orient|parent|aim|scale>
+
+  target: <target>::<node>
+  node: <id>::<node>
+
+  weights: [1]
+  maintain_offset: on
+
+  # aim options
+  aim: [0, 1, 0]
+  up: [1, 0, 0]

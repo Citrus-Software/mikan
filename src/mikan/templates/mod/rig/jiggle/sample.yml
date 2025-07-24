@@ -1,0 +1,9 @@
+rig.jiggle:
+  ctrl_main: <main_id>::ctrls.0
+
+  ctrl: <id>::ctrls.0
+  target: <id>::roots.1
+  dyn: <id>::dyns.0
+
+  goal: 0.5
+  damp: 0.5

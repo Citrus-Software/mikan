@@ -1,0 +1,6 @@
+# This deformer is now deprecated.
+# It was originally created to work around a limitation related to geometry IDs in the modifier system.
+# That limitation has since been resolved, and this deformer is no longer needed or maintained.
+
+desc: hook constraint
+virtual: on

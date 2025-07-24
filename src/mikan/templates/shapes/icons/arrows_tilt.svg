@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg width="100%" height="100%" viewBox="0 0 64 64"
+     xmlns="http://www.w3.org/2000/svg">
+<style type="text/css">
+<![CDATA[
+* {fill: none; stroke: #aaa; stroke-width: 0.03; stroke-linejoin: round;}
+]]>
+</style>
+<g transform="translate(32, 32) scale(48, 48)" class="curve">
+<path d="M 0.5,0.2288 L 0.4722,-0.1591 0.4303,0.031 0.3637,-0.0779 0.1969,-0.1896 -0.0,-0.2288 -0.1969,-0.1896 -0.3637,-0.0779 -0.4312,0.0301 -0.4722,-0.1591 -0.5,0.2288 -0.1595,0.0406 -0.3596,0.0848 -0.2976,-0.0119 -0.1609,-0.103 -0.0,-0.1349 0.1609,-0.103 0.2976,-0.0119 0.3582,0.0857 0.1595,0.0406 Z"/>
+</g>
+</svg>

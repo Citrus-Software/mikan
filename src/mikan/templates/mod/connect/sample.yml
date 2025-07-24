@@ -1,0 +1,3 @@
+connect:
+  input: <src>::<node>@<plug>
+  node: <id>::<node>@<plug>

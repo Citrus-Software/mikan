@@ -1,0 +1,140 @@
+desc: spline IK/FK chain rig
+help: https://citrus-software.github.io/mikan-docs/references/tpl/rig/spline
+
+base: core.joints
+
+ui:
+  icon: bone
+
+name: spline
+
+guides:
+  joint: on
+  number:
+    value: 5
+  root:
+    value: [ 0, 0, -0.5 ]
+  transform:
+    value: [ 0, 0, -1 ]
+
+structure:
+  chain: /*
+  base: chain[:-1]
+  tip: chain[1:]
+  last: chain[-1]
+
+opts:
+  iks:
+    value: 3
+    min: 2
+  tweakers:
+    value: 0
+    enum:
+      0: 'off'
+      1: chained
+      2: unchained
+
+  bones:
+    value: 0
+  bones_length:
+    value: 1
+    enum:
+      0: parametric
+      1: cvs
+      2: equal
+
+  uniform_ik:
+    value: on
+
+  fk_easing:
+    value: 0
+    enum:
+      0: 'off'
+      1: in
+      2: out
+      3: in-out
+  default_stretch:
+    value: off
+  legacy_twist:
+    value: on
+
+  add_nodes:
+    value: ''
+    yaml: on
+  do_pose:
+    value: off
+  parent_scale:
+    value: off
+
+  rotate_order:
+    value: 6
+    enum: { 0: xyz, 1: yzx, 2: zxy, 3: xzy, 4: yxz, 5: zyx, 6: auto }
+
+  orient:
+    value: 1
+    enum: { 0: copy, 1: auto }
+  flip_orient:
+    value: off
+
+  aim:
+    value: y
+  up:
+    value: x
+  up_dir:
+    value: 1
+    enum: { 0: auto, 1: +x, 2: -x, 3: +y, 4: -y, 5: +z, 6: -z }
+  up_auto:
+    value: 2
+    enum: { 0: average, 1: each, 2: first, 3: last }
+
+
+shapes:
+  ctrls.fk.*:
+    shape: circle
+    parent: base[*]
+    aim: tip[*]
+    color: lime
+
+  ctrls.fk.last:
+    shape: circle
+    parent: chain[-1]
+    aim: chain[-2]
+    aim_axis: -y
+    color: lime
+
+  ctrls.ik:
+    shape: rhombus
+    parent: chain[0]
+    aim: chain[1]
+    color: green
+
+  ctrls.tweaker:
+    shape: circle
+    parent: chain[0]
+    aim: chain[1]
+    color: palegoldenrod
+    size: 1
+
+
+hierarchy:
+  ctrls.fk.0:
+    root: on
+  ctrls.fk:
+    chain: on
+    hook:
+      - chain
+      - last
+  ctrls.ik:
+    chain: on
+  ctrls.ik.0:
+    parent: ctrls.fk.0
+  ctrls.tweaker:
+    chain: on
+  ctrls.tweaker.0:
+    parent: ctrls.fk.0
+
+  skin.0:
+    root: on
+  skin:
+    chain: on
+    hook: chain

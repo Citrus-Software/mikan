@@ -1,0 +1,10 @@
+desc: wrap deformer
+
+data:
+  maps:
+    value: { }
+
+  dropoff:
+    value: 1.0
+  rotate:
+    value: on

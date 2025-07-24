@@ -1,0 +1,20 @@
+desc: muscle hook
+help: https://citrus-software.github.io/mikan-docs/references/mod/rig/muscle
+
+data:
+  nodes:
+    value: [ ]
+  parent:
+    value: null
+
+  hook:
+    value: off
+  orient:
+    value: off
+
+  targets:
+    value:
+      - null
+      - null
+  name:
+    value: ''

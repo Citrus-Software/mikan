@@ -1,0 +1,134 @@
+desc: legacy neck from ttRig3
+help: https://citrus-software.github.io/mikan-docs/references/tpl/neck/legacy
+
+ui:
+  icon: skull
+  hooks:
+    head: head
+
+name: neck
+names:
+  head: head
+
+guides:
+  joint: on
+
+structure:
+  root: .
+  chain: /*
+  head: /-2
+  end: /-1
+  base: chain[:-2]
+  tip: chain[1:-1]
+
+opts:
+  sym:
+    value: x
+
+  bones:
+    value: 2
+  bones_length:
+    value: 0
+    enum:
+      0: equal
+      1: parametric
+
+  orient_neck:
+    value: on
+  aim_axis:
+    value: y
+  up_axis:
+    value: x
+
+  default_stretch:
+    value: on
+  stretch_mode:
+    value: 0
+    enum:
+      0: scale
+      1: translate
+
+  rigidity:
+    value: on
+  rigidity_dn:
+    value: 1.0
+    min: 0
+    max: 1
+  rigidity_up:
+    value: 0.0
+    min: 0
+    max: 1
+
+  space_switch:
+    value: on
+
+  offset_ctrl:
+    value: on
+
+
+shapes:
+  ctrls.neck*:
+    parent: base[*]
+    aim: tip[*]
+    shape: circle
+    color: khaki
+    size: 2
+
+  ctrls.mid:
+    parent: chain[:-1]
+    aim: chain[-2]
+    shape: cross
+    color: saddlebrown
+    size: 2
+
+  ctrls.head:
+    parent: head
+    shape: circle
+    color: yellow
+    size: 4
+    aim: end
+    point:
+      - head
+      - end
+    aim_axis: z
+    up_axis: y
+
+  ctrls.head_offset:
+    clone: ctrls.head
+    size: 0.95
+    color: goldenrod
+
+    aim: end
+    point:
+      - head
+      - end
+    aim_axis: z
+    up_axis: y
+
+  ctrls.scale:
+    shape: scale
+    parent: head
+    size: 1
+
+
+hierarchy:
+  ctrls.neck0:
+    root: on
+    hook: .
+  ctrls.neck*:
+    hook: chain
+    chain: on
+  ctrls.head:
+    parent: ctrls.neck0
+    hook: head
+
+  skin.neck0:
+    root: on
+  skin.neck*:
+    hook: chain
+    chain: on
+  skin.head:
+    parent: skin.last
+    hook: head
+  tip:
+    parent: skin.head

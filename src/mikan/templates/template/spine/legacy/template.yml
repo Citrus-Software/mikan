@@ -1,0 +1,153 @@
+desc: legacy spine from ttRig3
+help: https://citrus-software.github.io/mikan-docs/references/tpl/spine/legacy
+
+ui:
+  icon: hips
+  hooks:
+    pelvis: hips
+    torso: tip
+
+name: spine
+
+guide:
+  joint: on
+
+structure:
+  root: .
+  chain: /*
+  hips:
+  spine1: /1
+  spine2: /2
+  tip: /-1
+  mid: spine1+spine2
+
+names:
+  spine: spine
+  cog: cog
+  pelvis: pelvis
+  hip: hip
+  shoulder: shoulder
+
+opts:
+  group:
+    value: body
+  sym:
+    value: x
+
+  bones:
+    value: 6
+  bones_length:
+    value: 2
+    enum:
+      0: parametric
+      1: cvs
+      2: equal
+
+  orient_spine:
+    value: off
+  orient_pelvis:
+    value: off
+  orient_shoulders:
+    value: off
+  pivots:
+    value: 0
+    enum:
+      0: legacy
+      1: spine1
+      2: centered
+
+  default_stretch:
+    value: on
+  stretch_mode:
+    value: 1
+    enum:
+      0: scale
+      1: translate
+  curvature:
+    value: 0.5
+    min: 0
+    max: 1
+
+
+shapes:
+  ctrls.cog:
+    parent: root
+    shape: circle
+    color: yellow
+    size: 4
+
+  ctrls.spine1:
+    parent: spine1
+    shape: circle
+    color: khaki
+    size: 3
+    do_aim:
+      orient_spine: on
+    aim: spine2
+
+  ctrls.spine2:
+    parent: spine2
+    shape: circle
+    color: khaki
+    size: 3
+    do_aim:
+      orient_spine: on
+    aim: tip
+
+  ctrls.pelvisIK:
+    parent: root
+    shape: rhombus
+    color: yellow
+    size: 3.5
+    aim: y
+
+  ctrls.spineIK:
+    parent: tip
+    shape: rhombus
+    color: yellow
+    size: 3.5
+    aim: y
+
+  ctrls.spine_mid:
+    parent: mid
+    shape: cross
+    color: saddlebrown
+    size: 3.5
+    aim: spine2
+
+  ctrls.pelvis:
+    parent: root
+    shape: cross
+    color: saddlebrown
+    size: 3.5
+    aim: hips
+
+
+hierarchy:
+  ctrls.cog:
+    root: on
+  ctrls.spine1:
+    parent: ctrls.cog
+    hook: .
+  ctrls.spine2:
+    parent: ctrls.spine1
+    hook: spine2
+  ctrls.spineIK:
+    parent: ctrls.spine2
+    hook: tip
+  ctrls.pelvisIK:
+    root: on
+    hook: hips
+
+  skin.pelvis:
+    root: on
+    hook:
+      - root
+      - hips
+  skin.0:
+    parent: skin.pelvis
+  skin.chain:
+    chain: on
+    hook: chain
+  skin.tip:
+    hook: tip

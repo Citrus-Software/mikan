@@ -1,0 +1,62 @@
+global proc ttSkinAs() {
+
+	//sel test
+	string $sel[]=`ls -sl`;
+	if(size($sel)<2) error "bad selection";
+
+	string $skin[]=`listHistory $sel[0]`;
+	$skin=`ls -et skinCluster $skin`;
+	if(size($skin)==0) error "no skin";
+
+	string $infList[]=`skinCluster -q -inf $skin[0]`;
+
+	if(size($infList)==0) error "no influences";
+
+	string $jointList[]=`ls -et joint $infList`;
+	string $xformList[]=`ls -et transform $infList`;
+
+	$mi = getAttr($skin[0]+".mi");
+	$mmi= getAttr($skin[0]+".mmi");
+	$skm = getAttr($skin[0]+".skinningMethod");
+
+	//new skin
+	for($i=1; $i<size($sel); $i++) {
+
+		string $hasSkin[]=`listHistory $sel[$i]`;
+		$hasSkin=`ls -et skinCluster $hasSkin`;
+
+		if(size($hasSkin)) {
+			warning ("ttSkinAs: "+$sel[$i]+" has already a skinCluster");
+			continue;
+		}
+
+		string $newSkin[]=`skinCluster -mi $mi -omi $mmi -tsb $jointList $sel[$i]`;
+		setAttr ($newSkin[0]+".mi") $mi;
+		setAttr ($newSkin[0]+".skm") $skm;
+		if($skm>0) setAttr($newSkin[0]+".dqsSupportNonRigid", 1);
+
+		$cmd="skinCluster -e ";
+		for($xform0 in $xformList) {
+			$cmd+=("-ai "+$xform0+" ");
+
+			string $shapes[]=`listRelatives -pa -s $xform0`;
+			if(size($shapes)) {
+				string $base[]=`duplicate $shapes[0]`;
+				$base[0]=`rename $base[0] ($base[0]+"Base")`;
+				string $baseShape[]=`listRelatives -pa -s $base[0]`;
+				hide $base;
+
+				$cmd+=("-bsh "+$baseShape[0]+" -ug ");
+
+				setAttr ($newSkin[0]+".useComponents") 1;
+			}
+		}
+
+
+		$cmd+=($newSkin[0]+";");
+		eval $cmd;
+
+		copySkinWeights -noMirror -surfaceAssociation "closestPoint" -influenceAssociation "oneToOne" -influenceAssociation "closestJoint" $sel[0] $sel[$i];
+	}
+	select $sel;
+}

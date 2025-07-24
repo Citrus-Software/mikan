@@ -1,0 +1,26 @@
+desc: free form deformer (lattice)
+help: https://citrus-software.github.io/mikan-docs/references/deformer/ffd
+
+data:
+  maps:
+    value: { }
+
+  lattice:
+    value: ''
+    parser: off
+  base:
+    value: ''
+    parser: off
+
+  stu:
+    value: [ 2, 2, 2 ]
+    label: Divisions
+  local_stu:
+    value: [ 4, 4, 4 ]
+    label: Local influence
+  local:
+    value: off
+  falloff:
+    value: 1.0
+  outside:
+    value: 0

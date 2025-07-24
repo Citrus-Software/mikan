@@ -1,0 +1,38 @@
+desc: all purpose constraint
+help: https://citrus-software.github.io/mikan-docs/references/mod/constraint
+
+data:
+  type:
+    value: orient
+    enum:
+      - point
+      - orient
+      - parent
+      - aim
+      - scale
+
+  targets:
+    value: [ ]
+  weights:
+    value: [ 1.0 ]
+  maintain_offset:
+    value: on
+
+  aim:
+    value: [ 1.0, 0.0, 0.0 ]
+  up:
+    value: [ 0.0, 1.0, 0.0 ]
+
+  up_type:
+    value: scene
+    enum:
+      - none
+      - scene
+      - vector
+      - object
+      - object orient
+
+  world_up:
+    value: [ 0.0, 0.0, 0.0 ]
+  world_object:
+    value: null

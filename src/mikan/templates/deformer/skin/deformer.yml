@@ -1,0 +1,37 @@
+desc: skin deformer
+help: https://citrus-software.github.io/mikan-docs/references/deformer/skin
+
+data:
+  mi:
+    value: 5
+    label: Max influence
+  mmi:
+    value: off
+    label: Maintain max
+  normalize:
+    value: on
+
+  method:
+    value: 0
+    enum:
+      0: linear
+      1: dual quaternion
+      2: dq blend
+  dq:
+    value: off
+    label: Dual quaternion
+
+  infs:
+    value: { }
+    parser: off
+  bind_pose:
+    value: { }
+    parser: off
+  bind_pose_root:
+    value: { }
+    parser: off
+  maps:
+    value: { }
+
+  relative:
+    value: on

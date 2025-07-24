@@ -1,0 +1,8 @@
+drive:
+  node: <driver>::<node>@t.x
+  <driven>::<node>@t.y:
+    -0.5: -1
+    0: 0
+    0.5: 1
+    pre: constant
+    post: constant

@@ -1,0 +1,39 @@
+desc: simple locator
+help: https://citrus-software.github.io/mikan-docs/references/tpl/core/xform
+
+name: locator
+
+guides:
+  transform:
+    value: [ 0, 0, 0 ]
+
+opts:
+  parent:
+    value: 1
+  do_ctrl:
+    value: off
+  do_skin:
+    value: off
+
+  joint:
+    value: off
+  rotate_order:
+    value: 0
+    enum: { 0: xyz, 1: yzx, 2: zxy, 3: xzy, 4: yxz, 5: zyx }
+  flip_orient:
+    value: off
+  copy_orient:
+    value: on
+
+  copy_shapes:
+    value: off
+  locator:
+    value: off
+
+
+hierarchy:
+  ctrls.node:
+    root: on
+
+  skin.node:
+    root: on

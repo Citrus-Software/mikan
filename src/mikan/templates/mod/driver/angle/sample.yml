@@ -1,0 +1,17 @@
+driver.angle:
+  name: test
+  angle_ref: <id1>::<node>
+
+  angle_parent: <id2>::<node>  # OPTIONNAL
+  space_ref: ::hook
+
+  targets:
+    compression:
+      target_angle: [0, 0, 0]
+      falloff: 35
+      falloff_tangent: flat
+      remaps:
+        <output>::<node>@t.x: [0, 0]
+        <output>::<node>@t.y: [0, 0]
+        <output>::<node>@t.z: [0, 0]
+      op: add

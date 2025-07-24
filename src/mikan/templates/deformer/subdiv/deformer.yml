@@ -1,0 +1,6 @@
+desc: subdivision modifier
+help: https://citrus-software.github.io/mikan-docs/references/deformer/subdiv
+
+data:
+  level:
+    value: 2

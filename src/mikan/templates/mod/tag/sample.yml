@@ -1,0 +1,3 @@
+tag:
+  node: <id>::ctrls.0
+  remove: ctrls  # pattern

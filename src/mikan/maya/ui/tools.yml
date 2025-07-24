@@ -1,0 +1,180 @@
+# toolbox menu
+
+- name: rig
+  menu:
+
+    - separator: Template
+
+    - name: create control sets
+      file: $snippets/create_ctrl_sets.py
+
+    - name: fix template pivots
+      file: $snippets/fix_template_pivots.py
+      help: remove pivot values from template
+
+    - name: snap template from rig
+      file: $snippets/snap_template.py
+
+
+    - separator: Misc.
+
+    - name: snap toolbox
+      py: |
+        from mikan.maya.utils.snap import SnapUI2
+        SnapUI2(mikan_ui=MikanUI).show()
+
+    - name: create joints from cvs
+      file: $snippets/joints_from_cvs.py
+
+    - name: retarget template
+      py: |
+        from mikan.maya.utils.ui_auto import FunctionAutoUI
+        _ui = FunctionAutoUI("mikan/maya/utils/retarget_template.py", "retarget_template")
+        _ui.show()
+
+
+    - separator: on
+    - name: get anim curve mod
+      file: $snippets/export_driven_keys_to_mod.py
+
+
+    - separator: on
+    - name: mesh to rig
+      py: |
+        from mikan.maya.utils.ui_auto import FunctionAutoUI
+        _ui = FunctionAutoUI("mikan/maya/utils/topology_utils/mesh_to_rig.py", None, advance_setting_collapse=False)
+        _ui.show()
+
+    - separator: Anim
+    - name: save anim
+      file: $snippets/check/save_anim.py
+
+    - name: fix dagmenu
+      py: |
+        from mikan.maya.ui.dagmenu import DagMenu
+        DagMenu.reload()
+
+
+- name: export
+  menu:
+    - name: Set Tangerine Path
+      file: $snippets/export/set_tangerine_path.py
+
+    - name: Save shader data
+      file: $snippets/export/save_shader_data.py
+
+    - name: Export Blueprint abc
+      file: $snippets/export/export_blueprint.py
+
+
+- separator: on
+
+- name: cluster
+  menu: $ui/menus/cluster.yml
+
+
+- name: skin
+  menu: $ui/menus/skin.yml
+
+
+- name: non linear
+  menu:
+    - name: 'add non linear to controller'
+      menu:
+        - name: 'bend'
+          py: |
+            import mikan.maya.cmdx as mx
+            from mikan.maya.lib.rig import add_nonlinear
+
+            for obj in mx.ls(sl=True):
+              add_nonlinear(obj, 'bend')
+        - name: 'flare'
+          py: |
+            import mikan.maya.cmdx as mx
+            from mikan.maya.lib.rig import add_nonlinear
+
+            for obj in mx.ls(sl=True):
+              add_nonlinear(obj, 'flare')
+        - name: 'sine'
+          py: |
+            import mikan.maya.cmdx as mx
+            from mikan.maya.lib.rig import add_nonlinear
+
+            for obj in mx.ls(sl=True):
+              add_nonlinear(obj, 'sine')
+        - name: 'squash'
+          py: |
+            import mikan.maya.cmdx as mx
+            from mikan.maya.lib.rig import add_nonlinear
+
+            for obj in mx.ls(sl=True):
+              add_nonlinear(obj, 'squash')
+        - name: 'twist'
+          py: |
+            import mikan.maya.cmdx as mx
+            from mikan.maya.lib.rig import add_nonlinear
+
+            for obj in mx.ls(sl=True):
+              add_nonlinear(obj, 'twist')
+        - name: 'wave'
+          py: |
+            import mikan.maya.cmdx as mx
+            from mikan.maya.lib.rig import add_nonlinear
+
+            for obj in mx.ls(sl=True):
+              add_nonlinear(obj, 'wave')
+
+    - name: 'reroot handle'
+      py: |
+        from mikan.maya.lib.rig import transfer_nonlinear
+
+        transfer_nonlinear()
+      help: transfer handle from the first selected transform to the second
+
+
+- name: deformers
+  menu:
+    - name: assign handles
+      py: |
+        from mikan.maya.utils.deformer_utils import *
+        AssignDeformerHandlesUI().show()
+
+
+- separator: on
+
+- name: logger
+  menu:
+    - name: 'timed code: ON'
+      py: |
+        import mikan.core.logger
+        mikan.core.logger.set_time_logging(True)
+    - name: 'timed code: OFF'
+      py: |
+        import mikan.core.logger
+        mikan.core.logger.set_time_logging(False)
+
+    - separator: on
+    - name: 'level: DEBUG'
+      py: |
+        import mikan.core.logger
+        _logger = mikan.core.logger.create_logger(level='DEBUG')
+        _logger = mikan.core.logger.create_logger('mikan.pose', level='DEBUG')
+    - name: 'level: INFO'
+      py: |
+        import mikan.core.logger
+        _logger = mikan.core.logger.create_logger(level='INFO')
+        _logger = mikan.core.logger.create_logger('mikan.pose', level='INFO')
+
+    - separator: on
+    - name: ptvsd
+      py: |
+        import ptvsd
+        ptvsd.enable_attach(address=('0.0.0.0', 3500), redirect_output=True)
+      icon: link
+      help: python debugger
+
+    - separator: on
+    - name: colored script editor
+      py: |
+        from mikan.maya.ui.widgets import install_maya_syntax_highlighter
+        install_maya_syntax_highlighter()

@@ -1,0 +1,7 @@
+rig.rivet:
+  geo: <mesh>->shape
+
+  node: <id>::<node>  # constraint node
+  parent: <parent>::<node>
+
+  orient: <off|on>  # default: on

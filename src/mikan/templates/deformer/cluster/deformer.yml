@@ -1,0 +1,33 @@
+desc: cluster deformer
+help: https://citrus-software.github.io/mikan-docs/references/deformer/cluster
+
+data:
+  handle:
+    value: ''
+  bind_pose:
+    value: ''
+
+  soft:
+    value: off
+  falloff_mode:
+    value: 0
+    enum:
+      0: volume
+      1: surface
+  falloff_radius:
+    value: 1.0
+  falloff_center:
+    value: [ 0.0, 0.0, 0.0 ]
+  falloff_pivot:
+    value: ''
+  falloff_curve:
+    value: ''
+    yaml: on
+
+  maps:
+    value: { }
+
+  relative:
+    value: on
+  local:
+    value: off

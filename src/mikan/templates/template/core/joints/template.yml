@@ -1,0 +1,73 @@
+desc: simple chain rig
+help: https://citrus-software.github.io/mikan-docs/references/tpl/core/joints
+
+ui:
+  icon: bone
+
+name: joint
+
+guides:
+  number:
+    value: 1
+    min: 1
+  root:
+    value: [ 0, 0.5, 0 ]
+  transform:
+    value: [ 0, 1, 0 ]
+
+structure:
+  chain: /*
+
+opts:
+  parent:
+    value: 1
+
+  type:
+    value: 0
+    enum: { 0: joint, 1: transform }
+
+  parent_scale:
+    value: off
+  flip_orient:
+    value: off
+  unchain:
+    value: off
+
+  add_nodes:
+    value: ''
+    yaml: on
+  do_pose:
+    value: off
+
+  rotate_order:
+    value: 0
+    enum: { 0: xyz, 1: yzx, 2: zxy, 3: xzy, 4: yxz, 5: zyx }
+
+
+shapes:
+  ctrls.*:
+    parent: chain[*]
+    shape: locator
+    color: limegreen
+
+
+hierarchy:
+  ctrls.0:
+    root: on
+  ctrls:
+    hook: chain
+    chain: on
+
+  skin.0:
+    root: on
+    opts:
+      unchain:
+        chain: on
+        root: off
+  skin:
+    hook: chain
+    chain: on
+    opts:
+      unchain:
+        chain: off
+        root: on

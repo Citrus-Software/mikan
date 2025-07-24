@@ -1,0 +1,4 @@
+expression:
+  op: y = 2*x
+  y: <input>::<node>@<plug>
+  x: <output>::<node>@<plug>

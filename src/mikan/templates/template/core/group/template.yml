@@ -1,0 +1,11 @@
+desc: pass through template to add new group
+help: https://citrus-software.github.io/mikan-docs/references/tpl/core/group
+
+ui:
+  icon: group
+
+name: group
+
+opts:
+  main:
+    value: off

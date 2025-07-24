@@ -1,0 +1,15 @@
+- color: red
+  degree: 1
+  points:
+  - [0.0, 0.0, 0.0]
+  - [1.0, 0.0, 0.0]
+- color: lime
+  degree: 1
+  points:
+  - [0.0, 0.0, 0.0]
+  - [0.0, 1.0, 0.0]
+- color: blue
+  degree: 1
+  points:
+  - [0.0, 0.0, 0.0]
+  - [0.0, 0.0, 1.0]

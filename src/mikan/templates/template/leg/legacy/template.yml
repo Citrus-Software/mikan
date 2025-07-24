@@ -1,0 +1,262 @@
+desc: legacy leg from ttRig3
+help: https://citrus-software.github.io/mikan-docs/references/tpl/leg/legacy
+
+base: _common.limb
+
+ui:
+  icon: limb
+  hooks:
+    foot: limb3
+    hip: limb1
+    knee: limb2
+    toes: digits
+
+name: leg
+names:
+  clavicle: pelvis
+  limb1: hip
+  limb2: knee
+  limb3: ankle
+  digits: toes
+  effector: foot
+  heel: heel
+
+guides:
+  joint: on
+
+structure:
+  clavicle:
+  limb1: .
+  limb2: /1
+  limb3: /2
+  digits: /3
+  tip: /4
+  heel:
+  bank_int:
+  bank_ext:
+
+opts:
+  branches:
+    value: '[L, R]'
+    yaml: on
+  group:
+    value: body
+
+  clavicle:
+    value: off
+  clavicle_auto:
+    value: off
+  reverse_lock:
+    value: on
+  bank:
+    value: off
+  effector_plane:
+    value: 4
+    enum:
+      0: x
+      1: y
+      2: z
+      3: auto
+      4: ground
+  pv_space:
+    value: space.cog
+  pv_space_default:
+    value: 1
+    min: 0
+    max: 1
+
+  default_stretch:
+    value: on
+  soft_distance:
+    value: 0.05
+    min: 0
+    max: 1
+  stomp_power:
+    value: -0.5
+    min: -1
+    max: 0
+
+  smooth_type:
+    value: 0
+    enum:
+      0: length
+      1: parametric
+  blend_joints:
+    value: on
+
+  twist_joints_up:
+    value: 3
+    min: 2
+  twist_joints_dn:
+    value: 3
+    min: 2
+  add_chains:
+    value: ''
+    yaml: on
+  advanced_twist:
+    value: off
+  space_switch:
+    value: on
+
+  aim_axis:
+    value: -y
+  up_axis:
+    value: -x
+  up_axis2:
+    value: z
+
+
+shapes:
+  ctrls.clavicle:
+    shape: circle
+    color: red
+    parent: clavicle
+    size: 1
+
+    point:
+      - clavicle
+      - limb1
+    aim: limb1
+
+  ctrls.limb1:
+    shape: circle
+    color: darkred
+    parent: limb1
+    size: 1.5
+
+    aim: limb2
+    up: limb3
+    aim_axis: y
+    up_axis: -z
+
+  ctrls.limb2:
+    shape: circle
+    color: darkred
+    parent: limb2
+    size: 1.5
+
+    aim: limb3
+    up: limb1
+    aim_axis: y
+    up_axis: -z
+
+  ctrls.limb3:
+    shape: circle
+    color: darkred
+    parent: limb3
+    size: 1.5
+
+    aim: y
+    up: tip
+    aim_axis: y
+    up_axis: z
+
+  ctrls.ik:
+    shape: square
+    color: red
+    parent: limb3
+    size: 1.5
+
+    aim: y
+    up: tip
+    aim_axis: y
+    up_axis: z
+
+  ctrls.ik_offset:
+    clone: ctrls.ik
+    size: 0.8
+    color: darkred
+
+    parent: digits
+    aim: limb3
+    aim_axis: z
+
+  ctrls.digits:
+    shape: circle
+    color: red
+    parent: digits
+    size: 1
+
+    aim: tip
+    up: limb3
+
+  ctrls.bend1:
+    shape: cross
+    color: darkred
+    parent: limb1
+    point:
+      - limb1
+      - limb2
+    aim: limb2
+    up: limb3
+  ctrls.bend2:
+    shape: cross
+    color: darkred
+    parent: limb2
+    point:
+      - limb2
+      - limb3
+    aim: limb3
+    up: limb1
+  ctrls.tweak:
+    shape: cross
+    color: darkred
+    parent: limb2
+    aim: limb3
+    up: limb1
+
+
+hierarchy:
+  ctrls.clavicle:
+    root: on
+    hook: clavicle
+
+  ctrls.limb1:
+    root: on
+    hook: limb1
+    opts:
+      clavicle:
+        root: off
+        parent: ctrls.clavicle
+  ctrls.limb2:
+    parent: ctrls.limb1
+    hook: limb2
+  ctrls.limb3:
+    parent: ctrls.limb2
+    hook: limb3
+
+  skin.clavicle:
+    root: on
+    hook: clavicle
+
+  skin.up.0:
+    root: on
+    hook: limb1
+    opts:
+      clavicle:
+        root: off
+        parent: skin.clavicle
+  skin.up:
+    chain: on
+
+  skin.dn.0:
+    parent: skin.last.up
+    hook: limb2
+  skin.dn:
+    chain: on
+
+  skin.limb3:
+    parent: skin.last.dn
+    hook: limb3
+  skin.digits:
+    parent: skin.limb3
+    hook: digits
+  tip:
+    parent: skin.digits
+
+  skin.bj1:
+    parent: skin.up.0
+  skin.bj2:
+    parent: skin.dn.0
+  skin.bje:
+    parent: skin.limb3

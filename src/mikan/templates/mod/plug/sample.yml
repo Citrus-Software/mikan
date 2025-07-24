@@ -1,0 +1,10 @@
+plug:
+  node: <id>::<node>
+  plug_name:
+    type: bool
+    set: on
+    keyable: on
+  plug_name2:
+    min: 0
+    max: 1
+    k: on

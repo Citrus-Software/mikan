@@ -1,0 +1,5 @@
+rig.rechain:
+  chain:
+    - <fk1>::<node>
+    - <fk2>::<node>
+    - ...

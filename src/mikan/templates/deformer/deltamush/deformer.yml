@@ -1,0 +1,13 @@
+desc: deltamush deformer
+help: https://citrus-software.github.io/mikan-docs/references/deformer/deltamush
+
+data:
+  maps:
+    value: { }
+
+  iterations:
+    value: 10
+  smooth_step:
+    value: 1.0
+  displacement:
+    value: 1.0

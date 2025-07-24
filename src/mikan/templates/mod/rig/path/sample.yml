@@ -1,0 +1,18 @@
+rig.path:
+  geo: <curve>->shape
+  node: <id>::roots.0
+
+  parent: <parent>::skin.0  # default: node parent
+  orient: <on|off>  # default: on
+
+  u: <0|max_u>  # default: closest from node
+  percent: <off|on>  # default: off
+  length: <off|on>  # default: off
+  io: <off|on>  # default: off
+  # closest: <src>::<node>  # projection source
+
+  # axes
+  forward_vector: <x|y|z|[1, 0, 0]>  # default: x
+  up_vector: <null|x|y|z|[0, 0, 0]>  # default: null
+  up_object: null  # default: null
+  up_object_vector: <null|x|y|z|[0, 0, 0]>  # default: null

@@ -1,0 +1,8 @@
+rig.muscle:
+  targets:
+    - <target1>::skin.0
+    - <target2>::skin.0
+  nodes:
+    - <id>::roots.0
+  orient: <on|off>  # default: on
+  name: ...

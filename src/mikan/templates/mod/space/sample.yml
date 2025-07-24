@@ -1,0 +1,10 @@
+space:
+  node: <id>::ctrls.0  # anim node
+  root: <id>::roots.0  # constraint node
+
+  rest_name: root
+  targets:
+    - *::space.world
+    - *::space.move
+    - *::space.pelvis
+    - *::space.head

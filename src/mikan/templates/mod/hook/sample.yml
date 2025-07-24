@@ -1,0 +1,10 @@
+hook:
+  nodes:
+    - <id1>::<node>
+    - <id2>::<node>
+    - ...
+  targets:
+    - <target>::<node>
+  weights: [1]
+  group: <on|off>  # create group to be be hooked?
+  name: ...  # -> mod id
