@@ -118,8 +118,11 @@ class Nodes(with_metaclass(MetaNodes)):
                         _nodes[node] = True
                 return list(_nodes)
 
-        if as_list and not isinstance(nodes, list):
-            return [nodes]
+            if as_list:
+                if not nodes:
+                    return []
+                if not isinstance(nodes, list):
+                    return [nodes]
 
         return nodes
 
