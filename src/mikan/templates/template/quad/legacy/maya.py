@@ -19,21 +19,16 @@ from mikan.templates.template._common.limb.maya import get_triangle_weights
 class Template(mk.Template):
 
     def rename_template(self):
-        clavicle = self.get_structure('clavicle')[0]
-        limb2 = self.get_structure('limb2')[0]
-        limb3 = self.get_structure('limb3')[0]
-        limb4 = self.get_structure('limb4')[0]
-        digits = self.get_structure('digits')[0]
-        tip = self.get_structure('tip')[0]
-        heel = self.get_structure('heel')[0]
 
-        clavicle.rename('tpl_{}_clav'.format(self.name))
-        limb2.rename('tpl_{}_limb2'.format(self.name))
-        limb3.rename('tpl_{}_limb3'.format(self.name))
-        limb4.rename('tpl_{}_limb4'.format(self.name))
-        digits.rename('tpl_{}_digits'.format(self.name))
-        tip.rename('tpl_{}_tip'.format(self.name))
-        heel.rename('tpl_{}_heel'.format(self.name))
+        for s in ('clavicle', 'limb2', 'limb3', 'limb4', 'digits', 'tip', 'heel', 'bank_int', 'bank_ext'):
+            j = self.get_structure(s)
+            if not j or j[0].is_referenced():
+                continue
+
+            sfx = s
+            if s == 'clavicle':
+                sfx = 'clav'
+            j[0].rename('tpl_{}_{}'.format(self.name, sfx))
 
     def build_template(self, data):
         tpl_limb1 = self.node
@@ -48,8 +43,16 @@ class Template(mk.Template):
             tpl_heel = md.create_node(mx.tJoint, parent=tpl_eff)
             tpl_clav = md.create_node(mx.tJoint, parent=tpl_limb1)
 
+            tpl_bank_int = md.create_node(mx.tJoint, parent=tpl_dig, name='tpl_bank_int')
+            tpl_bank_ext = md.create_node(mx.tJoint, parent=tpl_dig, name='tpl_bank_ext')
+
+        fix_inverse_scale(list(self.node.descendents()))
+
         self.set_template_id(tpl_heel, 'heel')
         self.set_template_id(tpl_clav, 'clavicle')
+
+        self.set_template_id(tpl_bank_int, 'bank_int')
+        self.set_template_id(tpl_bank_ext, 'bank_ext')
 
         # geometry
         tpl_limb1['tx'] = 1
@@ -64,6 +67,9 @@ class Template(mk.Template):
 
         tpl_clav['tx'] = 0.5
         tpl_heel['t'] = (0, 0, -1.5)
+
+        tpl_bank_int['tx'] = 0.5
+        tpl_bank_ext['tx'] = -0.5
 
     def build_rig(self):
         # get structures

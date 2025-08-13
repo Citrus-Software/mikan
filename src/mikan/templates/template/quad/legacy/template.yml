@@ -26,6 +26,8 @@ structure:
   digits: /4
   tip: /5
   heel:
+  bank_int:
+  bank_ext:
 
 names:
   clavicle: pelvis

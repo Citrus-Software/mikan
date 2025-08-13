@@ -20,7 +20,7 @@ class Template(mk.Template):
 
     def build_template(self, data):
         tpl_limb1 = self.node
-        tpl_limb1.rename('tpl_leg1'.format(self.name))
+
         tpl_limb2 = kl.Joint(tpl_limb1, 'tpl_leg2')
         tpl_limb3 = kl.Joint(tpl_limb2, 'tpl_ankle_quad')
         tpl_eff = kl.Joint(tpl_limb3, 'tpl_foot')
@@ -28,13 +28,18 @@ class Template(mk.Template):
         tpl_dig_end = kl.Joint(tpl_dig, 'tpl_digits_tip')
 
         tpl_heel = kl.Joint(tpl_eff, 'tpl_heel')
-        self.set_template_id(tpl_heel, 'heel')
-
         tpl_clav = kl.Joint(tpl_limb1, 'tpl_pelvis')
+
+        tpl_bank_int = kl.Joint(tpl_dig, 'tpl_bank_int')
+        tpl_bank_ext = kl.Joint(tpl_dig, 'tpl_bank_ext')
+
+        self.set_template_id(tpl_heel, 'heel')
         self.set_template_id(tpl_clav, 'clavicle')
 
+        self.set_template_id(tpl_bank_int, 'bank_int')
+        self.set_template_id(tpl_bank_ext, 'bank_ext')
+
         # geometry
-        tpl_clav.transform.set_value(M44f(V3f(0.5, 0, 0), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
         tpl_limb1.transform.set_value(M44f(V3f(1, 0, 0), V3f(0, 0, 180), V3f(1, 1, 1), Euler.XYZ))
         tpl_limb2.transform.set_value(M44f(V3f(0, 2.645, 0.25), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
         tpl_limb3.transform.set_value(M44f(V3f(0, 2.595, -1.25), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
@@ -42,7 +47,11 @@ class Template(mk.Template):
         tpl_dig.transform.set_value(M44f(V3f(0, 1.5, -1.5), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
         tpl_dig_end.transform.set_value(M44f(V3f(0, 1, 0), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
 
+        tpl_clav.transform.set_value(M44f(V3f(0.5, 0, 0), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
         tpl_heel.transform.set_value(M44f(V3f(0, 0, -1.5), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
+
+        tpl_bank_int.transform.set_value(M44f(V3f(0.5, 0, 0), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
+        tpl_bank_ext.transform.set_value(M44f(V3f(-0.5, 0, 0), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
 
     def build_rig(self):
         # get structures
