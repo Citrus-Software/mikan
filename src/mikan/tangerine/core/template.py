@@ -1893,11 +1893,7 @@ class Template(abstract.Template):
                 if not specs:
                     continue
 
-                _key = key
-                if isolated and key.startswith('skin.'):
-                    _key = key.replace('skin.', 'out.skin.')
-
-                key_id = '{}{}::{}'.format(self.name, self.get_branch_id(), _key)
+                key_id = '{}{}::{}'.format(self.name, self.get_branch_id(), key)
                 plug = 'gem_dag_{}'.format(key.split('.')[0])
 
                 nodes = Nodes.get_id(key_id)
@@ -1918,26 +1914,20 @@ class Template(abstract.Template):
                 if specs.get('root', False):
                     parent = self.get_hook(plug=plug)
                     for node in nodes:
-                        _node = node
-                        if isolated:
-                            for _id in node.gem_id.get_value().split(';'):
-                                if 'out.skin.' in _id:
-                                    _node = Nodes.get_id(_id.replace('out.skin.', 'skin.'))
-                                    break
 
                         virtual_parent = self.get_virtual_hook(node, plug=plug)
-                        if virtual_parent and virtual_parent != _node:
+                        if virtual_parent and virtual_parent != node:
                             parent = virtual_parent
 
                         parented = False
-                        for o in _node.get_dynamic_plug('gem_id').get_outputs():
+                        for o in node.get_dynamic_plug('gem_id').get_outputs():
                             if o.get_node().get_name() == 'gem_dag_children':
                                 parented = True
                                 break
                         if parented:
                             continue
 
-                        set_virtual_parent(_node, parent)
+                        set_virtual_parent(node, parent)
 
                 if specs.get('parent'):
                     parents = specs['parent']
