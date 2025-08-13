@@ -361,7 +361,7 @@ class Template(mk.Template):
             mk.Mod.add(
                 n['c_h'], 'space',
                 {
-                    'rest_name': 'root',
+                    'rest_name': 'neck',
                     'targets': [self.get_hook(tag=True), '*::space.cog', '*::space.root', '*::space.world'],
                     'orient': True,
                     'default': [0, 0, 1, 0]
