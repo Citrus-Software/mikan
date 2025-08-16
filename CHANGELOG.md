@@ -6,7 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 
-## [1.0.1] - 2025-21-07
+## [1.0.2] - 2025-08-16
+
+### Changed
+- Reworked UI to make adding template modules more intuitive
+- Reworked UI for branch editing
+
+### Fixed
+- Resolved build issue with the `quad.legacy` bank option
+- Fixed hierarchy issues with isolated skin skeletons
+
+
+## [1.0.1] - 2025-07-21
 
 ### Added
 - Introduced a UI for editing the user menu bar
@@ -18,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Cleaned up global preferences reload mechanism
 
 
-## [1.0.0] - 2025-15-07
+## [1.0.0] - 2025-07-15
 
 ### Added
 
