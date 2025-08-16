@@ -667,6 +667,27 @@ class Template(abstract.Template):
 
         return nodes
 
+    def get_template_branch_edits(self, root=None, nodes=None):
+        if root is None:
+            root = self.node
+        if not isinstance(root, mx.Node):
+            root = mx.encode(str(root))
+
+        if nodes is None:
+            nodes = []
+
+        for child in root.children():
+            if child.type_id not in (mx.tTransform, mx.tJoint):
+                continue
+            if 'gem_type' in child and child['gem_type'].read() == Template.type_name:
+                continue
+            if 'gem_type' in child and child['gem_type'].read() == 'edit':
+                nodes.append(child)
+                break
+            self.get_template_branch_edits(root=child, nodes=nodes)
+
+        return nodes
+
     def get_template_chain(self, root=None, nodes=None):
         if root is None:
             root = self.root

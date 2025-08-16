@@ -2037,6 +2037,14 @@ class TemplateTreeWidget(QTreeWidget):
 
                 do_parent = True
 
+            else:
+                if item.is_branch_edit():
+                    tpl = Template.get_from_node(item.node)
+                    if tpl:
+                        for node in tpl.get_template_branch_edits(root=item.node):
+                            helper = Helper(node)
+                            self.add_item(helper, parent=item)
+
         elif isinstance(item, DeformerGroup):
             _item = Helper(item.node)
             for helper in _item.get_children():
@@ -2048,17 +2056,22 @@ class TemplateTreeWidget(QTreeWidget):
 
         elif isinstance(item, Template):
             helper_nodes = []
-            helper_branches = []
             for node in item.get_template_nodes():
                 helper = Helper(node)
                 if helper.is_protected():
                     continue
                 elif helper.is_branch() or helper.is_branch_edit():
-                    helper_branches.append(helper)
+                    continue
+                    # helper_branches.append(helper)
                 elif helper.is_hidden() and not helper.is_shape():
                     helper_nodes.append(helper)
                 elif not helper.is_hidden() and helper.has_mod():
                     helper_nodes.append(helper)
+
+            helper_branches = []
+            for node in item.get_template_branch_edits():
+                helper = Helper(node)
+                helper_branches.append(helper)
 
             _nodes = [helper.node for helper in helper_nodes if helper.node != item.node]
             for helper in helper_nodes:
@@ -2311,6 +2324,7 @@ class TemplateTreeWidget(QTreeWidget):
         has_helper = Helper in types
         has_mod = any([item.has_mod for item in items if isinstance(item, Helper)])
         has_hook = TemplateHook in types
+        has_branch = any([item.is_branch() or item.is_branch_edit() for item in items if isinstance(item, Helper)])
 
         locked = False
         if single and (has_asset or has_template or has_helper):
@@ -2328,11 +2342,11 @@ class TemplateTreeWidget(QTreeWidget):
             _act.triggered.connect(Callback(self.scale_item, items[0]))
             menu.addSeparator()
 
-        if single and (has_asset or has_template or has_hook):
+        if single and (has_asset or has_template or has_hook) and not has_branch:
             _act = menu.addAction('Add helper node')
             _act.triggered.connect(self.create_helper_node)
 
-        if single and (has_helper or has_template or has_hook) and not locked:
+        if single and (has_helper or has_template or has_hook) and not locked and not has_branch:
             mod_menu = menu.addMenu('Add modifier')
             _act = mod_menu.addAction('(empty)')
             _act.triggered.connect(partial(self.create_mod, ''))
@@ -2343,7 +2357,7 @@ class TemplateTreeWidget(QTreeWidget):
                 _act = mod_menu.addAction(mod)
                 _act.triggered.connect(partial(self.create_mod, v))
 
-        if has_mod and not locked:
+        if has_mod and not locked and not has_branch:
             _act = menu.addAction('Modifiers: Search and replace')
             _act.triggered.connect(self.note_search_and_replace_cb)
 
@@ -2358,7 +2372,7 @@ class TemplateTreeWidget(QTreeWidget):
 
             if single:
                 menu.addSeparator()
-                _act = menu.addAction('Build branches')
+                _act = menu.addAction('Build branches template')
                 _act.triggered.connect(Callback(self.build_branches))
 
             _act = menu.addAction('Add shapes')
@@ -2377,12 +2391,6 @@ class TemplateTreeWidget(QTreeWidget):
 
             _act = menu.addAction('Select controllers hierarchy')
             _act.triggered.connect(Callback(self.select_rig_nodes, 'ctrls', hierarchy=True))
-
-        if not mixed and has_helper:
-            if all([item.is_branch() for item in items]):
-                menu.addSeparator()
-                _act = menu.addAction('Set branch edit')
-                _act.triggered.connect(self.set_branch_edit)
 
         if single and has_template:
             menu.addSeparator()
@@ -2666,18 +2674,9 @@ class TemplateTreeWidget(QTreeWidget):
             Nodes.rebuild()
             roots = item.build_template_branches()
             for root in roots:
+                Template.set_branch_edit(root)
                 helper = Helper(root)
                 self.add_item(helper, item.get_parent())
-
-    def set_branch_edit(self):
-        for item in self.get_selected_items():
-            if not isinstance(item, Helper) and not item.is_branch():
-                continue
-
-            Template.set_branch_edit(item.node)
-
-            tree_item = self.tree_items.get(item)
-            tree_item.update()
 
     def select_rig_nodes(self, tag, hierarchy=False):
         templates = []
@@ -2882,17 +2881,16 @@ class TemplateTreeItem(QTreeWidgetItem):
                 name = Nodes.get_node_id(item.node, find='branch')
                 name = name.split('::')[0]
                 self.setText(0, name)
-                self.setText(2, 'Branch')
+                self.setText(2, 'Branch Build')
                 icon = self.ICON_BRANCH
                 self.setForeground(2, self.BRUSH_TEMPLATE)
             elif item.is_branch_edit():
                 name = Nodes.get_node_id(item.node, find='edit')
                 name = name.split('::')[0]
                 self.setText(0, name)
-                self.setText(2, 'Branch edit')
+                self.setText(2, 'Branch')
                 icon = self.ICON_BRANCH
-                self.setForeground(2, self.BRUSH_TEMPLATE)
-
+                self.setForeground(2, self.BRUSH_GRAPH)
             else:
                 self.setText(2, 'Helper')
                 icon = self.ICON_GRAPH
