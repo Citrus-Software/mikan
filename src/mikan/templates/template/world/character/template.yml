@@ -4,7 +4,7 @@ help: https://citrus-software.github.io/mikan-docs/references/tpl/world/characte
 ui:
   icon: world
   hooks:
-    root: root
+    default: root
 
 name: world
 names:

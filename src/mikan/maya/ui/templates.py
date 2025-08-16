@@ -131,6 +131,7 @@ class TemplateManager(QMainWindow, OptVarSettings):
 
         # signals
         self.tree.itemSelectionChanged.connect(self.update_tabs)
+        self.tree.itemSelectionChanged.connect(self.update_hooks)
         self.tree.doubleClicked.connect(self.select_tab_edit)
         self.tree.refresh_edit.connect(self.update_tabs)
         self.tree.refresh_edit.connect(self.select_tab_edit)
@@ -142,6 +143,8 @@ class TemplateManager(QMainWindow, OptVarSettings):
 
         self.tab_edit.wd_rename.returnPressed.connect(self.rename_item)
         self.tab_edit.wd_enable.altered.connect(self.update_tree_items)
+
+        self.tabs.currentChanged.connect(self.tab_changed)
 
         # shortcuts
         up_key = QShortcut(QtGui.QKeySequence(Qt.Key_Up), self.tree)
@@ -260,6 +263,38 @@ class TemplateManager(QMainWindow, OptVarSettings):
         if not any((n, o, r)):
             self.reload()
 
+    def tab_changed(self, tab):
+        if tab == 0:
+            # add tab
+            self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
+            self.tree.BRUSH_SELECTED = self.tree.BRUSH_SELECTED_ADD
+
+            self.update_hooks()
+
+        else:
+            # other tabs
+            self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
+            self.tree.BRUSH_SELECTED = self.tree.BRUSH_SELECTED_EDIT
+
+            items = self.tree.get_selected_items()
+            for item in items:
+                if isinstance(item, TemplateHook):
+                    tpl = item.template
+                    tree_item = self.tree.tree_items[item]
+                    tree_item.setSelected(False)
+
+                    tree_item = self.tree.tree_items[tpl]
+                    tree_item.setSelected(True)
+
+            # remove all hooks item
+            tpl_hooks = [item for item in self.tree.tree_items if isinstance(item, TemplateHook)]
+
+            for tpl_hook in tpl_hooks:
+                tree_item = self.tree.tree_items[tpl_hook]
+                self.tree.delete_tree_item(tree_item)
+
+        self.tree.viewport().update()
+
     def update_tabs(self):
         items = self.tree.get_selected_items()
         self.tab_add.set_current_items(items)
@@ -267,6 +302,60 @@ class TemplateManager(QMainWindow, OptVarSettings):
 
         self.tab_add.rebuild()
         self.tab_edit.rebuild()
+
+        self.update_hooks()
+
+    def update_hooks(self):
+
+        add_mode = self.tabs.currentIndex() == 0
+        if not add_mode:
+            return
+
+        self.tree.blockSignals(True)
+
+        # force only one selected item
+        last = None
+        items = self.tree.get_selected_tree_items()
+        if items:
+            last = items[-1]
+        if len(items) > 1:
+            self.tree.clearSelection()
+            last.setSelected(True)
+
+        # add hooks for selected template
+        if last and isinstance(last.item, Template):
+            tpl = last.item
+
+            # remove all previous hooks
+            tpl_hooks = [item for item in self.tree.tree_items if isinstance(item, TemplateHook)]
+
+            for tpl_hook in tpl_hooks:
+                tree_item = self.tree.tree_items[tpl_hook]
+                self.tree.delete_tree_item(tree_item)
+
+            # add hooks
+            hooks = ordered_dict()
+            data = tpl.template_data.get('ui', {})
+            if 'hooks' in data:
+                for name in data['hooks']:
+                    if name == 'default':
+                        continue
+                    nodes = tpl.get_structure(data['hooks'][name])
+                    if not nodes:
+                        continue
+                    n = len(nodes)
+
+                    if n == 1 and '[' not in data['hooks'][name]:
+                        hooks[name] = nodes[0]
+                    else:
+                        for i, node in enumerate(nodes):
+                            hooks['{}[{}]'.format(name, i)] = node
+
+            for name in list(hooks)[::-1]:
+                tpl_hook = TemplateHook(tpl, name, hooks[name])
+                self.tree.add_item(tpl_hook, tpl, insert=True)
+
+        self.tree.blockSignals(False)
 
     def select_tab_edit(self):
         self.tabs.setCurrentIndex(1)
@@ -289,17 +378,17 @@ class TemplateManager(QMainWindow, OptVarSettings):
             elif n == -1:
                 n = len(siblings) - 1
             self.tree.setCurrentItem(siblings[n], 1)
-            self.update_tabs()
+            self.tree.tree_changed.emit()
             self.select_tab_edit()
 
         elif y == -1 and parent:
             self.tree.setCurrentItem(parent, 1)
-            self.update_tabs()
+            self.tree.tree_changed.emit()
             self.select_tab_edit()
 
         elif y == 1 and children:
             self.tree.setCurrentItem(children[0], 1)
-            self.update_tabs()
+            self.tree.tree_changed.emit()
             self.select_tab_edit()
 
     # -- slots
@@ -307,28 +396,31 @@ class TemplateManager(QMainWindow, OptVarSettings):
     def add_template(self):
         Nodes.get_asset_paths()
 
-        tpl = self.tab_add.wd_type.value + '.' + self.tab_add.wd_subtype.value
-        root = None
-
         # add
-        name = self.tab_add.wd_name.value
-        struct = self.tab_add.wd_parent.value or ''
+        name = self.tab_add.wd_name.text()
+        n = self.tab_add.wd_number.value
+        tpl_type = self.tab_add.wd_type.value + '.' + self.tab_add.wd_subtype.value
 
-        parent = self.tree.get_selected_item()
-        parent_item = parent
-        if struct == 'selected node':
-            parent = dict(enumerate(mx.ls(sl=1, type='transform'))).get(0, None)
-            # TODO: find parent item
-        if isinstance(parent, Asset) and struct == 'asset root':
-            parent = parent.get_template_root()
-        elif isinstance(parent, Template):
-            if '.' in struct:
-                struct = struct.split('.')[-1]
-                ui_data = parent.template_data.get('ui', {})
-                struct = ui_data.get('hooks', {}).get(struct, None)
-                parent = parent.get_structure(struct)[0]
-            else:
-                parent = parent.node
+        parent = None
+        parent_item = self.tree.get_selected_item()
+
+        if isinstance(parent_item, Asset):
+            parent = parent_item.get_template_root()
+
+        elif isinstance(parent_item, Template):
+            parent = parent_item.node
+
+            data = parent_item.template_data.get('ui', {})
+            if 'hooks' in data and 'default' in data['hooks']:
+                nodes = parent_item.get_structure(data['hooks']['default'])
+                if nodes:
+                    if isinstance(nodes, list):
+                        parent = nodes[0]
+                    else:
+                        parent = nodes
+
+        elif isinstance(parent_item, TemplateHook):
+            parent = parent_item.node
 
         # create template
         data = {}
@@ -336,21 +428,23 @@ class TemplateManager(QMainWindow, OptVarSettings):
             if w.value != w.default:
                 data[opt] = w.value
 
-        tpl = Template.create(tpl, parent, name, data=data, joint=True, root=root)
+        for i in range(n):
+            tpl = Template.create(tpl_type, parent, name, data=data)
 
-        # set opts from add box
-        for opt, w in iteritems(self.tab_add.wd_opts):
-            if w.value != w.default:
-                tpl.set_opt(opt, w.value)
+            # set opts from add box
+            for opt, w in iteritems(self.tab_add.wd_opts):
+                if w.value != w.default:
+                    tpl.set_opt(opt, w.value)
 
-        for opt, w in iteritems(self.tab_add.wd_custom_opts['']):
-            if w.value != w.default:
-                tpl.set_opt(opt, w.value)
+            for opt, w in iteritems(self.tab_add.wd_custom_opts['']):
+                if w.value != w.default:
+                    tpl.set_opt(opt, w.value)
+
+            self.tree.add_item(tpl, parent=parent_item)
 
         # refresh ui
-        self.tree.add_item(tpl, parent=parent_item)
         self.tree.setCurrentItem(self.tree.tree_items[tpl], 1)
-        self.update_tabs()
+        self.tree.tree_changed.emit()
 
     def add_asset(self):
         Nodes.get_asset_paths()
@@ -478,7 +572,7 @@ class TemplateManager(QMainWindow, OptVarSettings):
 
             if tpl in self.tree.tree_items:
                 self.tree.setCurrentItem(self.tree.tree_items[tpl], 1)
-            self.update_tabs()
+            self.tree.tree_changed.emit()
 
     @busy_cursor
     def update_dfg(self):
@@ -1391,41 +1485,43 @@ class TemplateAddWidget(TemplateOpts, OptVarSettings):
         self.wd_add = QToolButton()
         self.wd_add.setIcon(self.ICON_ADD)
         self.wd_add.setAutoRaise(True)
-        lbl_add = QLabel('Add new template')
+        lbl_add = QLabel('Add Module')
         lbl_add.setStyleSheet('color:#789; font-size:12px; font-weight:bold')
+        self.wd_name = QLineEdit()
 
         self.wd_add_asset = QToolButton()
         self.wd_add_asset.setIcon(self.ICON_ADD_ASSET)
         self.wd_add_asset.setAutoRaise(True)
-        lbl_add_asset = QLabel('Add new asset')
+        lbl_add_asset = QLabel('Add Asset')
         lbl_add_asset.setStyleSheet('color:#987; font-size:12px; font-weight:bold')
         self.txt_add_asset = QLineEdit()
 
-        _col = self.add_columns(stretch=[2, 3])
+        _col = self.add_columns(stretch=[2, 2])
         _row = self.add_row(_col[0])
         _row.addWidget(self.wd_add)
         _row.addWidget(lbl_add)
+        _row.addWidget(self.wd_name)
 
         _row = self.add_row(_col[1])
         _row.addWidget(self.wd_add_asset)
         _row.addWidget(lbl_add_asset)
         _row.addWidget(self.txt_add_asset)
+
         self.layout_asset = _row.parent()
         if Asset.get_assets():
             self.layout_asset.hide()
 
         self.wd_type = StringListPlugWidget(label='Type')
         self.wd_subtype = StringListPlugWidget()
-        self.wd_name = StringPlugWidget(label='Name')
-        self.wd_parent = StringListPlugWidget(label='Parent')
+
+        self.wd_number = IntPlugWidget(label='Number', min_value=1, default=1)
 
         _grid = self.add_grid()
 
         _grid.addWidget(self.wd_type, 0, 0)
         _grid.addWidget(self.wd_subtype, 1, 0)
 
-        _grid.addWidget(self.wd_name, 0, 1)
-        _grid.addWidget(self.wd_parent, 1, 1)
+        _grid.addWidget(self.wd_number, 0, 1)
 
         # collapse build/options
         self.box_add = self.add_collapse('Create')
@@ -1449,28 +1545,8 @@ class TemplateAddWidget(TemplateOpts, OptVarSettings):
     # slots ------------------------------------------------------------------------------------------------------------
 
     def rebuild(self):
-        self.wd_parent.widget.clear()
-
-        parents = []
-
-        if isinstance(self.item, Template):
-            data = self.item.template_data.get('ui', {})
-            if 'hooks' in data:
-                for name in data['hooks']:
-                    parents.append('{}.{}'.format(self.item.name, name))
-
-            parents.append(self.item.name)
-
-        elif isinstance(self.item, Asset):
-            parents = ['asset root']
-
-        parents.append('selected node')
-
-        self.wd_parent.set_list(parents)
-
         if self.item is None:
             self.layout_asset.show()
-            self.wd_parent.widget.clear()
         else:
             self.layout_asset.hide()
 
@@ -1568,7 +1644,7 @@ class TemplateAddWidget(TemplateOpts, OptVarSettings):
     def build_wd_name(self, *args):
         module = self.get_current_template_modules()[0]
         name = module.template_data['name']
-        self.wd_name.set_value(name)
+        self.wd_name.setText(name)
 
     def opt_type_changed(self):
         pass
@@ -1772,7 +1848,9 @@ class TemplateTreeWidget(QTreeWidget):
 
     FONT_SIZE = 11
     TREE_STYLE = 'QTreeView {selection-background-color: transparent; font-size: ' + str(FONT_SIZE) + ';}'
-    BRUSH_SELECTED = QtGui.QBrush(QtGui.QColor('#30ffd095'))
+    BRUSH_SELECTED_ADD = QtGui.QBrush(QtGui.QColor('#30778899'))
+    BRUSH_SELECTED_EDIT = QtGui.QBrush(QtGui.QColor('#30998877'))
+    BRUSH_SELECTED = BRUSH_SELECTED_ADD
 
     sep = os.path.sep
     _path = os.path.abspath(__file__).split(sep)
@@ -1801,7 +1879,7 @@ class TemplateTreeWidget(QTreeWidget):
         self._callbacks = {}
         self.tree_items = {}
 
-        self.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        # self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setExpandsOnDoubleClick(False)
         self.doubleClicked.connect(self.select)
 
@@ -1901,7 +1979,7 @@ class TemplateTreeWidget(QTreeWidget):
                 roots.append(tpl)
         return roots
 
-    def add_item(self, item, parent=None, recursive=True):
+    def add_item(self, item, parent=None, recursive=True, insert=False):
 
         # convert helper node to deformer group
         if isinstance(item, Helper) and not isinstance(parent, DeformerGroup):
@@ -1922,9 +2000,15 @@ class TemplateTreeWidget(QTreeWidget):
         tree_item = TemplateTreeItem(item)
         self.tree_items[item] = tree_item
 
+        if isinstance(parent, TemplateHook):
+            parent = parent.template
+
         if parent in self.tree_items and not isinstance(item, Asset):
             parent = self.tree_items[parent]
-            parent.addChild(tree_item)
+            if insert:
+                parent.insertChild(0, tree_item)
+            else:
+                parent.addChild(tree_item)
         else:
             self.addTopLevelItem(tree_item)
 
@@ -2122,7 +2206,7 @@ class TemplateTreeWidget(QTreeWidget):
     def attach_item(self, tree_item, do_parent=True):
 
         item = tree_item.item
-        if isinstance(item, (Template, Helper, Asset, DeformerGroup)):
+        if isinstance(item, (Template, Helper, Asset, DeformerGroup, TemplateHook)):
             m_obj = item.node.object()
             m_dag = item.node.dag_path()
 
@@ -2226,6 +2310,7 @@ class TemplateTreeWidget(QTreeWidget):
         has_template = Template in types
         has_helper = Helper in types
         has_mod = any([item.has_mod for item in items if isinstance(item, Helper)])
+        has_hook = TemplateHook in types
 
         locked = False
         if single and (has_asset or has_template or has_helper):
@@ -2234,19 +2319,20 @@ class TemplateTreeWidget(QTreeWidget):
         # build menu
         menu = QMenu(self)
 
-        _act = menu.addAction('Remove')
-        _act.triggered.connect(self.delete_selected_items)
+        if not has_hook:
+            _act = menu.addAction('Remove')
+            _act.triggered.connect(self.delete_selected_items)
 
         if single and (has_asset or has_template):
             _act = menu.addAction('Scale')
             _act.triggered.connect(Callback(self.scale_item, items[0]))
             menu.addSeparator()
 
-        if single and (has_asset or has_template):
+        if single and (has_asset or has_template or has_hook):
             _act = menu.addAction('Add helper node')
             _act.triggered.connect(self.create_helper_node)
 
-        if single and (has_helper or has_template) and not locked:
+        if single and (has_helper or has_template or has_hook) and not locked:
             mod_menu = menu.addMenu('Add modifier')
             _act = mod_menu.addAction('(empty)')
             _act.triggered.connect(partial(self.create_mod, ''))
@@ -2607,20 +2693,25 @@ class TemplateTreeWidget(QTreeWidget):
 
     def create_helper_node(self):
         item = self.get_selected_item()
-        if isinstance(item, (Asset, Helper, Template)):
+        if isinstance(item, (Asset, Helper, Template, TemplateHook)):
             parent = item.node
             if isinstance(item, Asset):
                 parent = item.get_template_root()
+
             with mx.DagModifier() as md:
                 node = md.create_node(mx.tTransform, parent=parent, name='_node#')
             helper = Helper(node)
+
+            if isinstance(item, TemplateHook):
+                item = item.template
+
             self.add_item(helper, parent=item)
             self.setCurrentItem(self.tree_items[helper], 1)
             self.refresh_edit.emit()
 
     def create_mod(self, mod):
         item = self.get_selected_item()
-        if isinstance(item, (Helper, Template)):
+        if isinstance(item, (Helper, Template, TemplateHook)):
             cfg = ConfigParser(item.node)
             if mod:
                 mod = mod.sample.strip('\n') + '\n'
@@ -2630,8 +2721,10 @@ class TemplateTreeWidget(QTreeWidget):
                 data += '\n\n'
             cfg['mod'].write(data + mod)
 
-            if isinstance(item, Template):
+            if isinstance(item, (Template, TemplateHook)):
                 helper = Helper(item.node)
+                if isinstance(item, TemplateHook):
+                    item = item.template
                 self.add_item(helper, parent=item)
                 self.setCurrentItem(self.tree_items[helper], 1)
             else:
@@ -2692,6 +2785,7 @@ class TemplateTreeItem(QTreeWidgetItem):
     ICON_MODIFIER = Icon('gear', size=16, color='#b5f')
     ICON_DEFORMER = Icon('gear', size=16, color='#bf5')
     ICON_DEFORMER_GROUP = Icon('group', size=16, color='#bf5')
+    ICON_HOOK = Icon('cross', size=8, color='#777')
 
     BRUSH_ASSET = QtGui.QBrush(QtGui.QColor("#987"))
     BRUSH_TEMPLATE = QtGui.QBrush(QtGui.QColor('#789'))
@@ -2761,6 +2855,12 @@ class TemplateTreeItem(QTreeWidgetItem):
 
             modes = Helper(item).get_enable_modes()
             self.setText(3, modes)
+
+        elif isinstance(item, TemplateHook):
+            self.setText(0, item.name)
+            self.setText(2, 'Hook')
+            self.setForeground(2, self.BRUSH_GRAPH)
+            icon = self.ICON_HOOK
 
         elif isinstance(item, Asset):
             self.setText(0, item.name)
@@ -2836,6 +2936,8 @@ class TemplateTreeItem(QTreeWidgetItem):
             self.setForeground(0, self.BRUSH_DISABLED)
         elif not self.ref:
             self.setForeground(0, self.BRUSH_TEXT)
+        if isinstance(item, TemplateHook):
+            self.setForeground(0, self.BRUSH_DISABLED)
 
         # invalid?
         if isinstance(item, Template):
@@ -2848,6 +2950,14 @@ class TemplateTreeItem(QTreeWidgetItem):
         if 'ui_expanded' in node and not node['ui_expanded'].read():
             expanded = False
         return expanded
+
+
+class TemplateHook(object):
+
+    def __init__(self, tpl, name, node):
+        self.name = name
+        self.template = tpl
+        self.node = node
 
 
 class TemplateModInspector(QTreeWidget):

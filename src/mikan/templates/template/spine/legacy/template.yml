@@ -4,8 +4,10 @@ help: https://citrus-software.github.io/mikan-docs/references/tpl/spine/legacy
 ui:
   icon: hips
   hooks:
+    default: tip
     pelvis: hips
     torso: tip
+    root: root
 
 name: spine
 

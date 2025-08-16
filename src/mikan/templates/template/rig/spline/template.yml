@@ -5,6 +5,9 @@ base: core.joints
 
 ui:
   icon: bone
+  hooks:
+    default: tip
+    fk: chain
 
 name: spline
 

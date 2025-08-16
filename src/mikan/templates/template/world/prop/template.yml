@@ -6,7 +6,7 @@ base: world.character
 ui:
   icon: world
   hooks:
-    root: root
+    default: root
 
 name: world
 names:

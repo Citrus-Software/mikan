@@ -4,6 +4,9 @@ base: core.joints
 
 ui:
   icon: bone
+  hooks:
+    default: tip
+    bone: chain[:-1]
 
 name: bone
 

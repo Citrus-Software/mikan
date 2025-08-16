@@ -6,10 +6,11 @@ base: _common.limb
 ui:
   icon: limb
   hooks:
+    default: tip
     foot: limb3
+    pelvis: clavicle
     hip: limb1
     knee: limb2
-    toes: digits
 
 name: leg
 names:

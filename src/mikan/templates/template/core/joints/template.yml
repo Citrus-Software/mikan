@@ -3,6 +3,9 @@ help: https://citrus-software.github.io/mikan-docs/references/tpl/core/joints
 
 ui:
   icon: bone
+  hooks:
+    default: chain[-1]
+    joint: chain[:-1]
 
 name: joint
 

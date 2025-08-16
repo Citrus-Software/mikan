@@ -4,7 +4,9 @@ help: https://citrus-software.github.io/mikan-docs/references/tpl/neck/legacy
 ui:
   icon: skull
   hooks:
+    default: head
     head: head
+    neck: base
 
 name: neck
 names:

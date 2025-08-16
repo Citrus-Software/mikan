@@ -6,10 +6,11 @@ base: _common.limb
 ui:
   icon: limb
   hooks:
+    default: tip
     hand: limb3
+    clavicle: clavicle
     shoulder: limb1
     elbow: limb2
-    fingers: digits
 
 name: arm
 names:

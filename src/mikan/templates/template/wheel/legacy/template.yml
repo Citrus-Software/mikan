@@ -3,6 +3,8 @@ help: https://citrus-software.github.io/mikan-docs/references/tpl/wheel/legacy
 
 ui:
   icon: gear
+  hooks:
+    default: axis
 
 name: wheel
 
