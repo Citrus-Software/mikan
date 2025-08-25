@@ -275,8 +275,9 @@ class Template(abstract.Template):
             else:
                 Nodes.rename_cfg_ids(node, _old_name, _name)
 
-        # rename node
+        # rename other nodes
         self.rename_root()
+        self.rename_shapes()
 
         # regen
         Nodes.rebuild()
@@ -1553,7 +1554,8 @@ class Template(abstract.Template):
                 if not root:
                     key_name = key.replace('.', '_').replace('*', 'all')
                     with mx.DagModifier() as md:
-                        root = md.create_node(mx.tTransform, parent=p[0], name='_shape_{}_{}{}'.format(self.name, key_name, self.get_branch_suffix()))
+                        name = '_shp_{}_{}{}'.format(self.name, key_name, self.get_branch_suffix())
+                        root = md.create_node(mx.tTransform, parent=p[0], name=name)
                     do_new = True
                 do_flip = self.do_flip()
 
@@ -1634,8 +1636,10 @@ class Template(abstract.Template):
                     s = Shape.create(specs['shape'], axis=specs.get('axis'))
                     mc.parent(str(s.node), str(root), r=1)
 
-                    n = root.name(namespace=False).replace('_shape_', 'shp_')
-                    mc.rename(str(s.node), n)
+                    key_name = key.replace('.', '_').replace('*', 'all')
+                    name = 'shp_{}_{}{}'.format(self.name, key_name, self.get_branch_suffix())
+
+                    mc.rename(str(s.node), name)
 
                     if 'size' in specs:
                         s.scale(specs['size'], absolute=True)
@@ -1788,6 +1792,39 @@ class Template(abstract.Template):
                 for _cnst in root.children():
                     if _cnst.is_a(mx.kConstraint):
                         _cnst['hio'] = 1
+
+        # exit
+        self.branches = _branches
+        self.root = _root
+        Nodes.current_asset = current_asset
+
+    def rename_shapes(self):
+        current_asset = Nodes.current_asset
+
+        Nodes.current_asset = Nodes.get_asset_id(self.node)
+        shapes_tree = Nodes.shapes[Nodes.current_asset]
+
+        branches = list(self.get_branches())
+
+        _branches = self.branches
+        _root = self.root
+        for self.branches, self.root in branches:
+
+            if not self.root:
+                continue
+
+            for node in shapes_tree.get('{}{}::*'.format(self.name, self.get_branch_id()), [], as_list=True):
+                key = node['gem_shape'].read().split('::')[-1]
+                key_name = key.replace('.', '_').replace('*', 'all')
+                base_name = 'shp_{}_{}{}'.format(self.name, key_name, self.get_branch_suffix())
+
+                node.rename('_' + base_name)
+
+                shp_name = base_name
+                if len(list(node.children(type=mx.tTransform))) > 1:
+                    shp_name += '#'
+                for shp in node.children():
+                    shp.rename(shp_name)
 
         # exit
         self.branches = _branches
