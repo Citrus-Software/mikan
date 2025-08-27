@@ -310,11 +310,7 @@ class Group(object):
         return cmds
 
     def connect_showhide(self, grp):
-        if 'menu_showhide' not in self.node:
-            self.node.add_attr(mx.Message('menu_showhide', array=True, indexMatters=False))
-        if self.node['menu_showhide'].input() != grp.node:
-            self.node['menu_showhide'].append(grp.node['msg'])
-            log.debug('connect show/hide menu for {} to {}'.format(grp, self))
+        Control.connect_showhide_node(self.node, grp)
 
     def show(self):
         with mx.DGModifier() as md:
@@ -697,14 +693,17 @@ class Control(object):
             return cmds_str
         return cmds
 
-    def connect_showhide(self, grp):
-        if 'menu_showhide' not in self.node:
-            self.node.add_attr(mx.Message('menu_showhide', array=True))
+    @staticmethod
+    def connect_showhide_node(node, grp):
+        if 'menu_showhide' not in node:
+            node.add_attr(mx.Message('menu_showhide', array=True))
 
-        menu = self.node['menu_showhide']
+        menu = node['menu_showhide']
         if grp.node not in [menu[i].input() for i in menu.array_indices]:
             menu.append(grp.node['message'])
-            log.debug('connect show/hide menu for {} to {}'.format(grp, self))
+
+    def connect_showhide(self, grp):
+        self.connect_showhide_node(self.node, grp)
 
 
 def _set_attr(plug, value):
