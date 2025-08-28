@@ -277,6 +277,8 @@ class Template(abstract.Template):
 
         # rename other nodes
         self.rename_root()
+
+        self.check_shapes_id()
         self.rename_shapes()
 
         # regen
@@ -535,6 +537,10 @@ class Template(abstract.Template):
 
         with mx.DagModifier() as md:
             md.set_attr(plug, v)
+
+        # update shapes id if branches are edited
+        if opt == 'branches':
+            self.check_shapes_id()
 
     def reset_opt(self, opt):
         plug = self.get_opt_plug(opt)
@@ -1792,6 +1798,46 @@ class Template(abstract.Template):
                 for _cnst in root.children():
                     if _cnst.is_a(mx.kConstraint):
                         _cnst['hio'] = 1
+
+        # exit
+        self.branches = _branches
+        self.root = _root
+        Nodes.current_asset = current_asset
+
+    def check_shapes_id(self):
+        current_asset = Nodes.current_asset
+
+        Nodes.current_asset = Nodes.get_asset_id(self.node)
+        shapes_tree = Nodes.shapes[Nodes.current_asset]
+
+        branches = list(self.get_branches())
+        _branches = self.branches
+        _root = self.root
+
+        # check
+        for self.branches, self.root in branches:
+            if not self.root:
+                continue
+
+            tpl_key = self.name + self.get_branch_id()
+
+            for n in self.get_template_nodes():
+                if 'gem_shape' in n:
+                    # delete old id
+                    _id = n['gem_shape'].read()
+                    if _id.split('::')[0] == tpl_key:
+                        continue
+
+                    del shapes_tree[_id]
+
+                    # add new id
+                    _id = tpl_key + '::' + _id.split('::')[-1]
+
+                    with mx.DGModifier() as md:
+                        md.set_attr(n['gem_shape'], _id)
+                    shapes_tree[_id] = n
+
+        shapes_tree.get('{}{}::*')
 
         # exit
         self.branches = _branches
