@@ -66,6 +66,9 @@
     - name: Export Blueprint abc
       file: $snippets/export/export_blueprint.py
 
+    - name: Run Tangerine
+      file: $snippets/export/run_tangerine.py
+
 
 - separator: on
 
