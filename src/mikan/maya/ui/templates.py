@@ -35,7 +35,7 @@ from mikan.core.logger import timed_code, create_logger, SafeHandler, get_format
 from ..ui.widgets import OptVarSettings, SafeUndoInfo, Callback, open_url
 from ..lib.rig import apply_transform
 from ..lib.configparser import ConfigParser
-from ..core import Asset, Template, Helper, Nodes, DeformerGroup, parse_nodes
+from ..core import Asset, Template, Helper, Nodes, DeformerGroup, Deformer, parse_nodes
 
 __all__ = ['TemplateManager']
 
@@ -3034,6 +3034,29 @@ class TemplateModInspector(QTreeWidget):
                     id_item.setForeground(0, self.BRUSH_ID)
                     node_item.addChild(id_item)
                 hide = False
+
+            elif node.is_a(mx.tTransform):
+                parents = []
+                parent = node.parent()
+                while parent:
+                    parents.append(parent)
+                    parent = parent.parent()
+
+                if parents and not any(['gem_id' in _node for _node in parents]):
+                    node_item = QTreeWidgetItem()
+                    node_item.setText(0, str(node))
+                    self.addTopLevelItem(node_item)
+                    self.expandItem(node_item)
+
+                    ids = Deformer.get_deformer_ids(node, parents[0])
+                    name = Deformer.get_unique_name(node, parents[0])
+                    for i in ids:
+                        _name = name + '->' + i
+                        id_item = QTreeWidgetItem(_name)
+                        id_item.setText(0, _name)
+                        id_item.setForeground(0, self.BRUSH_ID)
+                        node_item.addChild(id_item)
+                    hide = False
 
         if hide:
             self.hide()
