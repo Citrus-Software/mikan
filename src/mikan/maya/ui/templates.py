@@ -533,7 +533,7 @@ class TemplateManager(QMainWindow, OptVarSettings):
         Nodes.rebuild()
 
         for item in self.tree.get_selected_items():
-            if isinstance(item, (Asset, Template)):
+            if isinstance(item, (Asset, Template, Helper)):
                 item.toggle_shapes_visibility()
 
     @busy_cursor

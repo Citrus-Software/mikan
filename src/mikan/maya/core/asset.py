@@ -1328,6 +1328,12 @@ class Helper(object):
                         with mx.DGModifier() as md:
                             md.set_attr(node['s'], node['s'].as_vector() * scale)
 
+    def toggle_shapes_visibility(self):
+        if self.is_branch_edit() or self.is_branch():
+            node = self.node
+            tpl = Template.get_from_node(node)
+            tpl.toggle_shapes_visibility()
+
 
 class LogFilter(object):
 

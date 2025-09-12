@@ -1498,12 +1498,12 @@ class Template(abstract.Template):
         _branches = self.branches
         _root = self.root
         for self.branches, self.root in branches:
-            if not self.root:
-                continue
-
             edit = Nodes.get_id('{}{}::edit'.format(self.name, self.get_branch_id()))
             if edit:
                 self.root = edit
+
+            if not self.root:
+                continue
 
             # spawn more overlords
             for key in list(data):
