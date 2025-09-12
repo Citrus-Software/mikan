@@ -53,7 +53,7 @@ class Template(mk.Template):
         last = 'j'
         if not do_joint:
             last = 'c'
-            _chain, chain_sub = self.get_chain()
+            _chain, chain_sub, chain_trail = self.get_chain()
             if chain_sub:
                 last = chain_sub[-1]
 
@@ -63,17 +63,23 @@ class Template(mk.Template):
     def get_chain(self):
         chain = self.get_opt('add_nodes')
         chain_sub = []
+        chain_trail = []
         if not chain:
             chain = []
         if isinstance(chain, string_types):
             chain = [chain]
+        if 'j' in chain:
+            i = chain.index('j')
+            chain_trail = chain[i + 1:]
+            chain = chain[:i]
         if 'c' in chain:
-            chain_sub = chain[chain.index('c') + 1:]
-            chain = chain[:chain.index('c')]
+            i = chain.index('c')
+            chain_sub = chain[i + 1:]
+            chain = chain[:i]
         if self.get_opt('do_pose') and 'pose' not in chain + chain_sub:
             chain.append('pose')
 
-        return chain, chain_sub
+        return chain, chain_sub, chain_trail
 
     def build_chain(self, tpl_chain, hook=None, chain=None, suffixes=None, do_flip=True, do_joint=True, do_skin=None, rotate_order=None, unchain=False, register=True):
 
@@ -89,7 +95,7 @@ class Template(mk.Template):
         if isinstance(rotate_order, string_types):
             rotate_order = mx.Euler.orders[rotate_order.lower()]
 
-        _chain, chain_sub = self.get_chain()
+        _chain, chain_sub, chain_trail = self.get_chain()
         if chain is None:
             chain = _chain
         # TODO: check chain_sub
@@ -134,15 +140,13 @@ class Template(mk.Template):
 
                 n['c'] = mx.create_node(mx.tTransform, parent=n['root'], name='c_' + n_chain + n_end)
 
-                if chain:
-                    for chain_id in chain:
-                        n[chain_id] = mx.create_node(mx.tTransform, parent=n['root'], name=chain_id + '_' + n_chain + n_end)
-                    if 'offsetParentMatrix' not in n['c']:
-                        n['x'] = mx.create_node(mx.tTransform, parent=n['root'], name='x_' + n_chain + n_end)
-                        mc.parent(str(n['c']), str(n['x']))
-                if chain_sub:
-                    for chain_id in chain_sub:
-                        n[chain_id] = mx.create_node(mx.tTransform, parent=n['c'], name=chain_id + '_' + n_chain + n_end)
+                for chain_id in chain:
+                    n[chain_id] = mx.create_node(mx.tTransform, parent=n['root'], name=chain_id + '_' + n_chain + n_end)
+                if 'offsetParentMatrix' not in n['c']:
+                    n['x'] = mx.create_node(mx.tTransform, parent=n['root'], name='x_' + n_chain + n_end)
+                    mc.parent(str(n['c']), str(n['x']))
+                for chain_id in chain_sub:
+                    n[chain_id] = mx.create_node(mx.tTransform, parent=n['c'], name=chain_id + '_' + n_chain + n_end)
                 n['j'] = mx.create_node(mx.tJoint, parent=n['root'], name=j_prefix + '_' + n_chain + n_end)
                 n['j']['ssc'] = False
                 n['j']['ssc'].lock()
@@ -155,17 +159,18 @@ class Template(mk.Template):
                 n['root'] = mx.create_node(mx.tTransform, parent=parent, name='root_' + n_chain + n_end)
                 _p = n['root']
 
-                if chain:
-                    for chain_id in chain:
-                        n[chain_id] = mx.create_node(mx.tTransform, parent=_p, name=chain_id + '_' + n_chain + n_end)
-                        _p = n[chain_id]
+                for chain_id in chain:
+                    n[chain_id] = mx.create_node(mx.tTransform, parent=_p, name=chain_id + '_' + n_chain + n_end)
+                    _p = n[chain_id]
                 n['c'] = mx.create_node(mx.tTransform, parent=_p, name='c_' + n_chain + n_end)
                 last = n['c']
-                if chain_sub:
-                    for chain_id in chain_sub:
-                        n[chain_id] = mx.create_node(mx.tTransform, parent=last, name=chain_id + '_' + n_chain + n_end)
-                        last = n[chain_id]
+                for chain_id in chain_sub:
+                    n[chain_id] = mx.create_node(mx.tTransform, parent=last, name=chain_id + '_' + n_chain + n_end)
+                    last = n[chain_id]
                 n['j'] = mx.create_node(mx.tJoint, parent=last, name=j_prefix + '_' + n_chain + n_end)
+
+            for chain_id in chain_trail:
+                n[chain_id] = mx.create_node(mx.tJoint, parent=n['j'], name=chain_id + '_' + n_chain + n_end)
 
             # do skin?
             n['sk'] = n['j']
@@ -256,8 +261,7 @@ class Template(mk.Template):
                 if do_skin:
                     self.set_id(n['sk'], 'skin.{}'.format(i))
 
-                if chain or chain_sub:
-                    for chain_id in chain + chain_sub:
-                        self.set_id(n[chain_id], '{}s.{}'.format(chain_id, i))
+                for chain_id in chain + chain_sub + chain_trail:
+                    self.set_id(n[chain_id], '{}s.{}'.format(chain_id, i))
 
         return nodes

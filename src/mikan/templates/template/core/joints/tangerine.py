@@ -38,7 +38,7 @@ class Template(mk.Template):
         last = 'j'
         if not do_joint:
             last = 'c'
-            _chain, chain_sub = self.get_chain()
+            _chain, chain_sub, chain_trail = self.get_chain()
             if chain_sub:
                 last = chain_sub[-1]
 
@@ -48,17 +48,23 @@ class Template(mk.Template):
     def get_chain(self):
         chain = self.get_opt('add_nodes')
         chain_sub = []
+        chain_trail = []
         if not chain:
             chain = []
         if isinstance(chain, str):
             chain = [chain]
+        if 'j' in chain:
+            i = chain.index('j')
+            chain_trail = chain[i + 1:]
+            chain = chain[:i]
         if 'c' in chain:
-            chain_sub = chain[chain.index('c') + 1:]
-            chain = chain[:chain.index('c')]
+            i = chain.index('c')
+            chain_sub = chain[i + 1:]
+            chain = chain[:i]
         if self.get_opt('do_pose') and 'pose' not in chain + chain_sub:
             chain.append('pose')
 
-        return chain, chain_sub
+        return chain, chain_sub, chain_trail
 
     def build_chain(self, tpl_chain, hook=None, chain=None, suffixes=None, do_flip=True, do_joint=True, do_skin=None, rotate_order=None, unchain=False, register=True):
 
@@ -73,7 +79,7 @@ class Template(mk.Template):
             rotate_order = self.get_opt('rotate_order')
             rotate_order = str_to_rotate_order(rotate_order)
 
-        _chain, chain_sub = self.get_chain()
+        _chain, chain_sub, chain_trail = self.get_chain()
         if chain is None:
             chain = _chain
         # TODO: check chain_sub
@@ -116,16 +122,15 @@ class Template(mk.Template):
                     n['root'].scale_compensate.set_value(False)
 
                 n['c'] = kl.SceneGraphNode(n['root'], 'c_' + n_chain + n_end)
-                if chain:
-                    for chain_id in chain:
-                        n[chain_id] = kl.SceneGraphNode(n['root'], chain_id + '_' + n_chain + n_end)
-                    n['x'] = kl.SceneGraphNode(n['root'], 'x_' + n_chain + n_end)
-                    n['c'].reparent(n['x'])
-                if chain_sub:
-                    for chain_id in chain_sub:
-                        n[chain_id] = kl.SceneGraphNode(n['c'], chain_id + '_' + n_chain + n_end)
+                for chain_id in chain:
+                    n[chain_id] = kl.SceneGraphNode(n['root'], chain_id + '_' + n_chain + n_end)
+                n['x'] = kl.SceneGraphNode(n['root'], 'x_' + n_chain + n_end)
+                n['c'].reparent(n['x'])
+                for chain_id in chain_sub:
+                    n[chain_id] = kl.SceneGraphNode(n['c'], chain_id + '_' + n_chain + n_end)
                 n['j'] = kl.Joint(n['root'], j_prefix + '_' + n_chain + n_end)
                 n['j'].scale_compensate.set_value(False)
+
             else:
                 parent = hook
                 if i > 0 and not unchain:
@@ -133,17 +138,18 @@ class Template(mk.Template):
 
                 n['root'] = kl.SceneGraphNode(parent, 'root_' + n_chain + n_end)
                 _p = n['root']
-                if chain:
-                    for chain_id in chain:
-                        n[chain_id] = kl.SceneGraphNode(_p, chain_id + '_' + n_chain + n_end)
-                        _p = n[chain_id]
+                for chain_id in chain:
+                    n[chain_id] = kl.SceneGraphNode(_p, chain_id + '_' + n_chain + n_end)
+                    _p = n[chain_id]
                 n['c'] = kl.SceneGraphNode(_p, 'c_' + n_chain + n_end)
                 last = n['c']
-                if chain_sub:
-                    for chain_id in chain_sub:
-                        n[chain_id] = kl.SceneGraphNode(last, chain_id + '_' + n_chain + n_end)
-                        last = n[chain_id]
+                for chain_id in chain_sub:
+                    n[chain_id] = kl.SceneGraphNode(last, chain_id + '_' + n_chain + n_end)
+                    last = n[chain_id]
                 n['j'] = kl.Joint(last, j_prefix + '_' + n_chain + n_end)
+
+            for chain_id in chain_trail:
+                n[chain_id] = kl.Joint(n['j'], chain_id + '_' + n_chain + n_end)
 
             # do skin?
             n['sk'] = n['j']
@@ -227,8 +233,7 @@ class Template(mk.Template):
                 if do_skin:
                     self.set_id(n['sk'], 'skin.{}'.format(i))
 
-                if chain or chain_sub:
-                    for chain_id in chain + chain_sub:
-                        self.set_id(n[chain_id], '{}s.{}'.format(chain_id, i))
+                for chain_id in chain + chain_sub + chain_trail:
+                    self.set_id(n[chain_id], '{}s.{}'.format(chain_id, i))
 
         return nodes
