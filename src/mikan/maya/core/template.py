@@ -1192,7 +1192,7 @@ class Template(abstract.Template):
         if root.name().startswith('_') and 'gem_type' not in root:
             mx.delete(root)
         else:
-            for node in root.children():
+            for node in list(root.children()):  # recursion cause issues when dynamically listing children:
                 Template.set_branch_edit(node)
 
     # tag system -------------------------------------------------------------------------------------------------------
