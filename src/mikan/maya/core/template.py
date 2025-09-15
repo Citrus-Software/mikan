@@ -690,8 +690,8 @@ class Template(abstract.Template):
                 continue
             if 'gem_type' in child and child['gem_type'].read() == 'edit':
                 nodes.append(child)
-                break
-            self.get_template_branch_edits(root=child, nodes=nodes)
+            else:
+                self.get_template_branch_edits(root=child, nodes=nodes)
 
         return nodes
 
