@@ -2675,7 +2675,7 @@ class TemplateTreeWidget(QTreeWidget):
 
         with SafeUndoInfo():
             Nodes.rebuild()
-            roots = item.build_template_branches()
+            roots = item.build_template_branches()  # TODO: transférer tout ça dans Template.build_branches_edit()
             for root in roots:
                 root = Template.set_branch_edit(root)
                 if root:
