@@ -1176,7 +1176,14 @@ class Template(abstract.Template):
 
         if 'gem_id' in root:
             gem_id = root['gem_id'].read()
-            root['gem_id'] = gem_id.replace('::branch', '::edit')
+            _id = gem_id.replace('::branch', '::edit')
+
+            edit = Nodes.get_id(_id)
+            if edit:
+                mx.delete(root)
+                return
+
+            root['gem_id'] = _id
 
         if 'gem_type' in root:
             if root['gem_type'].read() == 'branch':
@@ -1194,6 +1201,8 @@ class Template(abstract.Template):
         else:
             for node in list(root.children()):  # recursion cause issues when dynamically listing children:
                 Template.set_branch_edit(node)
+
+        return root
 
     # tag system -------------------------------------------------------------------------------------------------------
 

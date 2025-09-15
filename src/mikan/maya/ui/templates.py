@@ -2024,6 +2024,9 @@ class TemplateTreeWidget(QTreeWidget):
             for tpl in item.get_top_templates():
                 self.add_item(tpl, parent=item)
 
+            for helper in item.get_top_templates_branch_edits():
+                self.add_item(helper, parent=item)
+
         elif isinstance(item, Helper):
             if 'gem_type' not in item.node:  # skip children if helper is already a template
                 if recursive:
@@ -2674,9 +2677,19 @@ class TemplateTreeWidget(QTreeWidget):
             Nodes.rebuild()
             roots = item.build_template_branches()
             for root in roots:
-                Template.set_branch_edit(root)
-                helper = Helper(root)
-                self.add_item(helper, item.get_parent())
+                root = Template.set_branch_edit(root)
+                if root:
+                    helper = Helper(root)
+
+                    tpl = Template.get_from_node(root)
+                    parent = tpl.get_parent()
+                    if parent is None:  # no parent -> asset?
+                        asset_id = Nodes.get_asset_id(root)
+                        asset = Nodes.get_id(asset_id + '#::asset')
+                        if asset:
+                            parent = Asset(asset)
+
+                    self.add_item(helper, parent)
 
     def select_rig_nodes(self, tag, hierarchy=False):
         templates = []

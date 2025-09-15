@@ -353,12 +353,19 @@ class Asset(abstract.Asset):
 
     def get_top_templates(self):
         templates = []
-        for tpl in self.get_template_root().children():
+        for node in self.get_template_root().children():
             try:
-                templates.append(Template(tpl))
+                templates.append(Template(node))
             except:
                 pass
         return templates
+
+    def get_top_templates_branch_edits(self):
+        edits = []
+        for node in self.get_template_root().children():
+            if 'gem_type' in node and node['gem_type'].read() == 'edit':
+                edits.append(Helper(node))
+        return edits
 
     def get_helper_nodes(self):
         for node in self.get_template_root().children(type=mx.tTransform):
