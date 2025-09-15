@@ -59,12 +59,8 @@
 - separator: Layers
 
 - name: switch skin layer
-  py: |
-    import mikan.maya as mk
-    import maya.cmds as mc
-    _sl = mc.ls(sl=1, et='transform')
-    if _sl:
-      mk.Deformer.toggle_layers(_sl[0])
+  file: $snippets/deformers/switch_skin_layer.py
+  help: Toggles the skin layer display of the selected geometries
 
 - name: bind skin layer
   file: $snippets/deformers/bind_skin_layers.py
