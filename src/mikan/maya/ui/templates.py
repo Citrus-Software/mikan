@@ -2681,6 +2681,9 @@ class TemplateTreeWidget(QTreeWidget):
                 if root:
                     helper = Helper(root)
 
+                    if not helper.is_branch_root():
+                        continue
+
                     tpl = Template.get_from_node(root)
                     parent = tpl.get_parent()
                     if parent is None:  # no parent -> asset?

@@ -1058,6 +1058,11 @@ class Helper(object):
             return True
         return False
 
+    def is_asset(self):
+        if 'gem_type' in self.node and self.node['gem_type'].read() == Asset.type_name:
+            return True
+        return False
+
     def is_template(self):
         if 'gem_type' in self.node and self.node['gem_type'].read() == Template.type_name:
             return True
@@ -1072,6 +1077,17 @@ class Helper(object):
         if 'gem_type' in self.node and self.node['gem_type'].read() == 'edit':
             return True
         return False
+
+    def is_branch_root(self):
+        parent = self.node.parent()
+        while parent:
+            helper = Helper(parent)
+            if helper.is_template() or helper.is_asset():
+                return True
+            if helper.is_branch() or helper.is_branch_edit():
+                return False
+            parent = parent.parent()
+        return True
 
     def is_hidden(self):
         return self.name.startswith('_')
