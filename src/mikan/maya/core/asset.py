@@ -353,12 +353,19 @@ class Asset(abstract.Asset):
 
     def get_top_templates(self):
         templates = []
-        for tpl in self.get_template_root().children():
+        for node in self.get_template_root().children():
             try:
-                templates.append(Template(tpl))
+                templates.append(Template(node))
             except:
                 pass
         return templates
+
+    def get_top_templates_branch_edits(self):
+        edits = []
+        for node in self.get_template_root().children():
+            if 'gem_type' in node and node['gem_type'].read() == 'edit':
+                edits.append(Helper(node))
+        return edits
 
     def get_helper_nodes(self):
         for node in self.get_template_root().children(type=mx.tTransform):
@@ -786,7 +793,10 @@ class Scheduler(object):
         modes = []
 
         for line in ini.get_lines():
-            if line.startswith('#!'):
+            if line.startswith('#/') and 'ignore' in line[2:].split():
+                modes.append('ignore')
+
+            elif line.startswith('#!'):
                 for arg in re.findall(r"[\w'^!*~+-]+", line[2:]):
                     if re_is_int.match(arg):
                         data['priority'] = int(arg)
@@ -1048,6 +1058,11 @@ class Helper(object):
             return True
         return False
 
+    def is_asset(self):
+        if 'gem_type' in self.node and self.node['gem_type'].read() == Asset.type_name:
+            return True
+        return False
+
     def is_template(self):
         if 'gem_type' in self.node and self.node['gem_type'].read() == Template.type_name:
             return True
@@ -1062,6 +1077,17 @@ class Helper(object):
         if 'gem_type' in self.node and self.node['gem_type'].read() == 'edit':
             return True
         return False
+
+    def is_branch_root(self):
+        parent = self.node.parent()
+        while parent:
+            helper = Helper(parent)
+            if helper.is_template() or helper.is_asset():
+                return True
+            if helper.is_branch() or helper.is_branch_edit():
+                return False
+            parent = parent.parent()
+        return True
 
     def is_hidden(self):
         return self.name.startswith('_')
@@ -1324,6 +1350,12 @@ class Helper(object):
                     else:
                         with mx.DGModifier() as md:
                             md.set_attr(node['s'], node['s'].as_vector() * scale)
+
+    def toggle_shapes_visibility(self):
+        if self.is_branch_edit() or self.is_branch():
+            node = self.node
+            tpl = Template.get_from_node(node)
+            tpl.toggle_shapes_visibility()
 
 
 class LogFilter(object):

@@ -485,7 +485,10 @@ class Scheduler(object):
         modes = []
 
         for line in ini.get_lines():
-            if line.startswith('#!'):
+            if line.startswith('#/') and 'ignore' in line[2:].split():
+                modes.append('ignore')
+
+            elif line.startswith('#!'):
                 for arg in re.findall(r"[\w'^!*~+-]+", line[2:]):
                     if re_is_int.match(arg):
                         data['priority'] = int(arg)

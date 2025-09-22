@@ -176,10 +176,6 @@ def mirror_joints(node, myz=True, mxy=False, mxz=False, nodes=None, _root=None, 
         m = r * wm * ip * s * p * pim
 
         if node_type == mx.tJoint:
-            if d['ssc'].read():
-                ds = mx.TransformationMatrix(scale=d['inverseScale'])
-                m = mx.Tm(ds.as_matrix_inverse()) * m * ds
-
             d['jo'] = node['jo']
 
         mc.xform(str(d), m=m.as_matrix())

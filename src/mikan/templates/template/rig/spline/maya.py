@@ -57,7 +57,7 @@ class Template(mk.Template):
         if len(tpl_chain) < 2:
             raise RuntimeError('/!\\ template chain must have at least 2 joints')
 
-        chain, chain_sub = self.get_chain()
+        chain, chain_sub, chain_trail = self.get_chain()
 
         num_ik = self.get_opt('iks')
         num_fk = len(tpl_chain)

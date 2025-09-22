@@ -417,14 +417,7 @@ class Group(object):
     # ui callbacks -----------------------------------------------------------------------------------------------------
 
     def connect_showhide(self, grp):
-        if not self.node.get_dynamic_plug('menu_showhide'):
-            add_plug(self.node, 'menu_showhide', str, array=True)
-
-        plug = self.node.menu_showhide
-        i = get_next_available(plug)
-        plug[i].connect(grp.node.gem_id)
-
-        grp.node.set_parent(self.node)
+        Control.connect_showhide_node(self.node, grp)
 
     def show(self, modifier=None):
         for node in self.get_all_nodes(vis=True, cache=True):
@@ -845,13 +838,17 @@ class Control(object):
 
         return cmds
 
-    def connect_showhide(self, grp):
-        if not self.node.get_dynamic_plug('menu_showhide'):
-            add_plug(self.node, 'menu_showhide', str, array=True)
+    @staticmethod
+    def connect_showhide_node(node, grp):
+        if not node.get_dynamic_plug('menu_showhide'):
+            add_plug(node, 'menu_showhide', str, array=True)
 
-        plug = self.node.menu_showhide
+        plug = node.menu_showhide
         i = get_next_available(plug)
         plug[i].connect(grp.node.gem_id)
 
         if not isinstance(grp.node.get_parent(), kl.Node):
-            grp.node.set_parent(self.node)
+            grp.node.set_parent(node)
+
+    def connect_showhide(self, grp):
+        self.connect_showhide_node(self.node, grp)

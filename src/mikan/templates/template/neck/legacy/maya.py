@@ -377,9 +377,6 @@ class Template(mk.Template):
                 }
             )
 
-        # # face cam
-        # self._make_cam()
-
         # switch
         for nodes in chain:
             mk.Control.set_control_shape(c_switch, nodes['ctrl'])
@@ -396,6 +393,9 @@ class Template(mk.Template):
         grp = mk.Group.create('{}{} shape'.format(n_neck, self.get_branch_suffix(' ')))
         grp.add_member(c_neckIK_mid)
         self.set_id(grp.node, 'vis.shape')
+
+        for i in range(len(tpl_chain) - 1):
+            mk.Control.connect_showhide_node(chain[i]['ctrl'], grp)
 
         if do_offset:
             n['c_ho']['v'] = False
@@ -421,6 +421,7 @@ class Template(mk.Template):
         for i in range(len(tpl_chain) - 1):
             self.set_id(chain[i]['ctrl'], 'ctrls.fk.{}'.format(i))
             self.set_id(chain[i]['ctrl'], 'ctrls.neck{}'.format(i))  # legacy id
+            self.set_id(chain[i]['ctrl'], 'ctrls._{}'.format(i))
         self.set_id(c_switch, 'ctrls.switch')
 
         self.set_id(n['sk_h'], 'skin.head')
@@ -432,28 +433,6 @@ class Template(mk.Template):
         self.set_id(n['j_h'], 'j.head')
 
         self.set_id(n['end_h'], 'tip')
-
-    def _make_cam(self):
-        n = self.n
-
-        rootcam = mx.create_node(mx.tTransform, name='root_facePanel', parent=n['hook_h'])
-        mc.parentConstraint(str(n['sk_h']), str(rootcam), n='_prx#')
-
-        cam = mx.create_node(mx.tTransform, name='cam_facePanel', parent=rootcam)
-        mx.create_node(mx.tCamera, parent=cam, name='cam_facePanelShape')
-
-        cam['t'] = (0, 0, 10)
-
-        cam['orthographic'] = True
-        cam['renderable'] = False
-        cam['overscan'] = True
-        cam['v'] = False
-
-        n['c_h'].add_attr(mx.Message('camPanel', array=True, indexMatters=False))
-        n['c_h']['camPanel'].apend(cam['msg'])
-
-        cam.add_attr(mx.String('name'))
-        cam['name'] = 'face panel'
 
     def _make_scale(self):
         n = self.n

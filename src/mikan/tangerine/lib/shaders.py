@@ -4,11 +4,13 @@ import os
 import zlib
 import json
 import base64
-import winreg
 import itertools
 import subprocess
 from copy import deepcopy
 from contextlib import suppress
+
+if os.name == 'nt':
+    import winreg
 
 import meta_nodal_py as kl
 from meta_nodal_py.Imath import V3f, Color4f
@@ -283,14 +285,18 @@ def get_color_from_file(path):
     return gray
 
 
-def winreg_subkeys(path, hkey=winreg.HKEY_LOCAL_MACHINE, flags=0):
-    with suppress(WindowsError), winreg.OpenKey(hkey, path, 0, winreg.KEY_READ | flags) as k:
-        for i in itertools.count():
-            yield winreg.EnumKey(k, i)
+if os.name == 'nt':
+    def winreg_subkeys(path, hkey=winreg.HKEY_LOCAL_MACHINE, flags=0):
+        with suppress(WindowsError), winreg.OpenKey(hkey, path, 0, winreg.KEY_READ | flags) as k:
+            for i in itertools.count():
+                yield winreg.EnumKey(k, i)
 
 
 def find_imconvert():
     # imconvert lookup
+
+    if os.name != 'nt':
+        raise NotImplementedError("find_imconvert is only implemented for Windows for now.")
 
     for key in winreg_subkeys(r'SOFTWARE\Autodesk\Maya'):
         try:
@@ -305,4 +311,7 @@ def find_imconvert():
             pass
 
 
-imconvert = find_imconvert()
+if os.name == 'nt':
+    imconvert = find_imconvert()
+else:
+    imconvert = None  # TODO implement for Linux

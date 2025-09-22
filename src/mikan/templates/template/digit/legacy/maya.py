@@ -74,7 +74,7 @@ class Template(mk.Template):
             suffixes.append(sfx if len(tpl_digit) > 1 else '')
 
         # add inf
-        chain, chain_sub = self.get_chain()
+        chain, chain_sub, chain_trail = self.get_chain()
         if 'inf' not in chain:
             chain.insert(0, 'inf')
 

@@ -10,7 +10,7 @@
 
     - name: fix template pivots
       file: $snippets/fix_template_pivots.py
-      help: remove pivot values from template
+      help: Remove pivot values from template
 
     - name: snap template from rig
       file: $snippets/snap_template.py
@@ -65,6 +65,9 @@
 
     - name: Export Blueprint abc
       file: $snippets/export/export_blueprint.py
+
+    - name: Run Tangerine
+      file: $snippets/export/run_tangerine.py
 
 
 - separator: on
@@ -128,15 +131,16 @@
       py: |
         from mikan.maya.lib.rig import transfer_nonlinear
         transfer_nonlinear()
-      help: transfer handle from the first selected transform to the second
+      help: Transfer handle from the first selected transform to the second
 
 
 - name: deformers
   menu:
-    - name: assign handles
+    - name: assign deformer tool
       py: |
         from mikan.maya.utils.deformer_utils import *
         AssignDeformerHandlesUI().show()
+      help: Opens a tool to assign the chosen deformers to the selected geometry
 
 
 - separator: on
@@ -149,6 +153,8 @@
       py: |
         import mikan.core.logger
         mikan.core.logger.set_time_logging(True)
+      help: Enables additional logger info to measure elapsed time
+
     - name: 'timed code: OFF'
       py: |
         import mikan.core.logger
@@ -177,6 +183,7 @@
       py: |
         from mikan.maya.ui.widgets import toggle_maya_syntax_highlighter
         toggle_maya_syntax_highlighter()
+      help: Toggles colored log levels and comments in the Script Editor
 
 
     - separator: 'config'
@@ -194,4 +201,4 @@
         import ptvsd
         ptvsd.enable_attach(address=('0.0.0.0', 3500), redirect_output=True)
       icon: link
-      help: python debugger
+      help: Enables remote Python debugging (VS Code, port 3500)

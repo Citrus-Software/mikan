@@ -35,7 +35,7 @@ from mikan.core.logger import timed_code, create_logger, SafeHandler, get_format
 from ..ui.widgets import OptVarSettings, SafeUndoInfo, Callback, open_url
 from ..lib.rig import apply_transform
 from ..lib.configparser import ConfigParser
-from ..core import Asset, Template, Helper, Nodes, DeformerGroup, parse_nodes
+from ..core import Asset, Template, Helper, Nodes, DeformerGroup, Deformer, parse_nodes
 
 __all__ = ['TemplateManager']
 
@@ -533,7 +533,7 @@ class TemplateManager(QMainWindow, OptVarSettings):
         Nodes.rebuild()
 
         for item in self.tree.get_selected_items():
-            if isinstance(item, (Asset, Template)):
+            if isinstance(item, (Asset, Template, Helper)):
                 item.toggle_shapes_visibility()
 
     @busy_cursor
@@ -2024,6 +2024,9 @@ class TemplateTreeWidget(QTreeWidget):
             for tpl in item.get_top_templates():
                 self.add_item(tpl, parent=item)
 
+            for helper in item.get_top_templates_branch_edits():
+                self.add_item(helper, parent=item)
+
         elif isinstance(item, Helper):
             if 'gem_type' not in item.node:  # skip children if helper is already a template
                 if recursive:
@@ -2672,11 +2675,24 @@ class TemplateTreeWidget(QTreeWidget):
 
         with SafeUndoInfo():
             Nodes.rebuild()
-            roots = item.build_template_branches()
+            roots = item.build_template_branches()  # TODO: transférer tout ça dans Template.build_branches_edit()
             for root in roots:
-                Template.set_branch_edit(root)
-                helper = Helper(root)
-                self.add_item(helper, item.get_parent())
+                root = Template.set_branch_edit(root)
+                if root:
+                    helper = Helper(root)
+
+                    if not helper.is_branch_root():
+                        continue
+
+                    tpl = Template.get_from_node(root)
+                    parent = tpl.get_parent()
+                    if parent is None:  # no parent -> asset?
+                        asset_id = Nodes.get_asset_id(root)
+                        asset = Nodes.get_id(asset_id + '#::asset')
+                        if asset:
+                            parent = Asset(asset)
+
+                    self.add_item(helper, parent)
 
     def select_rig_nodes(self, tag, hierarchy=False):
         templates = []
@@ -3034,6 +3050,29 @@ class TemplateModInspector(QTreeWidget):
                     id_item.setForeground(0, self.BRUSH_ID)
                     node_item.addChild(id_item)
                 hide = False
+
+            elif node.is_a(mx.tTransform):
+                parents = []
+                parent = node.parent()
+                while parent:
+                    parents.append(parent)
+                    parent = parent.parent()
+
+                if parents and not any(['gem_id' in _node for _node in parents]):
+                    node_item = QTreeWidgetItem()
+                    node_item.setText(0, str(node))
+                    self.addTopLevelItem(node_item)
+                    self.expandItem(node_item)
+
+                    ids = Deformer.get_deformer_ids(node, parents[0])
+                    name = Deformer.get_unique_name(node, parents[0])
+                    for i in ids:
+                        _name = name + '->' + i
+                        id_item = QTreeWidgetItem(_name)
+                        id_item.setText(0, _name)
+                        id_item.setForeground(0, self.BRUSH_ID)
+                        node_item.addChild(id_item)
+                    hide = False
 
         if hide:
             self.hide()

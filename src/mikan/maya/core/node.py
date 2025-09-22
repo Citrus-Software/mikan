@@ -290,11 +290,11 @@ class Nodes(abstract.Nodes):
         if isinstance(node, mx.DagNode):
             if plug_name in {'xfo', 'ixfo', 'pxfo', 'pixfo', 'wxfo', 'wixfo'}:
                 plug_name = plug_name.replace('xfo', 'm')
-            elif plug_name in {'m', 'im', 'pm', 'pim', 'wm', 'wim'}:
-                plug = node[plug_name]
-                if plug_name[0] in {'w', 'p'}:
-                    plug = plug[0]
-                return plug
+
+            if plug_name in {'m', 'im'}:
+                return node[plug_name]
+            elif plug_name in {'pm', 'pim', 'wm', 'wim'}:
+                return node[plug_name][0]
 
         if plug_name not in node:
             if add:

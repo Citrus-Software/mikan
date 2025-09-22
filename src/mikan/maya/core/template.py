@@ -275,8 +275,11 @@ class Template(abstract.Template):
             else:
                 Nodes.rename_cfg_ids(node, _old_name, _name)
 
-        # rename node
+        # rename other nodes
         self.rename_root()
+
+        self.check_shapes_id()
+        self.rename_shapes()
 
         # regen
         Nodes.rebuild()
@@ -535,6 +538,10 @@ class Template(abstract.Template):
         with mx.DagModifier() as md:
             md.set_attr(plug, v)
 
+        # update shapes id if branches are edited
+        if opt == 'branches':
+            self.check_shapes_id()
+
     def reset_opt(self, opt):
         plug = self.get_opt_plug(opt)
         if plug is None:
@@ -683,8 +690,8 @@ class Template(abstract.Template):
                 continue
             if 'gem_type' in child and child['gem_type'].read() == 'edit':
                 nodes.append(child)
-                break
-            self.get_template_branch_edits(root=child, nodes=nodes)
+            else:
+                self.get_template_branch_edits(root=child, nodes=nodes)
 
         return nodes
 
@@ -1169,7 +1176,14 @@ class Template(abstract.Template):
 
         if 'gem_id' in root:
             gem_id = root['gem_id'].read()
-            root['gem_id'] = gem_id.replace('::branch', '::edit')
+            _id = gem_id.replace('::branch', '::edit')
+
+            edit = Nodes.get_id(_id)
+            if edit:
+                mx.delete(root)
+                return
+
+            root['gem_id'] = _id
 
         if 'gem_type' in root:
             if root['gem_type'].read() == 'branch':
@@ -1185,8 +1199,10 @@ class Template(abstract.Template):
         if root.name().startswith('_') and 'gem_type' not in root:
             mx.delete(root)
         else:
-            for node in root.children():
+            for node in list(root.children()):  # recursion cause issues when dynamically listing children:
                 Template.set_branch_edit(node)
+
+        return root
 
     # tag system -------------------------------------------------------------------------------------------------------
 
@@ -1491,12 +1507,12 @@ class Template(abstract.Template):
         _branches = self.branches
         _root = self.root
         for self.branches, self.root in branches:
-            if not self.root:
-                continue
-
             edit = Nodes.get_id('{}{}::edit'.format(self.name, self.get_branch_id()))
             if edit:
                 self.root = edit
+
+            if not self.root:
+                continue
 
             # spawn more overlords
             for key in list(data):
@@ -1553,7 +1569,8 @@ class Template(abstract.Template):
                 if not root:
                     key_name = key.replace('.', '_').replace('*', 'all')
                     with mx.DagModifier() as md:
-                        root = md.create_node(mx.tTransform, parent=p[0], name='_shape_{}_{}{}'.format(self.name, key_name, self.get_branch_suffix()))
+                        name = '_shp_{}_{}{}'.format(self.name, key_name, self.get_branch_suffix())
+                        root = md.create_node(mx.tTransform, parent=p[0], name=name)
                     do_new = True
                 do_flip = self.do_flip()
 
@@ -1634,8 +1651,10 @@ class Template(abstract.Template):
                     s = Shape.create(specs['shape'], axis=specs.get('axis'))
                     mc.parent(str(s.node), str(root), r=1)
 
-                    n = root.name(namespace=False).replace('_shape_', 'shp_')
-                    mc.rename(str(s.node), n)
+                    key_name = key.replace('.', '_').replace('*', 'all')
+                    name = 'shp_{}_{}{}'.format(self.name, key_name, self.get_branch_suffix())
+
+                    mc.rename(str(s.node), name)
 
                     if 'size' in specs:
                         s.scale(specs['size'], absolute=True)
@@ -1788,6 +1807,79 @@ class Template(abstract.Template):
                 for _cnst in root.children():
                     if _cnst.is_a(mx.kConstraint):
                         _cnst['hio'] = 1
+
+        # exit
+        self.branches = _branches
+        self.root = _root
+        Nodes.current_asset = current_asset
+
+    def check_shapes_id(self):
+        current_asset = Nodes.current_asset
+
+        Nodes.current_asset = Nodes.get_asset_id(self.node)
+        shapes_tree = Nodes.shapes[Nodes.current_asset]
+
+        branches = list(self.get_branches())
+        _branches = self.branches
+        _root = self.root
+
+        # check
+        for self.branches, self.root in branches:
+            if not self.root:
+                continue
+
+            tpl_key = self.name + self.get_branch_id()
+
+            for n in self.get_template_nodes():
+                if 'gem_shape' in n:
+                    # delete old id
+                    _id = n['gem_shape'].read()
+                    if _id.split('::')[0] == tpl_key:
+                        continue
+
+                    del shapes_tree[_id]
+
+                    # add new id
+                    _id = tpl_key + '::' + _id.split('::')[-1]
+
+                    with mx.DGModifier() as md:
+                        md.set_attr(n['gem_shape'], _id)
+                    shapes_tree[_id] = n
+
+        shapes_tree.get('{}{}::*')
+
+        # exit
+        self.branches = _branches
+        self.root = _root
+        Nodes.current_asset = current_asset
+
+    def rename_shapes(self):
+        current_asset = Nodes.current_asset
+
+        Nodes.current_asset = Nodes.get_asset_id(self.node)
+        shapes_tree = Nodes.shapes[Nodes.current_asset]
+
+        branches = list(self.get_branches())
+
+        _branches = self.branches
+        _root = self.root
+        for self.branches, self.root in branches:
+
+            if not self.root:
+                continue
+
+            for node in shapes_tree.get('{}{}::*'.format(self.name, self.get_branch_id()), [], as_list=True):
+                key = node['gem_shape'].read().split('::')[-1]
+                key_name = key.replace('.', '_').replace('*', 'all')
+                base_name = 'shp_{}_{}{}'.format(self.name, key_name, self.get_branch_suffix())
+
+                node.rename('_' + base_name)
+
+                shp_name = base_name
+                if len(list(node.children(type=mx.tTransform))) > 1:
+                    shp_name += '#'
+                for shp in node.children():
+                    shp.rename(shp_name)
 
         # exit
         self.branches = _branches

@@ -2,32 +2,35 @@
 
 - name: skin to hook
   file: $snippets/skin_to_hook.py
-  help: select vertices with skin weights and objects to hook in any order
+  help: Select vertices with skin weights and objects to hook in any order
 
 
-- separator: Symmetry
+- separator: on
 
 - name: transfer skin
   file: $snippets/deformers/ttSkinAs.mel
   mel: ttSkinAs();
   debug: on
+  help: Copies the skinCluster from the first selected geometry to the others
 
 - name: combine skinned meshes
   file: $snippets/deformers/combine_skin.py
+  help: Generates a single skinned mesh by combining the selected skinned meshes
 
 - name: reset bindpose
   file: $snippets/deformers/reset_bindpose.py
-  help: reset bind pre matrix of selected skinCluster from current pose
+  help: Reset bind pre matrix of selected skinCluster from current pose
 
 - name: repeat flood
   file: $snippets/deformers/repeat_flood.py
-  help: in paint mode, push the button flood n times. Usefull for skin smoothing with a selection of vertices.
+  help: In paint mode, push the button flood n times. Usefull for skin smoothing with a selection of vertices.
 
 - name: cleanup joints color
   py: |
     import mikan.maya.cmdx as mx
     for j in mx.ls(et='joint'):
       j['useObjectColor'] = False
+  help: Removes custom color settings from all joints
 
 
 - separator: Symmetry
@@ -35,33 +38,29 @@
 - name: init sym map (points)
   file: $snippets/deformers/smart_mirror.py
   py: build_mirror_tables()
-  help: build sym map of selected meshes for smart mirror
+  help: Build sym map of selected meshes for smart mirror
 
 - name: init sym map (middle edge)
   file: $snippets/deformers/smart_mirror.py
   py: build_mirror_tables_topology()
-  help: build sym map of selected meshes for smart mirror ( edge flow aglo )
+  help: Build sym map of selected meshes for smart mirror ( edge flow aglo )
 
 - name: smart mirror skin (L to R)
   file: $snippets/deformers/smart_mirror.py
   py: smart_mirror('skin')
-  help: select meshes with generated sym map in any pose
+  help: Select meshes with generated sym map in any pose
 
 - name: smart mirror skin (R to L)
   file: $snippets/deformers/smart_mirror.py
   py: smart_mirror('skin', -1)
-  help: select meshes with generated sym map in any pose
+  help: Select meshes with generated sym map in any pose
 
 
 - separator: Layers
 
 - name: switch skin layer
-  py: |
-    import mikan.maya as mk
-    import maya.cmds as mc
-    _sl = mc.ls(sl=1, et='transform')
-    if _sl:
-      mk.Deformer.toggle_layers(_sl[0])
+  file: $snippets/deformers/switch_skin_layer.py
+  help: Toggles the skin layer display of the selected geometries
 
 - name: bind skin layer
   file: $snippets/deformers/bind_skin_layers.py
@@ -99,4 +98,4 @@
 
 - name: apply wmproxy to skin
   file: $snippets/deformers/apply_wmproxy_skin.py
-  help: select skinned meshes and nurbs object with nmap configuration in any order
+  help: Select skinned meshes and nurbs object with nmap configuration in any order

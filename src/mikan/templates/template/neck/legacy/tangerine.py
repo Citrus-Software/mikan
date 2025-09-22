@@ -383,6 +383,9 @@ class Template(mk.Template):
         grp.add_member(c_neckIK_mid)
         self.set_id(grp.node, 'vis.shape')
 
+        for i in range(len(tpl_chain) - 1):
+            mk.Control.connect_showhide_node(chain[i]['ctrl'], grp)
+
         if do_offset:
             n['c_ho'].show.set_value(False)
             grp = mk.Group.create('{}{} offset'.format(n_neck, self.get_branch_suffix(' ')))
