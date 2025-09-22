@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 
+## [1.0.3] - 2025-09-22
+
+### Added
+- Tangerine launch snippets
+- Additional tooltips in menus
+
+### Changed
+- Automatic renaming of shape hierarchies in the blueprint
+- Added geometry and deformer IDs in the mod inspector
+- Added `#/ignore` command in the mod parser
+- Fixed vis group handling in the `neck.legacy` module
+- Allow adding nodes after j/sk nodes in all modules based on `core.joints`
+
+### Fixed
+- Preserve shape assignments when modifying branches
+- Fixed retrieval of plug IDs for matrices in Maya
+- Fixed an issue with inverse scale in the mirror joints function
+- Fixed branch display in edit mode in the outliner
+- Fixed crash in Tangerine due to improperly handled imports
+
+
 ## [1.0.2] - 2025-08-16
 
 ### Changed
