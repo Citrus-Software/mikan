@@ -13,8 +13,8 @@ from mikan.tangerine.lib.connect import connect_mult, connect_div
 class Template(mk.Template):
 
     def build_template(self, data):
-        self.node.rename('tpl_{}'.format(self.name))
-        self.node.transform.set_value(M44f(V3f(self.get_opt('transform')), V3f(0, 0, 0), V3f(1, 1, 1), Euler.Default))
+        self.node.rename(f'tpl_{self.name}')
+        self.node.transform.set_value(M44f(V3f(*data['transform']), V3f(0, 0, 0), V3f(1, 1, 1), Euler.Default))
 
     def build_rig(self):
         hook = self.get_hook()
