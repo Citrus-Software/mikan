@@ -171,20 +171,21 @@ class Mod(mk.Mod):
                         # build driven key
                         an_pre = 'linear'
                         an_post = 'linear'
+                        key_style = None
 
                         keys = {0: 0}
                         if isinstance(keys_data, dict):
                             if 'pre' in keys_data:
                                 an_pre = keys_data['pre']
-                                del (keys_data['pre'])
                             if 'post' in keys_data:
                                 an_post = keys_data['post']
-                                del (keys_data['post'])
+                            if 'tan' in keys_data:
+                                key_style = keys_data['tan']
                             keys.update(keys_data)
                         else:
                             keys[float(keys_data)] = 1
 
-                        floats = list(keys)
+                        floats = [key for key in keys if isinstance(key, (int, float))]
                         fmin = min(floats)
                         fmax = max(floats)
                         if fmin == 0:
@@ -192,7 +193,7 @@ class Mod(mk.Mod):
                         elif fmax == 0:
                             an_post = 'constant'
 
-                        driven_curve = connect_driven_curve(plug_chan, keys=keys, pre=an_pre, post=an_post)
+                        driven_curve = connect_driven_curve(plug_chan, keys=keys, pre=an_pre, post=an_post, key_style=key_style)
 
                         if buffer[shp_driven_sfx]['src'] is None:
                             buffer[shp_driven_sfx]['src'] = driven_curve['output']

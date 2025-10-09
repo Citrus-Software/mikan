@@ -333,6 +333,8 @@ def create_curve_value(keys, curve=None, tangent_mode=None, do_scale=0):
     # add keys
     rmb_keys = []
     for k, data in keys.items():
+        if not isinstance(k, (int, float)):
+            continue
         left_tangent_mode = tangent_mode
         right_tangent_mode = tangent_mode
         dxl, dyl, dxr, dyr = -1, 0, 1, 0

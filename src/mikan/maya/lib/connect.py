@@ -330,6 +330,9 @@ def connect_driven_curve(out_node, in_node=None, keys=None, key_style=None, pre=
 
     cv = None
     for key, data in iteritems(keys):
+        if not isinstance(key, (float, int)):
+            continue
+
         key = float(key)
         itt = key_style
         ott = key_style
