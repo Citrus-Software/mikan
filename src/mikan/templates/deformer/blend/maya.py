@@ -92,6 +92,7 @@ class Deformer(mk.Deformer):
                 reference = False
                 if 'REFERENCE' in name:
                     reference = True
+                    self.data['weights'][t] = 1
                 delta = self.get_delta_weightmaps(self.node, t, reference=reference)
                 if delta:
                     self.data['delta'][t] = delta
@@ -434,7 +435,12 @@ class Deformer(mk.Deformer):
 
         if reference:
             fn = om.MFnMesh(shp.object())
-            points = fn.getPoints(mx.sObject)
+            points = fn.getPoints()
+
+            wm = []
+            for pt in points:
+                wm += mx.Vector(pt)
+            return {1.0: WeightMap(wm)}
 
         maps = Deformer.get_delta(bs, index)
 
@@ -443,9 +449,6 @@ class Deformer(mk.Deformer):
             wm = [0.0] * count * 3
 
             for cp, pt in delta:
-                if reference:
-                    pt = mx.Vector(pt)
-                    pt += mx.Vector(points[cp])
                 wm[cp * 3:cp * 3 + 3] = pt
 
             maps[k] = WeightMap(wm)
