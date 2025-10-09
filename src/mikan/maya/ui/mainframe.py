@@ -81,19 +81,29 @@ class MikanUI(MayaDockMixin):
     def tab_changed(self, v):
         self.set_optvar('selected_main_tab', v)
 
-    @staticmethod
-    def load_menu(file_menu, parent):
+    def load_menu(self, name, file_menu):
         data = None
-        with open(file_menu, 'r') as stream:
-            try:
-                data = ordered_load(stream)
-            except yaml.YAMLError as exc:
-                print(exc)
+
+        if not os.path.isfile(file_menu):
+            log.error('could not find menu file "{}"'.format(file_menu))
+            return
+
+        try:
+            with open(file_menu, 'r') as stream:
+                try:
+                    data = ordered_load(stream)
+                except yaml.YAMLError as exc:
+                    print(exc)
+        except (OSError, IOError) as e:
+            log.error('could not read menu file "{}": {}'.format(file_menu, e))
+            return
 
         if not data:
             return
 
-        MikanUI.load_menuitems(data, parent)
+        menu = self.menuBar().addMenu(name)
+        MikanUI.load_menuitems(data, menu)
+        return menu
 
     @staticmethod
     def load_menuitems(data, parent):
@@ -244,12 +254,9 @@ class MikanUI(MayaDockMixin):
 
         # update ui
         for name, path in menus:
-            menu = menu_bar.addMenu(name)
-
             MikanUI.PATHS = self.get_paths_dict(path)
-            self.load_menu(path, menu)
-
-            if 'Help' not in name:
+            menu = self.load_menu(name, path)
+            if menu and 'Help' not in name:
                 menu.setTearOffEnabled(True)
 
         # env
