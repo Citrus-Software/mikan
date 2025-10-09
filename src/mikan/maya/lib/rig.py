@@ -910,7 +910,7 @@ def stretch_ik(joints, ctrl):
     _ds = connect_mult(ctrl['soft_distance'], _d0)
     _da = connect_sub(_d0, _ds)
 
-    _deff = connect_expr('d >= da ? da + ds * 1 - e ^ (-(d-da) / ds) : d', d=_len, da=_da, ds=_ds, e=math.e)
+    _deff = connect_expr('d >= da ? da + ds * (1 - e ^ (-(d-da) / ds)) : d', d=_len, da=_da, ds=_ds, e=math.e)
     _wsoft = connect_expr('deff / d', deff=_deff, d=_len)
     _w = connect_expr('lerp(w, wsoft, soft)', w=_w, wsoft=_wsoft, soft=ctrl['soft'])
     _fsoft = connect_expr('1 / w', w=_w)
