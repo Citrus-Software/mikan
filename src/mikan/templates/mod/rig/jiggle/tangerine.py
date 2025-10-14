@@ -1,7 +1,7 @@
 # coding: utf-8
 
 import meta_nodal_py as kl
-from tang_gui.get_document import get_document
+from tang_core.document.get_document import get_document
 
 import mikan.tangerine.core as mk
 from mikan.tangerine.lib.commands import add_plug
