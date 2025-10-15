@@ -909,6 +909,9 @@ class Template(mk.Template):
             connect_reverse(n['c_clav']['auto_orient'], _px['w0'])
             n['c_clav']['auto_orient'] >> _px['w1']
 
+            # cleanup vis
+            n['ao_clav'].hide()
+
     def build_reverse_lock(self):
         n = self.n
 
@@ -1207,6 +1210,7 @@ class Template(mk.Template):
         copy_transform(n['c_1'], n['ao_pv'], t=True)
         mc.delete(mc.aimConstraint(str(n['c_e']), str(n['ao_pv']), aim=[0, 1, 0], u=[0, 0, 1], wu=[0, 0, 1], wut='vector'))
         mc.makeIdentity(str(n['ao_pv']), a=1)
+        n['ao_pv'].hide()
 
         n['end_pv'] = mx.create_node(mx.tJoint, parent=n['ao_pv'], name='end_' + n_limb + '_PV_auto' + n_end)
         n['end_pv']['ty'] = 1
