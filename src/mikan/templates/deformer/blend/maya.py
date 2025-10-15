@@ -433,22 +433,32 @@ class Deformer(mk.Deformer):
         shp = mx.Node(fn.getInputGeometry()[0])
         count = Deformer.get_shape_components_size(shp)
 
+        delta = Deformer.get_delta(bs, index)
+
+        # compute absolute shape
         if reference:
             fn = om.MFnMesh(shp.object())
-            points = fn.getPoints()
+            points = fn.getPoints(mx.sObject)
 
             wm = []
             for pt in points:
                 wm += mx.Vector(pt)
+
+            d = delta.get(1, [])
+            if 1 in delta:
+                d = delta[1]
+
+            for cp, pt in d:
+                wm[cp * 3:cp * 3 + 3] = mx.Vector(pt) + mx.Vector(points[cp])
+
             return {1.0: WeightMap(wm)}
 
-        maps = Deformer.get_delta(bs, index)
+        # serialize point positions
+        maps = {}
 
-        for k in list(maps):
-            delta = maps[k]
+        for k, d in delta.items():
             wm = [0.0] * count * 3
-
-            for cp, pt in delta:
+            for cp, pt in d:
                 wm[cp * 3:cp * 3 + 3] = pt
 
             maps[k] = WeightMap(wm)
