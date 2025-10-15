@@ -847,7 +847,7 @@ class Control(object):
         i = get_next_available(plug)
         plug[i].connect(grp.node.gem_id)
 
-        if not isinstance(grp.node.get_parent(), kl.Node):
+        if isinstance(grp.node.get_parent(), kl.RootNode):
             grp.node.set_parent(node)
 
     def connect_showhide(self, grp):
