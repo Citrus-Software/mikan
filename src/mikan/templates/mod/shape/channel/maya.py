@@ -70,7 +70,9 @@ class Mod(mk.Mod):
 
         # cleanup rules
         shapes = self.data['shapes']
+
         if isinstance(shapes, list):
+            # convert to dict
             _shapes = ordered_dict()
             for shp in shapes:
                 if isinstance(shp, dict):
@@ -81,10 +83,13 @@ class Mod(mk.Mod):
             shapes = _shapes
 
         # add plugs to controller
+        channels = {}
+
         for shp_name, shp_data in iteritems(shapes):
-            if shp_data is None:
+            if not shp_data:
                 shp_data = {}
 
+            # get plug build data
             plug_default = shp_data.get('default', shp_data.get('dv'))
             plug_type = 'float'
             if isinstance(plug_default, bool):
@@ -96,22 +101,22 @@ class Mod(mk.Mod):
                 self.add_plug(ctrl, shp_name, type='separator')
                 continue
 
-            shp_divs = ['']
-            if 'div' in shp_data:
-                for _div in shp_data['div']:
-                    if _div:
-                        _div = '_{}'.format(_div)
-                    shp_divs.append(_div)
+            # update ctrl plug build data
+            _data = shp_data.get('driven', {})
+            if not isinstance(_data, dict):
+                self.log_warning('invalid data for driven shapes of "{}"'.format(shp_name))
+                shp_data['driven'] = _data = {}
 
-            # update ctrl plug data
-            for sfx in shp_divs:
-                for shp_driven, keys_data in iteritems(shp_data.get('driven', {shp_name: None})):
-                    shp_driven_sfx = shp_driven + sfx
+            shp_divs = self.get_divs(shp_data)
+
+            for shp_driven in _data:
+                for div in shp_divs:
+                    shp_driven_div = shp_driven + div
                     plug = None
-                    if shp_driven_sfx in plug_names:
+                    if shp_driven_div in plug_names:
                         for src in src_nodes:
-                            if shp_driven_sfx in src:
-                                plug = src[shp_driven_sfx]
+                            if shp_driven_div in src:
+                                plug = src[shp_driven_div]
                                 break
                     if plug is None:
                         continue
@@ -131,142 +136,149 @@ class Mod(mk.Mod):
                             except:
                                 pass
 
-            # sfx connect loop
-            for sfx in shp_divs:
-                shp_name_sfx = shp_name + sfx
+            # add channels div loop
+            for div in shp_divs:
+                shp_name_div = shp_name + div
 
                 # forced plugs
                 if shp_data.get('force'):
-                    self.add_plug(channel, shp_name_sfx, shp_name)
+                    channels[shp_name_div] = self.add_plug(channel, shp_name_div, shp_name)
 
-                # shape plugs
+                # direct shape plugs
                 if 'driven' not in shp_data:
-                    if shp_name_sfx not in plug_names:
+                    if shp_name_div not in plug_names:
                         continue
 
                     # add channel
-                    plug_chan = self.add_plug(channel, shp_name_sfx)
-
-                    if buffer[shp_name_sfx]['src'] is None:
-                        buffer[shp_name_sfx]['src'] = plug_chan
-                    else:
-                        buffer[shp_name_sfx]['src'] = connect_add(buffer[shp_name_sfx]['src'], plug_chan)
-
-                    # connect ctrl to channel
-                    plug_ctrl = self.add_plug(ctrl, shp_name_sfx, type=plug_type, default=plug_default, enum=enum)
+                    plug_chan = self.add_plug(channel, shp_name_div)
+                    plug_ctrl = self.add_plug(ctrl, shp_name_div, type=plug_type, default=plug_default, enum=enum)
                     connect_blend_weighted(plug_ctrl, plug_chan)
+
+                    channels[shp_name_div] = plug_chan
 
                 # driven shape plugs
                 if 'driven' in shp_data:
-
-                    plug_chan = None
-                    for shp_driven, keys_data in iteritems(shp_data['driven']):
-                        shp_driven_sfx = shp_driven + sfx
-                        if shp_driven_sfx not in plug_names:
+                    for shp_driven in shp_data['driven']:
+                        shp_driven_div = shp_driven + div
+                        if shp_driven_div not in plug_names:
                             continue
 
                         # add channel
-                        plug_chan = self.add_plug(channel, shp_name_sfx)
-
-                        # build driven key
-                        an_pre = 'linear'
-                        an_post = 'linear'
-                        key_style = None
-
-                        keys = {0: 0}
-                        if isinstance(keys_data, dict):
-                            if 'pre' in keys_data:
-                                an_pre = keys_data['pre']
-                            if 'post' in keys_data:
-                                an_post = keys_data['post']
-                            if 'tan' in keys_data:
-                                key_style = keys_data['tan']
-                            keys.update(keys_data)
-                        else:
-                            keys[float(keys_data)] = 1
-
-                        floats = [key for key in keys if isinstance(key, (int, float))]
-                        fmin = min(floats)
-                        fmax = max(floats)
-                        if fmin == 0:
-                            an_pre = 'constant'
-                        elif fmax == 0:
-                            an_post = 'constant'
-
-                        driven_curve = connect_driven_curve(plug_chan, keys=keys, pre=an_pre, post=an_post, key_style=key_style)
-
-                        if buffer[shp_driven_sfx]['src'] is None:
-                            buffer[shp_driven_sfx]['src'] = driven_curve['output']
-                        else:
-                            buffer[shp_driven_sfx]['src'] = connect_add(buffer[shp_driven_sfx]['src'], driven_curve['output'])
-
-                    # connect ctrl to channel
-                    if plug_chan is not None:
-                        plug_ctrl = self.add_plug(ctrl, shp_name_sfx, type=plug_type, default=plug_default, enum=enum)
+                        plug_chan = self.add_plug(channel, shp_name_div)
+                        plug_ctrl = self.add_plug(ctrl, shp_name_div, type=plug_type, default=plug_default, enum=enum)
                         connect_blend_weighted(plug_ctrl, plug_chan)
 
+                        channels[shp_name_div] = plug_chan
+                        break
+
                 # set controller limits
-                if shp_name_sfx in ctrl:
+                if shp_name_div in ctrl:
                     if 'min' in shp_data:
-                        mc.addAttr(ctrl[shp_name_sfx].path(), e=1, min=shp_data['min'])
+                        mc.addAttr(ctrl[shp_name_div].path(), e=1, min=shp_data['min'])
                     if 'max' in shp_data:
-                        mc.addAttr(ctrl[shp_name_sfx].path(), e=1, max=shp_data['max'])
+                        mc.addAttr(ctrl[shp_name_div].path(), e=1, max=shp_data['max'])
 
-        # combos
-        cmb_buffer = {}
+        # build shape buffer
+        for shp_name, shp_data in iteritems(shapes):
+            if not shp_data:
+                shp_data = {}
 
-        cmb_data = self.data.get('combos', self.data.get('combo', {}))
-        for cmb_name, data in iteritems(cmb_data):
-            cmb_drivers = data.get('drivers', {})
-            if not cmb_drivers:
-                continue
+            # check for weights
+            weight_data = shp_data.get('weight', {})
+            if not isinstance(weight_data, dict):
+                self.log_warning('invalid weight data for channel "{}"'.format(shp_name))
 
-            do_src = 'src' in data
+            # connect loop
+            shp_divs = self.get_divs(shp_data)
 
-            for sfx in data.get('div', ['']):
-                if sfx:
-                    sfx = '_' + sfx
-
-                cmb_name_sfx = cmb_name + sfx
-
-                if cmb_name_sfx not in buffer:  # or not buffer[cmb_name_sfx]['src']:
+            for div in shp_divs:
+                shp_name_div = shp_name + div
+                if shp_name_div not in channels:
                     continue
 
-                for cmb_driver, drv_data in iteritems(cmb_drivers):
-                    cmb_driver_sfx = cmb_driver + sfx
-                    if cmb_driver_sfx not in buffer or not buffer[cmb_driver_sfx]['src']:
+                plug_chan = channels[shp_name_div]
+
+                # connect weight
+                for weight_shape, keys_data in iteritems(weight_data):
+                    weight_shape_div = weight_shape + div
+                    if weight_shape_div not in channels:
                         continue
 
-                subs = []
-                ans = []
+                    kw = self.build_keys_kw(keys_data, mode='weight')
+                    driven_curve = connect_driven_curve(channels[weight_shape_div], **kw)
 
+                    plug_chan = connect_mult(plug_chan, driven_curve['output'])
+
+                # connect channel to shapes
+                if 'driven' in shp_data:
+                    # connect driven shape
+                    for shp_driven, keys_data in iteritems(shp_data['driven']):
+                        shp_driven_div = shp_driven + div
+                        if shp_driven_div not in plug_names:
+                            continue
+
+                        # build driven key
+                        kw = self.build_keys_kw(keys_data)
+                        driven_curve = connect_driven_curve(plug_chan, **kw)
+
+                        if buffer[shp_driven_div]['src'] is None:
+                            buffer[shp_driven_div]['src'] = driven_curve['output']
+                        else:
+                            buffer[shp_driven_div]['src'] = connect_add(buffer[shp_driven_div]['src'], driven_curve['output'])
+
+                else:
+                    # direct connect shape
+                    if shp_name_div not in plug_names:
+                        continue
+
+                    if buffer[shp_name_div]['src'] is None:
+                        buffer[shp_name_div]['src'] = plug_chan
+                    else:
+                        buffer[shp_name_div]['src'] = connect_add(buffer[shp_name_div]['src'], plug_chan)
+
+        # combination shapes
+        comb_buffer = {}
+
+        comb_data = self.data.get('combos', self.data.get('combo', {}))
+        if not isinstance(comb_data, dict):
+            self.log_warning('invalid combo data')
+            comb_data = {}
+
+        for comb_shape, data in iteritems(comb_data):
+            comb_drivers = data.get('drivers', {})
+            if not comb_drivers:
+                continue
+
+            # do_src = 'src' in data
+
+            for div in self.get_divs(data, strict=True):
+
+                # get target shape
+                comb_shape_div = comb_shape + div
+
+                if comb_shape_div not in buffer:  # or not buffer[comb_shape_div]['src']:
+                    continue
+
+                for comb_driver in comb_drivers:
+                    comb_driver_div = comb_driver + div
+                    if comb_driver_div not in buffer or not buffer[comb_driver_div]['src']:
+                        continue
+
+                coeffs = {}
                 i = 0
-                for cmb_driver, keys_data in iteritems(cmb_drivers):
-                    cmb_driver_sfx = cmb_driver + sfx
 
-                    v0 = buffer[cmb_driver_sfx]['src']
-                    if cmb_driver_sfx in cmb_buffer:
-                        v0 = cmb_buffer[cmb_driver_sfx]
+                for comb_driver, keys_data in iteritems(comb_drivers):
+                    comb_driver_div = comb_driver + div
 
-                    sub = connect_mult(0, -1)
-                    sub = sub.node()['input1']
-                    subs.append(sub)
+                    v0 = buffer[comb_driver_div]['src']
+                    if comb_driver_div in comb_buffer:
+                        v0 = comb_buffer[comb_driver_div]
 
                     # drive combo
-                    vmax = 0.
-                    fmax = 0.
+                    kw = self.build_keys_kw(keys_data, mode='combo')
 
-                    keys = {0: 0}
-                    if isinstance(keys_data, dict):
-                        if 'pre' in keys_data:
-                            del (keys_data['pre'])
-                        if 'post' in keys_data:
-                            del (keys_data['post'])
-                        keys.update(keys_data)
-                    else:
-                        keys[float(keys_data)] = 1
-
-                    for key, key_data in iteritems(keys):
+                    vmax = fmax = 0.0  # normalize drivers
+                    for key, key_data in iteritems(kw['keys']):
                         if isinstance(key_data, dict):
                             v = key_data['v']
                         else:
@@ -275,112 +287,73 @@ class Mod(mk.Mod):
                             vmax = v
                             fmax = key
 
-                    _pre = None
-                    _post = None
-                    if min(keys) >= 0:
-                        _pre = 'constant'
-                    elif max(keys) <= 0:
-                        _post = 'constant'
+                    driven_curve = connect_driven_curve(v0, **kw)
 
-                    driven_curve = connect_driven_curve(v0, sub, keys, pre=_pre, post=_post)
-                    ans.append(driven_curve['output'])
-
-                    # maximum at
-                    f = float(fmax) / float(vmax)
+                    # normalized driver weight
+                    driven_normed = driven_curve['output']
+                    f = float(vmax) / float(fmax)
                     if f != 1:
-                        mul = connect_mult(driven_curve['output'], f)
-                        sub.disconnect(destination=False)
-                        mul >> sub
-                        subs[-1] = mul.node()['input1']
+                        driven_normed = connect_mult(driven_curve['output'], f)
+                    coeffs[comb_driver_div] = f
 
                     # connect min
-                    if i > 0:
-                        _if = connect_expr('b>=a ? a : b', a=ans[-1], b=ans[-2])
-                        ans[-1] = _if
-                        for sub in subs:
-                            _if >> sub
+                    if i == 0:
+                        driven_min = driven_normed
+                    else:
+                        driven_min = connect_expr('min(a, b)', a=driven_min, b=driven_normed)
                     i += 1
 
-                    # remove delta from driver
-                    buffer[cmb_driver_sfx]['add'].append(sub.node()['output'])
+                for comb_driver in comb_drivers:
+                    comb_driver_div = comb_driver + div
 
-                    if do_src:
-                        # je sais plus trop à quoi ça sert ça. ça devait être le mode recursif on/off
-                        cmb_buffer[cmb_driver_sfx] = buffer[cmb_driver_sfx]['add'][-1]
+                    f = coeffs[comb_driver_div]
+                    if f != 1:
+                        sub = connect_mult(driven_min, -1 / f)
+                    else:
+                        sub = connect_mult(driven_min, -1)
+
+                    # remove delta from driver
+                    buffer[comb_driver_div]['add'].append(sub)
+
+                    # TODO: réintégrer le mode récursif. mais au final je pense que ça ne devrait pas servir
+                    # if do_src:
+                    #     comb_buffer[comb_driver_div] = sub
 
                 # add delta to target
-                buffer[cmb_name_sfx]['add'].append(ans[-1])
-                cmb_buffer[cmb_name_sfx] = ans[-1]
+                buffer[comb_shape_div]['add'].append(driven_min)
+                comb_buffer[comb_shape_div] = driven_min
 
-        # # weight
-        # wt_data = {}
-        # if 'weights' in self.data:
-        #     wt_data = self.data['weights']
-        # if 'weight' in self.data:
-        #     wt_data = self.data['weight']
-        #
-        # for wt_name, data in iteritems(wt_data):
-        #
-        #     # read description
-        #     do_rate = True
-        #     do_key = False
-        #     try:
-        #         rate = float(rule[1][1])
-        #     except:
-        #         keys = self.parse_keys(rule[1][1].split(','))
-        #         do_key = True
-        #
-        #     try:
-        #         src = buffer[rule[1][0]]['src']
-        #         vs = [buffer[x]['src'] for x in rule[1][2].split(',')]
-        #     except:
-        #         do_rate = False
-        #
-        #     # connect
-        #     if do_rate:
-        #         driven_curve = DrivenCurveFloatNode.create(chan, '_curve')
-        #         driven_curve.pre_cycle_mode.set_int(0)
-        #         driven_curve.post_cycle_mode.set_int(0)
-        #
-        #         curve_keys = [[1, 0], [rate, 10]]
-        #         if do_key:
-        #             curve_keys = []
-        #             for k in keys:
-        #                 curve_keys.append((k['v'], k['f']))
-        #                 # keyTangent(an, lock=False)
-        #                 # if k.has_key('itt'): keyTangent(an, f=[k['f']], itt=k['itt'], ott=k['ott'])
-        #                 # if k.has_key('ia'): keyTangent(an, f=[k['f']], inAngle=k['ia'], outAngle=k['oa'])
-        #
-        #         driven_curve.curve.set_value(animcurves.create_curve_Float_linear(curve_keys))
-        #         driven_curve.driver.connect(src, True)
-        #
-        #         for attr in rule[1][2].split(','):
-        #             buffer[attr]['mult'].append(driven_curve.result)
-        #
-        # # clamp
-        # cp_data = {}
-        # if 'clamps' in self.data:
-        #     cp_data = self.data['clamps']
-        # if 'clamp' in self.data:
-        #     cp_data = self.data['clamp']
-        #
-        # for cp_name, data in iteritems(cp_data):
-        #
-        #     # read description
-        #     do_clamp = True
-        #     try:
-        #         val = float(rule[1][1])
-        #         [buffer[x]['src'] for x in rule[1][0].split(',')]
-        #     except:
-        #         do_clamp = False
-        #
-        #     # connect
-        #     if do_clamp:
-        #         for attr in rule[1][0].split(','):
-        #             if val < 0:
-        #                 buffer[attr]['clamp'][0] = val
-        #             elif val > 0:
-        #                 buffer[attr]['clamp'][1] = val
+        # weighted shapes
+        weight_data = self.data.get('weights', self.data.get('weight', {}))
+
+        for weight_shape, data in iteritems(weight_data):
+
+            for div in self.get_divs(data, strict=True):
+                weight_shape_div = weight_shape + div
+
+                if weight_shape_div not in buffer:
+                    self.log_warning('invalid weight entry: target shape not available')
+                    continue
+                if not isinstance(data, dict):
+                    self.log_warning('invalid weight entry: value error')
+                    continue
+
+                # read description
+                weight_drivers = data.get('drivers', {})
+                if not weight_drivers:
+                    continue
+
+                for weight_driver in weight_drivers:
+                    weight_driver_div = weight_driver + div
+                    if weight_driver_div not in buffer:
+                        continue
+
+                    kw = self.build_keys_kw(weight_drivers[weight_driver], mode='weight')
+                    driven_curve = connect_driven_curve(buffer[weight_driver_div].get('src'), **kw)
+
+                    buffer[weight_shape_div]['mult'].append(driven_curve['output'])
+
+        # TODO: clamp ?
 
         # connect adds
         for shp_name in buffer:
@@ -405,10 +378,10 @@ class Mod(mk.Mod):
                     buffer[shp_name]['src'] = _op
 
         # connect clamps
-        for shp_name in buffer:
-            if buffer[shp_name]['src'] is not None and buffer[shp_name]['clamp']:
-                # clamp = ClampFloat.create(chan, '_clamp')
-                pass
+        # for shp_name in buffer:
+        #     if buffer[shp_name]['src'] is not None and buffer[shp_name]['clamp']:
+        #         # clamp = ClampFloat.create(chan, '_clamp')
+        #         pass
 
         # connect to src
         for shp_name in buffer:
@@ -438,3 +411,67 @@ class Mod(mk.Mod):
         'enum': mx.Enum,
         'separator': mx.Divider
     }
+
+    @staticmethod
+    def get_divs(data, strict=False):
+        divs = ['']
+        if 'div' not in data:
+            return divs
+
+        if strict:
+            del divs[:]
+
+        if not isinstance(data['div'], (list, tuple)):
+            return divs
+
+        for _div in data['div']:
+            if _div:
+                _div = '_{}'.format(_div)
+            divs.append(_div)
+
+        return divs
+
+    @staticmethod
+    def build_keys_kw(keys_data, mode=None):
+
+        kw = {
+            'keys': {0: 0},
+            'pre': 'linear',
+            'post': 'linear',
+            'key_style': None,
+        }
+
+        if mode == 'weight':
+            kw['keys'] = {0: 1}
+
+        # build values
+        if isinstance(keys_data, dict):
+            for k in keys_data:
+                if isinstance(k, (float, int)):
+                    kw['keys'][k] = keys_data[k]
+
+        elif isinstance(keys_data, (float, int)):
+            if mode == 'weight':
+                kw['keys'][1] = float(keys_data)
+            else:
+                kw['keys'][float(keys_data)] = 1
+
+        # update infinities
+        if mode is None:
+            fmin = min(kw['keys'])
+            fmax = max(kw['keys'])
+            if fmin == 0:
+                kw['pre'] = 'constant'
+            elif fmax == 0:
+                kw['post'] = 'constant'
+
+        # overrides
+        if isinstance(keys_data, dict):
+            if 'pre' in keys_data:
+                kw['pre'] = keys_data['pre']
+            if 'post' in keys_data:
+                kw['post'] = keys_data['post']
+            if 'tan' in keys_data:
+                kw['key_style'] = keys_data['tan']
+
+        return kw
