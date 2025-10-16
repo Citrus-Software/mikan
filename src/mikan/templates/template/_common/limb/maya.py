@@ -843,6 +843,8 @@ class Template(mk.Template):
         n['sk_clav'] = duplicate_joint(n['j_clav'], p=n['inf_clav'], n='sk_' + n_clav + n_end)
         n['end_clav'] = duplicate_joint(n['tip_clav'], p=n['sk_clav'], n='end_' + n_clav + n_end)
 
+        n['c_clav']['ssc'] = False
+        n['inf_clav']['ssc'] = False
         n['sk_clav']['ssc'] = False
 
         # connect inf clav
