@@ -41,8 +41,18 @@ class SafeWidget(QWidget):
 
     def safe_position(self):
         app = QtWidgets.QApplication.instance()
-        res = app.desktop().screenGeometry()
-        w, h = res.width(), res.height()
+
+        # PySide2/PySide6 compatibility
+        try:
+            screen_geometry = app.desktop().screenGeometry()
+        except AttributeError:
+            screen = app.primaryScreen()
+            if screen:
+                screen_geometry = screen.geometry()
+            else:
+                screen_geometry = QtCore.QRect(0, 0, 1920, 1080)
+
+        w, h = screen_geometry.width(), screen_geometry.height()
 
         pos = self.mapToGlobal(self.pos())
         x, y = pos.x(), pos.y()

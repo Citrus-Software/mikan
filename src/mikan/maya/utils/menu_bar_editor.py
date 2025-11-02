@@ -34,12 +34,12 @@ class MenuBarEditorUI(MayaWindow):
         self.entries = {}
 
         main_layout = QVBoxLayout(self)
-        main_layout.setMargin(2)
+        main_layout.setContentsMargins(2, 2, 2, 2)
         main_layout.setSpacing(2)
 
         self.entry_container = QVBoxLayout()
         self.entry_container.setSpacing(2)
-        self.entry_container.setMargin(0)
+        self.entry_container.setContentsMargins(0, 0, 0, 0)
 
         scroll = QScrollArea()
         scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -119,7 +119,7 @@ class MenuBarEditorUI(MayaWindow):
         layout.addWidget(btn_delete, 1)
 
         layout.setSpacing(2)
-        layout.setMargin(0)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         uniform_height = 24
         for w in (edit_name, edit_path, btn_delete, btn_browse):

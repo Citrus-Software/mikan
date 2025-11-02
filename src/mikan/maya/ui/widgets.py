@@ -473,6 +473,14 @@ def find_script_editor_widget():
 
 
 def install_maya_syntax_highlighter():
+    try:
+        import PySide6
+    except ImportError:
+        pass
+    else:
+        log.warning('Cannot install syntax highlighter: Maya 2026 script editor API has changed')
+        return
+
     script_editor = find_script_editor_widget()
     if not script_editor:
         return
