@@ -66,11 +66,11 @@ class Deformer(mk.Deformer):
         oid = int(fn.indexForOutputShape(self.geometry.object()))
 
         for t in ids:
-            w = round(self.node['w'][t].read(), 4)
+            w = round(self.node['weight'][t].read(), 4)
             if w != 0:
                 self.data['weights'][t] = w
 
-            name = self.node._fn.plugsAlias(self.node['w'][t].plug())
+            name = self.node._fn.plugsAlias(self.node['weight'][t].plug())
 
             tgt = None
             for i in self.node['it'][oid]['itg'][t]['iti'].array_indices:
@@ -265,7 +265,7 @@ class Deformer(mk.Deformer):
             Deformer.add_target(self.node, index=t, weight=w, target=target, alias=name)
 
             if isinstance(w_in, mx.Plug):
-                w_in >> self.node['w'][t]
+                w_in >> self.node['weight'][t]
 
         # update i/o
         self.reorder()
@@ -330,7 +330,7 @@ class Deformer(mk.Deformer):
             hook = hook.split('.')
 
             if re_is_int.match(hook[1]):
-                return bs['w'][int(hook[1])]
+                return bs['weight'][int(hook[1])]
 
             else:
                 fn = oma.MFnGeometryFilter(bs.object())
@@ -340,7 +340,7 @@ class Deformer(mk.Deformer):
                 ids = bs['it'][oid]['itg'].array_indices
 
                 for t in ids:
-                    plug = bs['w'][t]
+                    plug = bs['weight'][t]
                     name = bs._fn.plugsAlias(plug.plug())
                     if name == hook[1]:
                         return plug
@@ -351,13 +351,13 @@ class Deformer(mk.Deformer):
         # get next index
         if index is None:
             index = 0
-            _indices = bs['w'].array_indices
+            _indices = bs['weight'].array_indices
             if _indices:
                 index = _indices[-1] + 1
 
         # add empty target
         with mx.DGModifier() as md:
-            md.set_attr(bs['w'][index], weight)
+            md.set_attr(bs['weight'][index], weight)
         mel.eval('setAttr "{}" -type "pointArray" 0;'.format(bs['it'][0]['itg'][index]['iti'][6000]['ipt'].path()))
         mel.eval('setAttr "{}" -type "componentList";'.format(bs['it'][0]['itg'][index]['iti'][6000]['ict'].path()))
         # mc.blendShape(str(bs), edit=True, resetTargetDelta=(0, index))
@@ -378,7 +378,7 @@ class Deformer(mk.Deformer):
         # alias?
         if alias:
             alias = str(alias)
-            mc.aliasAttr(alias, bs['w'][index].path())
+            mc.aliasAttr(alias, bs['weight'][index].path())
 
         return index
 
@@ -703,7 +703,7 @@ class Deformer(mk.Deformer):
 
         for t in bs['parentDirectory'].array_indices:
             if bs['parentDirectory'][t].read() == gid:
-                plug = bs['w'][t]
+                plug = bs['weight'][t]
                 plugs.append(plug)
 
         return plugs
