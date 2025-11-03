@@ -310,15 +310,12 @@ class MikanUI(MayaDockMixin):
 
     @classmethod
     def fix_path(cls, path):
-        path = os.path.relpath(path)
-
         for r in cls.PATHS:
             re = '$' + str(r).strip()
             if re in path:
                 path = path.replace(re, cls.PATHS[r])
 
-        path = path.replace('\\', '/')
-
+        path = os.path.realpath(path)
         return path
 
     @staticmethod
