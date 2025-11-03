@@ -257,6 +257,8 @@ class Template(mk.Template):
 
                 if self.get_opt('do_ctrl'):
                     self.set_id(n['c'], 'ctrls.{}'.format(i))
+                else:
+                    self.set_id(n['c'], 'nodes.{}'.format(i))
 
                 if do_skin:
                     self.set_id(n['sk'], 'skin.{}'.format(i))
