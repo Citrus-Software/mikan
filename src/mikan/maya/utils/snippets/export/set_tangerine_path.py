@@ -1,7 +1,7 @@
 # coding: utf-8
 
 from mikan.core.prefs import UserPrefs
-from PySide2 import QtWidgets, QtCore
+from mikan.vendor.Qt import QtWidgets, QtCore
 
 from mikan.maya.ui.widgets import MayaWindow
 
