@@ -2263,8 +2263,11 @@ class TemplateTreeWidget(QTreeWidget):
             text = item.text(0)
             icon = item.icon(0).pixmap(16, 16)
 
-            width = icon.width() + metrics.width(text) + 4
-            height = max(icon.height(), metrics.height()) - 2  # + 4
+            try:
+                width = metrics.horizontalAdvance(text) + 24
+            except AttributeError:
+                width = metrics.width(text) + 4
+            height = max(icon.height(), metrics.height())
 
             pixmap = QtGui.QPixmap(width, height)
             pixmap.fill(QtCore.Qt.transparent)
@@ -2273,7 +2276,7 @@ class TemplateTreeWidget(QTreeWidget):
             painter.drawPixmap(0, 0, icon)
             painter.setFont(font)
             painter.setPen(QtCore.Qt.white)
-            painter.drawText(icon.width() + 4, height // 2 + metrics.ascent() // 2, text)
+            painter.drawText(icon.width() + 2, height // 2 + metrics.ascent() // 2.5, text)
             painter.end()
             drag.setPixmap(pixmap)
 
