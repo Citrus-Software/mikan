@@ -1,5 +1,8 @@
 rig.rechain:
-  chain:
-    - <fk1>::<node>
-    - <fk2>::<node>
-    - ...
+  # create hierarchy constraints between siblings A, B and C
+  ctrls:
+    - A::skin.0
+    - B::skin.0
+  nodes:
+    - B::roots.0
+    - C::roots.0
