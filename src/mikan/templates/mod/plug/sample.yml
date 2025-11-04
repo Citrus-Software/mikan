@@ -1,10 +1,12 @@
 plug:
   node: <id>::<node>
-  plug_name:
+  t.x: 1.5
+  <plug_name>:
     type: bool
     set: on
     keyable: on
-  plug_name2:
+  <plug_name2>:
+    k: on
     min: 0
     max: 1
-    k: on
+  <plug_name3>: {k: on, set: 1.0}

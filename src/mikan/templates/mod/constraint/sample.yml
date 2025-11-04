@@ -4,6 +4,7 @@ constraint:
   target: <target>::<node>
   node: <id>::<node>
 
+  # optional
   weights: [1]
   maintain_offset: on
 

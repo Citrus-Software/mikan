@@ -5,6 +5,8 @@ hook:
     - ...
   targets:
     - <target>::<node>
+
+  # optional
   weights: [1]
-  group: <on|off>  # create group to be be hooked?
-  name: ...  # -> mod id
+  group: <off|on>  # create group to be hooked? default: off
+  name: <name>

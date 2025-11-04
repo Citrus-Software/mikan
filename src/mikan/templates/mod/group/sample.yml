@@ -1,5 +1,6 @@
 group:
   nodes:
     - <id>:::ctrls
-  tag: vis.group  # <= tag spécifique qui permet d'activer le SHOW/HIDE sur le groupe aux controllers des doigts
-  name: group
+  tag: vis.<name>  # specific tag name used to activate SHOW/HIDE menu item
+
+  name: <name>

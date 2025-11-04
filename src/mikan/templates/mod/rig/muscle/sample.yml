@@ -5,4 +5,4 @@ rig.muscle:
   nodes:
     - <id>::roots.0
   orient: <on|off>  # default: on
-  name: ...
+  name: <name>

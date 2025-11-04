@@ -1,5 +1,5 @@
 curve:
-  name: ...
+  name: <name>
   parent: <parent>::<node>
   nodes:
     - <id1>::<node>

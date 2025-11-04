@@ -2,7 +2,7 @@ driver.angle:
   name: test
   angle_ref: <id1>::<node>
 
-  angle_parent: <id2>::<node>  # OPTIONNAL
+  angle_parent: <id2>::<node>  # optional
   space_ref: ::hook
 
   targets:

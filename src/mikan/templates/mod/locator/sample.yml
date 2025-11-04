@@ -1,4 +1,4 @@
 locator:
   node: <id>::<node>  # node to copy
   parent: <parent>::<node>
-  name: ...  # node name/mod id
+  name: <name>  # id
