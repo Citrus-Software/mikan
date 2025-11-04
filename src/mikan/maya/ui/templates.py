@@ -266,16 +266,20 @@ class TemplateManager(QMainWindow, OptVarSettings):
     def tab_changed(self, tab):
         if tab == 0:
             # add tab
+            self.tree.current_tab = 0
             self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
             self.tree.BRUSH_SELECTED = self.tree.BRUSH_SELECTED_ADD
 
+            # hooks
             self.update_hooks()
 
         else:
             # other tabs
+            self.tree.current_tab = 1
             self.tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
             self.tree.BRUSH_SELECTED = self.tree.BRUSH_SELECTED_EDIT
 
+            # hooks
             items = self.tree.get_selected_items()
             for item in items:
                 if isinstance(item, TemplateHook):
@@ -1879,7 +1883,6 @@ class TemplateTreeWidget(QTreeWidget):
         self._callbacks = {}
         self.tree_items = {}
 
-        # self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setExpandsOnDoubleClick(False)
         self.doubleClicked.connect(self.select)
 
@@ -1899,6 +1902,12 @@ class TemplateTreeWidget(QTreeWidget):
 
         self.verticalScrollBar().valueChanged.connect(self.force_update)
         self.horizontalScrollBar().valueChanged.connect(self.force_update)
+
+        # drag'n drop
+        self.setAcceptDrops(True)
+        self.current_tab = 0
+        self._middle_pressed_pos = None
+        self._dragged_item = None
 
     def drawRow(self, painter, option, index):
         item = self.itemFromIndex(index)
@@ -2217,6 +2226,111 @@ class TemplateTreeWidget(QTreeWidget):
         if modifiers == Qt.ShiftModifier:
             for child in self.get_children(item):
                 self.collapseItem(child)
+
+    # drag'n drop overrides
+    def mousePressEvent(self, event):
+        if self.current_tab == 0:
+            self._dragged_item = None
+            if event.button() == Qt.MiddleButton:
+                self._middle_pressed_pos = event.pos()
+            if event.button() in {Qt.MiddleButton, Qt.RightButton}:
+                return
+        super(TemplateTreeWidget, self).mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self._middle_pressed_pos is None:
+            super(TemplateTreeWidget, self).mouseMoveEvent(event)
+            return
+
+        # drag trigger threshold
+        if (event.pos() - self._middle_pressed_pos).manhattanLength() < QApplication.startDragDistance():
+            return
+
+        # get item under mouse
+        item = self.itemAt(self._middle_pressed_pos)
+        if item and item.draggable:
+            self._dragged_item = item
+
+            # build drag command
+            drag = QtGui.QDrag(self)
+            mime = QtCore.QMimeData()
+            mime.setText(item.text(0))
+            drag.setMimeData(mime)
+
+            # paint drag icon
+            font = self.font()
+            metrics = QtGui.QFontMetrics(font)
+            text = item.text(0)
+            icon = item.icon(0).pixmap(16, 16)
+
+            width = icon.width() + metrics.width(text) + 4
+            height = max(icon.height(), metrics.height()) - 2  # + 4
+
+            pixmap = QtGui.QPixmap(width, height)
+            pixmap.fill(QtCore.Qt.transparent)
+
+            painter = QtGui.QPainter(pixmap)
+            painter.drawPixmap(0, 0, icon)
+            painter.setFont(font)
+            painter.setPen(QtCore.Qt.white)
+            painter.drawText(icon.width() + 4, height // 2 + metrics.ascent() // 2, text)
+            painter.end()
+            drag.setPixmap(pixmap)
+
+            # begin drag
+            drag.exec_(Qt.MoveAction)
+
+        # reset
+        self._middle_pressed_pos = None
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MiddleButton:
+            self._middle_pressed_pos = None
+        super(TemplateTreeWidget, self).mouseReleaseEvent(event)
+
+    def dragEnterEvent(self, event):
+        if event.source() == self:
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        if event.source() == self:
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        target_item = self.itemAt(event.pos())
+        source_item = self._dragged_item
+
+        if not source_item or not target_item:
+            event.ignore()
+            return
+
+        if not isinstance(target_item, TemplateTreeItem):
+            event.ignore()
+            return
+
+        if not target_item.draggable and not isinstance(target_item.item, (TemplateHook, Asset)):
+            event.ignore()
+            return
+
+        source_node = None
+        target_node = None
+        if source_item:
+            source_node = source_item.item.node
+        if target_item:
+            target_node = target_item.item.node
+            if isinstance(target_item.item, Asset):
+                target_node = target_item.item.get_template_root()
+
+        # parent nodes in maya
+        if source_node != target_node and source_node.parent() != target_node:
+            mc.parent(str(source_node), str(target_node))
+            event.accept()
+        else:
+            event.ignore()
 
     # API callbacks ----------------------------------------------------------------------------------------------------
     def attach_item(self, tree_item, do_parent=True):
@@ -2821,6 +2935,12 @@ class TemplateTreeItem(QTreeWidgetItem):
         self.ref = False
         if isinstance(item, (Asset, Helper, Template, DeformerGroup)):
             self.ref = item.node.is_referenced()
+
+        self.draggable = False
+        if isinstance(item, (Template, DeformerGroup)):
+            self.draggable = True
+        elif isinstance(item, Helper) and not item.is_template():
+            self.draggable = True
 
         if item is not None:
             node = item.node
