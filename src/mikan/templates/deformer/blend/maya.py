@@ -3,6 +3,7 @@
 from six.moves import range
 from six import string_types, iteritems
 
+import gemini.core
 from mikan.maya import om, oma, om1, oma1, mel
 from mikan.maya import cmds as mc
 import mikan.maya.cmdx as mx
@@ -392,6 +393,15 @@ class Deformer(mk.Deformer):
         if not isinstance(bs, mx.Node):
             bs = mx.encode(str(bs))
 
+        dim = 1
+        fn = oma.MFnGeometryFilter(bs.object())
+        shp = mx.Node(fn.getInputGeometry()[0])
+        if shp.is_a(mx.tLattice):
+            dim = 3
+            dim_u = shp['uDivisions'].read()
+            dim_t = shp['tDivisions'].read()
+            dim_s = shp['sDivisions'].read()
+
         target_plug = bs['inputTarget'][0]['inputTargetGroup']
         if index not in target_plug.array_indices:
             log.error('{} has no target index {}'.format(bs, index))
@@ -408,14 +418,28 @@ class Deformer(mk.Deformer):
                 continue
             else:
                 ipt = target['inputPointsTarget']
-                ict = target['inputComponentsTarget']
-
                 points = om.MFnPointArrayData(ipt._mplug.asMObject())
                 points = [tuple(pt)[:3] for pt in points.array()]
+
+                ict = target['inputComponentsTarget']
                 cpts_data = om.MFnComponentListData(ict._mplug.asMObject())
                 cpts = []
-                for c in range(cpts_data.length()):
-                    cpts += om.MFnSingleIndexedComponent(cpts_data.get(c)).getElements()
+
+                if dim == 1:
+                    for c in range(cpts_data.length()):
+                        _cpts = om.MFnSingleIndexedComponent(cpts_data.get(c))
+                        cpts += _cpts.getElements()
+
+                elif dim == 3:
+                    for c in range(cpts_data.length()):
+                        _cpts = om.MFnTripleIndexedComponent(cpts_data.get(c))
+                        for s, t, u in _cpts.getElements():
+                            i = ((t + dim_t * u) * dim_s) + s
+                            cpts.append(i)
+
+                else:
+                    raise RuntimeError('delta reader not supported yet')
+
                 k = j / 1000. - 5
                 maps[k] = zip(cpts, points)
 
