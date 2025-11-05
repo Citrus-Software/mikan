@@ -1078,18 +1078,38 @@ class ShapeAttributeEditor(QTreeWidget):
                 md.delete_attr(plug)
 
     def save_pose(self):
+        if not self.manager.group:
+            _msg = 'Group not set'
+            mc.inViewMessage(msg='Pose editor: <hl>' + _msg + '</hl>', pos='topCenter', fade=True)
+            log.warning(_msg)
+            return
+
+        if not self.manager.driver:
+            _msg = 'Driver not set'
+            mc.inViewMessage(msg='Pose editor: <hl>' + _msg + '</hl>', pos='topCenter', fade=True)
+            log.warning(_msg)
+            return
+
         items = self.selectedItems()
         if not items:
-            # find set channel
-            # or add pose?
-            # TODO: inview message
+            _msg = 'No channel selected'
+            mc.inViewMessage(msg='Pose editor: <hl>' + _msg + '</hl>', pos='topCenter', fade=True)
+            log.warning(_msg)
             return
 
         if len(items) > 1:
-            raise RuntimeError('too many channels selected')
+            _msg = 'Too many channels selected'
+            mc.inViewMessage(msg='Pose editor: <hl>' + _msg + '</hl>', pos='topCenter', fade=True)
+            log.warning(_msg)
+            return
+
         item = items[0]
+
         if item.blend:
-            raise RuntimeError('cannot save pose on sculpt attribute')
+            _msg = 'Cannot save pose on sculpt attribute'
+            mc.inViewMessage(msg='Pose editor: <hl>' + _msg + '</hl>', pos='topCenter', fade=True)
+            log.warning(_msg)
+            return
 
         driver = item.plug
         if driver.read() == 0:
@@ -1099,19 +1119,34 @@ class ShapeAttributeEditor(QTreeWidget):
         with BusyCursor():
             save_group_pose(self.manager.group, driver, decimals=self.manager.get_decimals())
 
+        _msg = '<span style="color:lime">Pose saved</span>: {} = {}'.format(driver.name(), driver.read())
+        mc.inViewMessage(msg=_msg, pos='topCenter', fade=True)
+
         # auto mod backup
         auto = bool(self.manager.chk_auto.checkState())
         if auto:
-            if not self.manager.driver or not self.manager.group:
-                return
-
             with BusyCursor():
                 export_plugs_to_mod(self.manager.driver)
                 export_driver_to_mod(self.manager.driver, self.manager.group, plugs=[driver.name(long=False)])
 
     def clear_pose(self):
+        if not self.manager.group:
+            _msg = 'Group not set'
+            mc.inViewMessage(msg='Pose editor: <hl>' + _msg + '</hl>', pos='topCenter', fade=True)
+            log.warning(_msg)
+            return
+
+        if not self.manager.driver:
+            _msg = 'Driver not set'
+            mc.inViewMessage(msg='Pose editor: <hl>' + _msg + '</hl>', pos='topCenter', fade=True)
+            log.warning(_msg)
+            return
+
         items = self.selectedItems()
         if not items:
+            _msg = 'No channel selected'
+            mc.inViewMessage(msg='Pose editor: <hl>' + _msg + '</hl>', pos='topCenter', fade=True)
+            log.warning(_msg)
             return
 
         plugs = []
@@ -1120,18 +1155,22 @@ class ShapeAttributeEditor(QTreeWidget):
                 continue
             plugs.append(item.plug)
 
+        names = []
+
         for plug in plugs:
             clear_plug_pose(plug, keep_blendshape=True)
 
             with mx.DGModifier() as md:
                 md.set_attr(plug, 0)
 
+            names.append(plug.name())
+
+        _msg = '<span style="color:lime">Pose cleared</span>: ' + ', '.join(names)
+        mc.inViewMessage(msg=_msg, pos='topCenter', fade=True)
+
         # auto mod cleanup
         auto = bool(self.manager.chk_clean.checkState())
         if auto:
-            if not self.manager.driver or not self.manager.group:
-                return
-
             with BusyCursor():
                 export_plugs_to_mod(self.manager.driver)
                 clear_driver_mod(self.manager.driver, plugs=plugs)
@@ -1139,7 +1178,11 @@ class ShapeAttributeEditor(QTreeWidget):
     def add_sculpt_target(self):
         items = self.selectedItems()
         if not items:
-            return
+            if not items:
+                _msg = 'No channel selected'
+                mc.inViewMessage(msg='Pose editor: <hl>' + _msg + '</hl>', pos='topCenter', fade=True)
+                log.warning(_msg)
+                return
 
         # find geometries
         geometries = []
