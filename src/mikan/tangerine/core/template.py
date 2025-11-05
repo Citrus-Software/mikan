@@ -1581,9 +1581,6 @@ class Template(abstract.Template):
     # grouping ---------------------------------------------------------------------------------------------------------
 
     def build_groups(self):
-        tpl_parent = self.get_parent()
-        group = self.get_opt('group')
-        self.branches = ['']
 
         # all group
         grp_all = Nodes.get_id('::group')
@@ -1610,22 +1607,24 @@ class Template(abstract.Template):
         if not grp_root:
             grp_root = Group.create(self.name)
 
+        grp_parent = grp_all
+
+        tpl_parent = self.get_parent()
         if tpl_parent:
             grp_parent_node = Nodes.get_id(f'{tpl_parent.name}::group')
             if grp_parent_node:
                 grp_parent = Group(grp_parent_node)
             else:
                 raise RuntimeError(f'unable to find group parent {tpl_parent.name} for {self}!')
-        else:
-            grp_parent = grp_all
 
         # override parent group
+        group = self.get_opt('group')
         if group:
             _group = group if group != 'all' else ''
             for grp_id in (f'{_group}::group', f'::groups.{group}'):
-                grp_group = Nodes.get_id(grp_id)
-                if grp_group:
-                    grp_group = Group(grp_group)
+                _group_node = Nodes.get_id(grp_id)
+                if _group_node:
+                    grp_group = Group(_group_node)
                     break
 
             else:  # new main group
@@ -1638,25 +1637,27 @@ class Template(abstract.Template):
                 grp_group.add_parent(grp_parent)
 
             grp_parent = grp_group
-            tpl_parent = Nodes.get_id(group)
-            if tpl_parent:
-                tpl_parent = Template(tpl_parent)
+            _tpl_node = Nodes.get_id(group)
+            if _tpl_node:
+                tpl_parent = Template(_tpl_node)
 
         # merge
         merge = self.get_opt('parent')
-        if grp_root != grp_parent:
-            if merge == 'parent':
-                grp_root.add_parent(grp_parent)
-            elif merge == 'merge up':
-                grp_parent.merge(grp_root)
-                grp_root = grp_parent
-            elif merge == 'merge down':
-                grp_parent.merge(grp_root)
-                grp_root = grp_parent
-                grp_root.node.gem_group.set_value(self.name)
-                grp_root.node.rename(f'grp_{self.name}')
+        merge_parent = None
+        if tpl_parent:
+            merge_parent = tpl_parent.get_opt('parent')
 
-        # branch sub groups
+        if merge_parent == 'merge down':
+            grp_root.merge(grp_parent)
+        else:
+            if grp_root != grp_parent:
+                if merge in {'parent', 'merge down'}:
+                    grp_root.add_parent(grp_parent)
+                elif merge == 'merge up':
+                    grp_parent.merge(grp_root)
+                    grp_root = grp_parent
+
+        # branch groups
         if tpl_parent:
             p_branches = tpl_parent.get_branch_ids()
 
@@ -1683,17 +1684,15 @@ class Template(abstract.Template):
                                 grp_parent_branch = Group(grp_parent_branch)
 
                                 # merge
-                                if merge == 'parent':
-                                    grp_root_branch.add_parent(grp_root)
-                                    grp_root_branch.add_parent(grp_parent_branch)
-                                elif merge == 'merge up':
-                                    grp_parent_branch.merge(grp_root_branch)
-                                    grp_root_branch = grp_parent_branch
-                                elif merge == 'merge down':
-                                    grp_parent_branch.merge(grp_root_branch)
-                                    grp_root_branch = grp_parent_branch
-                                    grp_root_branch.node.gem_group.set_value(self.name)
-                                    grp_root_branch.node.rename(f'grp_{self.name}')
+                                if merge_parent == 'merge down':
+                                    grp_root_branch.merge(grp_parent_branch)
+                                else:
+                                    if merge in {'parent', 'merge down'}:
+                                        grp_root_branch.add_parent(grp_root)
+                                        grp_root_branch.add_parent(grp_parent_branch)
+                                    elif merge == 'merge up':
+                                        grp_parent_branch.merge(grp_root_branch)
+                                        grp_root_branch = grp_parent_branch
 
                 if not grp_root_branch.get_parents():
                     grp_root_branch.add_parent(grp_root)
@@ -1738,14 +1737,13 @@ class Template(abstract.Template):
                                     Control.create(vis_node)
                                 Control(vis_node).connect_showhide(grp)
 
-            # sub ctrl groups
+            # controllers
             ctrl_tag = f'{self.name}{branch_id}::ctrls'
             nodes = Nodes.get_id(ctrl_tag)
             if not nodes:
                 continue
 
             # build mirror tables
-            # TODO: faire une vrai refacto pour ça, là c'est cracra (moins qu'avant mais quand même)
             sub_grps = {}
             for node in nodes:
                 gem_id = Nodes.get_node_id(node, '::ctrls')
