@@ -48,20 +48,33 @@ opts:
     value: body
 
   quad_type:
+    help: |
+      Quadruped leg articulation mode.
+       - down: The first bone aims at the effector, and IK is computed on the last two bones.
+       - up: IK is computed on the first two bones, and the last bone aims toward the hip.
     value: 0
     enum:
       0: down
       1: up
 
   clavicle:
+    help: Enables the clavicle rig.
     value: off
   clavicle_auto:
+    help: Enables automatic clavicle animation.
     value: off
   reverse_lock:
+    help: Enables a reverse foot-style locking system.
     value: on
   bank:
+    help: Enables banking control for the reverse foot.
     value: off
   effector_plane:
+    help: |
+      Orientation vector used to auto-orient the foot joint chain.
+       - x, y, z: World-space up vectors.
+       - auto: Based on the plane defined by joint positions.
+       - ground: Forces foot orientation perpendicular to the ground (ideal for feet).
     value: 4
     enum:
       0: x
@@ -70,44 +83,59 @@ opts:
       3: auto
       4: ground
   pv_space:
+    help: Global parent space for the pole vector.
     value: space.cog
   pv_space_default:
+    help: Default weight for the pole vector space switch.
     value: 1
     min: 0
     max: 1
 
   default_stretch:
+    help: Enables IK stretching by default.
     value: on
   soft_distance:
+    help: Soft IK activation threshold relative to stretch distance.
     value: 0.05
     min: 0
     max: 1
   stomp_power:
+    help: |
+      Volume compensation power factor.
+      -0.5 corresponds to an inverse square root falloff.
     value: -0.5
     min: -1
     max: 0
 
   blend_joints:
+    help: Enables skinning roll joints at key articulations.
     value: on
 
   splits_up:
+    help: Number of twist joints between hip and knee.
     value: 3
     min: 2
   splits_mid:
+    help: Number of twist joints between knee and ankle.
     value: 3
     min: 2
   splits_down:
+    help: Number of twist joints between ankle and "quad effector".
     value: 3
     min: 2
 
   space_switch:
+    help: Enables default space switches on key controllers.
     value: on
 
   aim_axis:
+    help: Not yet supported.
     value: -y
   up_axis:
+    help: Not yet supported.
     value: -x
   up_axis2:
+    help: Not yet supported.
     value: z
 
 

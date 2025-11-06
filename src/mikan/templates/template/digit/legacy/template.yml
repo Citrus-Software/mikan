@@ -27,42 +27,71 @@ structure:
 
 opts:
   meta:
+    help: Renames the first controller in the chain with the meta suffix and excludes it from aim behavior.
     value: on
   shear:
+    help: Enables a shearing rig. Adds two extra joints per phalanx (base and tip).
     value: off
   shear_values:
+    help: Default shearing values (editable after rig creation).
     value: ''
     yaml: on
   target_parent:
+    help: Parent ID used for the aim rig. Prioritizes parent template.
     value: hooks.digits
   target_weights:
+    help: Default aim constraint weights per phalanx.
     value: ''
     yaml: on
 
   add_nodes:
+    help: |
+      Adds additional nodes to the controller hierarchy.
+       - Example: inf creates an inf_{name} node above the controller.
+       - [inf, pose] adds inf_{name} and pose_{name} in order.
+       - [c, dyn] adds a dyn_{name} node between controller and skin joint.
     value: ''
     yaml: on
   do_pose:
+    help: Adds a posing node above the controller.
     value: off
   parent_scale:
+    help: Enables scale transmission between controllers (segment scale compensation).
     value: off
 
   rotate_order:
+    help: Rotation order for all rig elements.
     value: 0
     enum: { 0: xyz, 1: yzx, 2: zxy, 3: xzy, 4: yxz, 5: zyx, 6: auto }
 
   orient:
+    help: |
+      Orientation mode for the joint chain.
+       - copy: Matches template orientation.
+       - auto: Automatic orientation (see axis options below).
     value: 0
     enum: { 0: copy, 1: auto }
 
   aim_axis:
+    help: Main aim axis for controller orientation.
     value: y
   up_axis:
+    help: Up axis for controller orientation.
     value: z
   up_dir:
+    help: |
+      Determines up vector calculation mode.
+       - auto: Calculated from the geometry of the chain.
+       - +x, -x, +y, -y, +z, -z: Scene-based up vectors.
     value: 0
     enum: { 0: auto, 1: +x, 2: -x, 3: +y, 4: -y, 5: +z, 6: -z }
   up_auto:
+    help: |
+      Auto up calculation method.
+       - average: Averages triangle normals.
+       - each: Calculates unique up for each joint.
+       - first: Uses first triangle's up vector for the entire chain.
+       - last: Uses last triangle's up vector for the entire chain.
     value: 0
     enum: { 0: average, 1: each, 2: first, 3: last }
 

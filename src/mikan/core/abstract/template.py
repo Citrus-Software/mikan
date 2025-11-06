@@ -20,6 +20,9 @@ log = create_logger()
 common_data = '''
 opts:
   branches:
+    help: |
+      List of branches for duplicating the rig module.
+       - Example: [L, R] builds the module twice, mirrored left and right.
     value: ''
     yaml: on
     presets:
@@ -28,6 +31,7 @@ opts:
      - 'ft, bk'
     legacy: forks
   sym:
+    help: Axis of symmetry for flip and mirror functions in the animator menu.
     value: 0
     enum:
       0: parent
@@ -35,20 +39,35 @@ opts:
       2: y
       3: z
   group:
+    help: |
+      Name of the parent group in the module hierarchy.
+      If the group does not exist, it will be created and parented under "all".
     value: ''
   parent:
+    help: |
+      Determines how the module group will be integrated into the asset's group hierarchy.
+       - parent: Parents the module group under the template parent group.
+       - merge up: Merges the module's controllers into the template parent group.
+       - merge down: Merges the module's controllers into the template child group.
     value: 0
     enum:
       0: parent
       1: merge up
       2: merge down
   do_ctrl:
+    help: Tags controllers to make them animatable.
     value: on
   do_skin:
+    help: Tags binding joints to make them available for skinning.
     value: on
   virtual_parent:
+    help: |
+      Sets the new template parent for virtual hierarchy construction.
+      This allows the binding skeleton to connect more coherently if the template hierarchy is not suitable,
+      and also connects the controllers' pickwalk accordingly.
     value: ''
   isolate_skin:
+    help: Separates skin joints into a dedicated group within the rig.
     value: off
 '''
 

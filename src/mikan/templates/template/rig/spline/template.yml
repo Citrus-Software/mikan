@@ -28,9 +28,17 @@ structure:
 
 opts:
   iks:
+    help: |
+      Number of IK controllers.
+      Final IK spline will have 2x this number in control vertices.
     value: 3
     min: 2
   tweakers:
+    help: |
+      Adds secondary animation controllers per skin joint.
+       - off: No tweakers.
+       - chained: Tweakers follow a hierarchy.
+       - unchained: Tweakers remain independent.
     value: 0
     enum:
       0: 'off'
@@ -38,8 +46,17 @@ opts:
       2: unchained
 
   bones:
+    help: |
+      Number of skin joints to create.
+      Defaults to 2x FK controllers.
+      1 if unspecified.
     value: 0
   bones_length:
+    help: |
+      Distribution mode for skin joints.
+       - parametric: Evenly spaced along the spline parameter.
+       - cvs: Based on FK controller CV positions.
+       - equal: Joints evenly spaced by length.
     value: 1
     enum:
       0: parametric
@@ -47,9 +64,19 @@ opts:
       2: equal
 
   uniform_ik:
+    help: |
+      IK controller distribution mode.
+       - on: Parametric placement.
+       - off: Uniform length spacing.
     value: on
 
   fk_easing:
+    help: |
+      FK influence smoothing mode.
+       - off: Each FK controller controls a single CV.
+       - in: First controller affects first two CVs.
+       - out: Last controller affects last two CVs.
+       - in-out: Combines in and out easing.
     value: 0
     enum:
       0: 'off'
@@ -57,36 +84,62 @@ opts:
       2: out
       3: in-out
   default_stretch:
+    help: Enables stretch behavior by default.
     value: off
   legacy_twist:
     value: on
 
   add_nodes:
+    help: |
+      Adds custom nodes to the hierarchy.
+       - Example: inf inserts a node inf_{name} above the controller.
+       - Example: [inf, pose] inserts both nodes inf_{name} and pose_{name} in order.
+       - Example: [c, dyn] adds dyn_{name} between the controller and the skin joint.
     value: ''
     yaml: on
   do_pose:
+    help: Adds a pose node between the root and controller (for driven key control).
     value: off
   parent_scale:
+    help: Enables scale propagation between controllers (affects segment scale compensation).
     value: off
 
   rotate_order:
+    help: Sets the rotation order on the controller hierarchy.
     value: 6
     enum: { 0: xyz, 1: yzx, 2: zxy, 3: xzy, 4: yxz, 5: zyx, 6: auto }
 
   orient:
+    help: |
+      Sets the orientation strategy for the controller rig.
+       - copy: Copies orientation from the template joint.
+       - auto: Automatically orients joints using the options below.
     value: 1
     enum: { 0: copy, 1: auto }
   flip_orient:
+    help: Flips root orientation to produce symmetrical translation behavior.
     value: off
 
   aim:
+    help: Main axis pointing toward the next joint in the chain.
     value: y
   up:
+    help: Secondary axis used for local up vector.
     value: x
   up_dir:
+    help: |
+      Mode for computing the up vector.
+       - auto: Based on geometry of the joint chain.
+       - +x, -x, +y, -y, +z, -z: Fixed world-space directions.
     value: 1
     enum: { 0: auto, 1: +x, 2: -x, 3: +y, 4: -y, 5: +z, 6: -z }
   up_auto:
+    help: |
+      Strategy for auto up vector calculation.
+       - average: Averages all segment triangles.
+       - each: Computes individual up vectors per joint.
+       - first: Uses first segment's up vector for all.
+       - last: Uses last segment's up vector for all.
     value: 2
     enum: { 0: average, 1: each, 2: first, 3: last }
 

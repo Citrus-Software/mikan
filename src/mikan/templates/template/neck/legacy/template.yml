@@ -28,43 +28,61 @@ opts:
     value: x
 
   bones:
+    help: Number of skin joints to create.
     value: 2
   bones_length:
+    help: |
+      Distribution mode for skin joints.
+       - parametric: Evenly spaced along the spline parameter.
+       - equal: Joints evenly spaced by length.
     value: 0
     enum:
       0: equal
       1: parametric
 
   orient_neck:
+    help: Automatically orients the controller's axis toward the head.
     value: on
   aim_axis:
+    help: Main axis aligned toward next joint.
     value: y
   up_axis:
+    help: Secondary axis used for automatic alignment.
     value: x
 
   default_stretch:
+    help: Enables stretch behavior by default.
     value: on
   stretch_mode:
+    help: |
+      IK spline stretch application mode.
+       - scale: Scales joints along the curve.
+       - translate: Translates joints along the curve.
     value: 0
     enum:
       0: scale
       1: translate
 
   rigidity:
+    help: Enables tangent-based rig behavior on the IK spline.
     value: on
   rigidity_dn:
+    help: Default rigidity value at the base of the neck.
     value: 1.0
     min: 0
     max: 1
   rigidity_up:
+    help: Default rigidity value at the base of the head.
     value: 0.0
     min: 0
     max: 1
 
   space_switch:
+    help: Enables default space switches on key controllers.
     value: on
 
   offset_ctrl:
+    help: Enables offset controller of the head.
     value: on
 
 

@@ -734,6 +734,13 @@ class TemplateOpts(StackWidget):
         self.wd_opts['isolate_skin'] = BoolPlugWidget(label='Isolate skin', default=False)
         self.wd_opts['virtual_parent'] = StringPlugWidget(label='Virtual parent', default='', filter=True)
 
+        for k in common_keys:
+            if k in self.wd_opts:
+                tooltip = Template.common_data['opts'][k].get('help')
+                if tooltip:
+                    tooltip = str(tooltip).strip()
+                    self.wd_opts[k].setToolTip(tooltip)
+
         _col0, _col1 = self.add_columns(self.box_opts)
         _col0.addWidget(self.wd_opts['branches'])
         _col0.addWidget(self.wd_opts['group'])
@@ -823,6 +830,11 @@ class TemplateOpts(StackWidget):
                                 w = VectorPlugWidget(label=label, default=dv, presets=presets)
                             else:
                                 continue
+
+                            tooltip = data.get('help')
+                            if tooltip:
+                                tooltip = str(tooltip).strip()
+                                w.setToolTip(tooltip)
 
                             _cols[col_count].addWidget(w)
                             row_count += 1

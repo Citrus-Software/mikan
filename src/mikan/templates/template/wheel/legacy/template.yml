@@ -19,6 +19,7 @@ guides:
 
 opts:
   hook:
+    help: Reference node ID used for calculating rotation in space.
     value: ""
 
 shapes:

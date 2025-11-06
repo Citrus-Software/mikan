@@ -26,23 +26,37 @@ opts:
     value: 1
 
   type:
+    help: |
+      Rig hierarchy type.
+       - joint: All rig joints are parented under their respective roots, allowing proper scale transmission.
+       - transform: Controllers form a continuous hierarchy, resulting in cumulative scaling.
     value: 0
     enum: { 0: joint, 1: transform }
 
   parent_scale:
+    help: Enables scale propagation between controllers (segment scale compensate between skin and root).
     value: off
   flip_orient:
+    help: Flips root orientation for symmetrical translation behavior.
     value: off
   unchain:
+    help: Prevents hierarchical parenting between generated controllers.
     value: off
 
   add_nodes:
+    help: |
+      Adds custom nodes to the hierarchy.
+       - Example: inf inserts a node inf_{name} above the controller.
+       - Example: [inf, pose] inserts both nodes inf_{name} and pose_{name} in order.
+       - Example: [c, dyn] adds dyn_{name} between the controller and the skin joint.
     value: ''
     yaml: on
   do_pose:
+    help: Adds a pose node above the controller (for driven key control).
     value: off
 
   rotate_order:
+    help: Sets the rotation order on the controller hierarchy.
     value: 0
     enum: { 0: xyz, 1: yzx, 2: zxy, 3: xzy, 4: yxz, 5: zyx }
 

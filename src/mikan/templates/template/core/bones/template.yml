@@ -30,31 +30,58 @@ opts:
     value: 1
 
   add_nodes:
+    help: |
+      Adds custom nodes to the hierarchy.
+       - Example: inf inserts a node inf_{name} above the controller.
+       - Example: [inf, pose] inserts both nodes inf_{name} and pose_{name} in order.
+       - Example: [c, dyn] adds dyn_{name} between the controller and the skin joint.
     value: ''
     yaml: on
   do_pose:
+    help: Adds a pose node between the root and controller (for driven key control).
     value: off
   parent_scale:
+    help: Enables scale propagation between controllers (affects segment scale compensation).
     value: off
 
   rotate_order:
+    help: Sets the rotation order on the controller hierarchy.
     value: 0
     enum: { 0: xyz, 1: yzx, 2: zxy, 3: xzy, 4: yxz, 5: zyx, 6: auto }
 
   flip_orient:
+    help: Flips root orientation to produce symmetrical translation behavior.
     value: off
   orient:
+    help: |
+      Sets the orientation strategy for the controller rig.
+       - copy: Copies orientation from the template joint.
+       - auto: Automatically orients joints using the options below.
+       - world: Aligns orientation to the world axes.
+       - parent: Aligns to the parent rig joint.
     value: 0
     enum: { 0: copy, 1: auto, 2: world, 3: parent }
 
   aim_axis:
+    help: Main axis pointing toward the next joint in the chain.
     value: y
   up_axis:
+    help: Secondary axis used for local up vector.
     value: z
   up_dir:
+    help: |
+      Mode for computing the up vector.
+       - auto: Based on geometry of the joint chain.
+       - +x, -x, +y, -y, +z, -z: Fixed world-space directions.
     value: 0
     enum: { 0: auto, 1: +x, 2: -x, 3: +y, 4: -y, 5: +z, 6: -z }
   up_auto:
+    help: |
+      Strategy for auto up vector calculation.
+       - average: Averages all segment triangles.
+       - each: Computes individual up vectors per joint.
+       - first: Uses first segment's up vector for all.
+       - last: Uses last segment's up vector for all.
     value: 0
     enum: { 0: average, 1: each, 2: first, 3: last }
 

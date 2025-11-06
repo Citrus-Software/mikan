@@ -8,4 +8,5 @@ name: group
 
 opts:
   main:
+    help: When enabled, the group is parented directly under the "all" group for top-level organization.
     value: off

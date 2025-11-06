@@ -37,8 +37,14 @@ opts:
     value: x
 
   bones:
+    help: Number of skin joints to create.
     value: 6
   bones_length:
+    help: |
+      Distribution mode for skin joints.
+       - parametric: Evenly spaced along the spline parameter.
+       - cvs: Based on FK controller CV positions.
+       - equal: Joints evenly spaced by length.
     value: 2
     enum:
       0: parametric
@@ -46,12 +52,20 @@ opts:
       2: equal
 
   orient_spine:
+    help: Automatically orients the FK spine controllers.
     value: off
   orient_pelvis:
+    help: Automatically orients the pelvis controllers.
     value: off
   orient_shoulders:
+    help: Automatically orients the shoulder controllers.
     value: off
   pivots:
+    help: |
+      Position of the pelvis IK controller pivot.
+       - legacy: At the root position.
+       - spine1: At the first FK spine controller.
+       - centered: Between the two middle FK spine controllers.
     value: 0
     enum:
       0: legacy
@@ -59,13 +73,19 @@ opts:
       2: centered
 
   default_stretch:
+    help: Enables stretch behavior by default.
     value: on
   stretch_mode:
+    help: |
+      IK spline stretch application mode.
+       - scale: Scales joints along the curve.
+       - translate: Translates joints along the curve.
     value: 1
     enum:
       0: scale
       1: translate
   curvature:
+    help: Default curvature strength between the bottom and top of the spine.
     value: 0.5
     min: 0
     max: 1

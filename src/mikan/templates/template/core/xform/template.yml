@@ -16,18 +16,24 @@ opts:
     value: off
 
   joint:
+    help: If enabled, creates a joint instead of a transform group.
     value: off
   rotate_order:
+    help: Rotation order applied to the locator.
     value: 0
     enum: { 0: xyz, 1: yzx, 2: zxy, 3: xzy, 4: yxz, 5: zyx }
   flip_orient:
+    help: Flips the root orientation to produce mirrored translation behavior.
     value: off
   copy_orient:
+    help: Matches the locator orientation to the template joint.
     value: on
 
   copy_shapes:
+    help: Copies nurbs curve shapes from the template onto the locator.
     value: off
   locator:
+    help: Adds a locator shape to the transform.
     value: off
 
 

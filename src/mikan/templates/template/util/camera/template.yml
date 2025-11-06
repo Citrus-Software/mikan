@@ -15,21 +15,28 @@ opts:
     value: 1
 
   horizontal_aperture:
+    help: Horizontal camera aperture (inch).
     value: 1.28
   vertical_aperture:
+    help: Vertical camera aperture (inch).
     value: 0.72
   focal_length:
+    help: Focal length of the camera lens.
     value: 50.0
     min: 0.001
 
   near_clip:
+    help: Near clipping plane distance.
     value: 1.0
     min: 0.001
   far_clip:
+    help: Far clipping plane distance.
     value: 10000.0
     min: 0.001
 
   orthographic:
+    help: Enable orthographic projection.
     value: off
   image_plane:
+    help: Enable image plane for reference images.
     value: off

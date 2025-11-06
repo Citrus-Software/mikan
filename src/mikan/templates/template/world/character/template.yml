@@ -27,8 +27,10 @@ opts:
     value: merge up
 
   fly:
+    help: Enables "fly" controller.
     value: on
   scale:
+    help: Enables "scale" controller.
     value: on
 
 shapes:
