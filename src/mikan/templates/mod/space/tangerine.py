@@ -26,6 +26,14 @@ class Mod(mk.Mod):
         elif self.data.get('point'):
             channels = 't'
 
+        # check other space
+        if self.data.get('orient'):
+            if ctrl.get_dynamic_plug('ui_space_follow'):
+                raise mk.ModArgumentError('Follow switch already exists on controller')
+        else:
+            if ctrl.get_dynamic_plug('ui_space_pin'):
+                raise mk.ModArgumentError('Space switch already exists on controller')
+
         # filter targets
         targets = []
         target = self.data.get('target')
@@ -35,9 +43,9 @@ class Mod(mk.Mod):
         targets = list(filter(None, targets))
 
         if 'targets' not in self.data and 'target' not in self.data:
-            raise mk.ModArgumentError('targets missing')
+            raise mk.ModArgumentError('Missing required "target" or "targets" key in data')
         if not targets:
-            raise mk.ModArgumentError('no valid targets!')
+            raise mk.ModArgumentError('No valid targets found. Check your "target(s)" data entries')
 
         # target default weights
         if self.data.get('default'):
