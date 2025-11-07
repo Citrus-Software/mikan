@@ -548,16 +548,12 @@ class Template(mk.Template):
             poc.geom_world_transform_in.connect(cv_up.transform)
             poc.u_in.connect(npc.u_out)
 
-            loc = kl.SceneGraphNode(cv_up, f'loc_{n_chain}_up{i+1}')
+            loc = kl.SceneGraphNode(cv_up, f'loc_{n_chain}_up{i + 1}')
             loc.transform.connect(poc.transform_out)
 
             up_locs.append(loc)
 
         # -- ik twist
-        _dv = self.get_opt('legacy_twist')
-        add_plug(c_switch, 'legacy_twist', float, min_value=0, max_value=1, k=True, default_value=_dv)
-        _en = connect_expr('lerp(1,0,tw)', tw=c_switch.legacy_twist)
-
         _up = axis_to_vector(up_axis)
         if self.do_flip():
             _up *= -1
@@ -571,7 +567,6 @@ class Template(mk.Template):
                 target_aim *= -1
 
             _aim = aim_constraint(target, sk, aim_vector=target_aim, up_vector=_up, up_object=up_locs[i])
-            _aim.enable_in.connect(_en)
 
             _srt = find_srt(sk)
             _srt.rotate_order.set_value(rotate_order)
@@ -587,7 +582,7 @@ class Template(mk.Template):
         sk_aims = []
         for sk in sk_chain:
             _srt = find_srt(sk)
-            
+
             _euler = kl.EulerToFloat(_srt, '_euler')
             _euler.euler.connect(_srt.rotate.get_input())
 
@@ -599,10 +594,6 @@ class Template(mk.Template):
             _srt.rotate.connect(_rotate.euler)
 
             sk_aims.append(_rotate.get_plug(aim_axis[-1]))
-
-
-
-        ctrls = []
 
         tws = []
         for n in ik_nodes[1:-1]:
@@ -618,21 +609,10 @@ class Template(mk.Template):
                 plugs[k] = _n.get_plug(aim_axis[-1])
 
             tw = connect_expr(expr, **plugs)
-
-            tw = connect_expr('lerp(0, tw, legacy)', tw=tw, legacy=c_switch.legacy_twist)
             tws.append(tw)
 
-        ctrls = [c_switch.twist_offset_base] + tws + [c_switch.twist_offset_tip]
+        ctrls = [c_switch.twist_offset_base, c_switch.twist_offset_tip]
         blend_smooth_remap(ctrls, sk_aims)
-        # TODO: on a un énorme souci de correspondance maya/tang sur cette fonction
-
-
-        for i, sk_aim in enumerate(sk_aims):
-            twf = float(i) / (len(sk_aims) - 1)
-            tw = connect_mult(c_switch.twist, -twf)
-
-            connect_expr('y = aim + tw', y=sk_aim, aim=sk_aim.get_input(), tw=tw)
-        
 
         """
         r = kl.FloatToEuler(srt, 'rotate_twist')
@@ -695,17 +675,15 @@ class Template(mk.Template):
             add_plug(c, '_squash', float, k=1)
             add_plug(c, '_slide', float, k=1)
 
-            add_plug(c, '_legacy_twist', float, k=1)
             add_plug(c, '_twist', float, k=1)
             add_plug(c, '_twist_offset_base', float, k=1)
             add_plug(c, '_twist_offset_tip', float, k=1)
-            
+
             c._uniform_ik.connect(c_switch.uniform_ik)
             c._stretch.connect(c_switch.stretch)
             c._squash.connect(c_switch.squash)
             c._slide.connect(c_switch.slide)
 
-            c._legacy_twist.connect(c_switch.legacy_twist)
             c._twist.connect(c_switch.twist)
             c._twist_offset_base.connect(c_switch.twist_offset_base)
             c._twist_offset_tip.connect(c_switch.twist_offset_tip)

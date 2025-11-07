@@ -86,8 +86,6 @@ opts:
   default_stretch:
     help: Enables stretch behavior by default.
     value: off
-  legacy_twist:
-    value: on
 
   add_nodes:
     help: |
