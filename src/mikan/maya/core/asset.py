@@ -445,7 +445,7 @@ class Asset(abstract.Asset):
         for _n in mx.ls('mikan_menu', r=1, et='script'):
             mx.delete(_n)
 
-        scr = mc.scriptNode(bs=mikan_menu_loader, st=1, stp='python', n='dagMenuHack')
+        scr = mc.scriptNode(bs=menu_loader, st=1, stp='python', n='dagMenuHack')
         mc.scriptNode(scr, eb=1)
 
         Nodes.set_id(scr, '::menu')
@@ -676,9 +676,13 @@ class Asset(abstract.Asset):
         monitor.set_step(monitor.STEP_FINISHED)
 
 
-mikan_menu_loader = '''# mikan menu loader
-from mikan.maya.ui.dagmenu import DagMenu
-DagMenu.inject()
+menu_loader = '''# mikan menu loader
+try:
+  from mikan.maya.ui.dagmenu import DagMenu
+  DagMenu.inject()
+except ImportError as e:
+  import maya.cmds as mc
+  mc.warning(f'Failed to import Mikan: {e}')
 '''
 
 

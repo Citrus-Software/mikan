@@ -255,39 +255,26 @@ class DagMenu(object):
 
     @staticmethod
     def cleanup():
-        path = r'%tmp%\mikan'
-        path = os.path.expandvars(path)
-
-        file_path = path + os.sep + 'dagMenuProc.mel'
-
-        # try:
-        #     os.environ['MAYA_SCRIPT_PATH'] = script_path
-        #     if os.path.exists(file_path):
-        #         os.remove(file_path)
-        # except:
-        #     pass
+        pass
 
     @staticmethod
     def shadow():
+
+        # check if already loaded
+        if 'interactively' in mel.eval('whatIs dagMenuProc;'):
+            return
+
+        # source original dag menu proc
+        def _source():
+            mel.eval('catchQuiet(buildObjectMenuItemsNow(""));')
+            mel.eval('catchQuiet(dagMenuProc("", ""));')
+
+        mc.evalDeferred(_source)
 
         # check paths
         mayapath, mayabin = os.path.split(sys.executable)
         path = mayapath.split(os.path.sep)[:-1] + ['scripts', 'others', 'dagMenuProc.mel']
         dagmenu_path = os.path.sep.join(path)
-
-        path = r'%tmp%\mikan'
-        tmp_path = os.path.expandvars(path)
-        inject_path = tmp_path + os.sep + 'dagMenuProc.mel'
-
-        path = mel.eval('whatIs dagMenuProc;')
-        if ':' in path:
-            path = path.split(':', 1)[1].strip()
-            sourced_path = os.path.realpath(path)
-        else:
-            sourced_path = None
-
-        if sourced_path == inject_path:
-            return
 
         # hack mel
         f = open(dagmenu_path, 'r')
@@ -306,28 +293,15 @@ class DagMenu(object):
         if not idx:
             raise RuntimeError('failed to generate dagMenuProc shadow')
 
-        lines.insert(idx, injection_code)
-        dag_menu_proc = ''.join(lines)
-
         # inject
         try:
-            if os.path.exists(inject_path):
-                os.remove(inject_path)
+            lines.insert(idx, injection_code)
+            dag_menu_proc = ''.join(lines)
 
-            if not os.path.exists(tmp_path):
-                os.makedirs(tmp_path)
+            def _source():
+                mel.eval(dag_menu_proc)
 
-            with open(inject_path, 'w') as f:
-                f.write(dag_menu_proc)
-
-            script_path = os.getenv('MAYA_SCRIPT_PATH')
-
-            if tmp_path not in script_path:
-                os.environ['MAYA_SCRIPT_PATH'] = tmp_path + ';' + script_path
-
-            mel.eval('rehash;')
-            mel.eval('source "dagMenuProc.mel";')
-            mel.eval('catchQuiet(dagMenuProc("", ""));')
+            mc.evalDeferred(_source)
 
         except:
             raise RuntimeError('failed to shadow dagMenuProc')
