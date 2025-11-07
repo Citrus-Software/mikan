@@ -9,7 +9,7 @@ Whether you're rigging characters, props, or building custom workflows, Mikan he
 
 ## Get Started
 
-📚 Full setup instructions, usage guides, and blueprint authoring tips are available in the [official documentation](https://citrus-software.github.io/mikan-docs/).
+📚 Full setup instructions, usage guides, and blueprint authoring tips are available in the [documentation](https://citrus-software.github.io/mikan-docs/).
 
 
 ## Contributing
