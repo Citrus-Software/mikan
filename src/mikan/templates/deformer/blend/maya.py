@@ -3,7 +3,6 @@
 from six.moves import range
 from six import string_types, iteritems
 
-import gemini.core
 from mikan.maya import om, oma, om1, oma1, mel
 from mikan.maya import cmds as mc
 import mikan.maya.cmdx as mx
