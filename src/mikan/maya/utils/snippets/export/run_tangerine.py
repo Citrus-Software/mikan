@@ -15,9 +15,12 @@ if not os.path.exists(path_exe):
 
 path_cwd = os.path.split(path_exe)[0]
 
+# update env
 mikan_src = os.path.abspath(mikan.__path__[0])
 mikan_src = os.path.split(mikan_src)[0]
 
-hook = os.path.sep.join([mikan_src, 'mikan', 'tangerine', 'utils', 'hook.py'])
+os.environ["TANG_MIKAN_PATH"] = mikan_src
+os.environ["MIKAN_MENU"] = "on"
 
-subprocess.Popen([path_exe, hook, mikan_src], cwd=path_cwd)
+# run tangerine
+subprocess.Popen([path_exe], cwd=path_cwd)
