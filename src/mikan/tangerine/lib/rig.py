@@ -912,7 +912,7 @@ def aim_constraint(
             cnst.initial_up_vector_space.set_value(up_object.world_transform.get_value())
 
     if up_vector_world.length():
-        log.warning('/!\ up vector world does not work with maintain offset yet')
+        log.warning('/!\\ up vector world does not work with maintain offset yet')
 
     _init_constraint(cnst, targets, weights=weights, world=world, maintain_offset=maintain_offset)
 
