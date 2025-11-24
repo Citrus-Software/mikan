@@ -458,40 +458,48 @@ class Control(object):
     # mirroring --------------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def create_mirror_table(node0, node1, axis='x'):
-        w0 = node0['wm'][0].read()
-        w1 = node1['wm'][0].read()
-        p0 = node0['pm'][0].read()
-        p1 = node1['pm'][0].read()
+    def create_mirror_table(node0, node1, axis='x', epsilon=0.0001):
+
+        def extract(pm, wm):
+            return (
+                [mx.Vector(pm[i:i + 3]) for i in (0, 4, 8)],
+                [mx.Vector(wm[i:i + 3]) for i in (0, 4, 8)]
+            )
+
+        def flip(v, a):
+            if a in ('x', 'yz'):  return mx.Vector(-v[0], v[1], v[2])
+            if a in ('y', 'xz'):  return mx.Vector(v[0], -v[1], v[2])
+            if a in ('z', 'xy'):  return mx.Vector(v[0], v[1], -v[2])
+            return v
+
+        p0, w0 = extract(node0['pm'][0].read(), node0['wm'][0].read())
+        p1, w1 = extract(node1['pm'][0].read(), node1['wm'][0].read())
+
         d0 = node0['pm'][0].as_matrix().det4x4()
         d1 = node1['pm'][0].as_matrix().det4x4()
 
-        x0 = [mx.Vector(x) for x in (p0[0:3], p0[4:7], p0[8:11], w0[0:3], w0[4:7], w0[8:11])]
-        x1 = [mx.Vector(x) for x in (p1[0:3], p1[4:7], p1[8:11], w1[0:3], w1[4:7], w1[8:11])]
-        x0[3:] = [x * d0 for x in x0[3:]]
-        x1[3:] = [x * d1 * -1 for x in x1[3:]]
+        w0 = [v * d0 for v in w0]
+        w1 = [v * d1 * -1 for v in w1]
 
-        if axis in ['x', 'yz']:
-            x1 = [mx.Vector(-x[0], x[1], x[2]) for x in x1]
-        elif axis in ['y', 'xz']:
-            x1 = [mx.Vector(x[0], -x[1], x[2]) for x in x1]
-        elif axis in ['z', 'xy']:
-            x1 = [mx.Vector(x[0], x[1], -x[2]) for x in x1]
+        p1 = [flip(v, axis) for v in p1]
+        w1 = [flip(v, axis) for v in w1]
 
-        table = [copysign(1, round(x[0] * x[1])) for x in zip(x0, x1)]
-        table[:] = map(lambda x: x / abs(x) if x else 0, table)
-        if 0 in table:
-            table = [1, 1, 1, 1, 1, 1]
+        dot = [(a * b) for a, b in zip(p0 + w0, p1 + w1)]
+
+        table = [
+            1 if v > epsilon else
+            -1 if v < -epsilon else
+            (-1 if i < 3 else 1)
+            for i, v in enumerate(dot)
+        ]
 
         mt = 'mirror_{}t'.format(axis)
         mr = 'mirror_{}r'.format(axis)
+
         for node in (node0, node1):
-            if mt not in node:
-                node.add_attr(mx.Double3(mt))
-            if mr not in node:
-                node.add_attr(mx.Double3(mr))
-            node[mt] = table[:3]
-            node[mr] = table[3:]
+            if mt not in node: node.add_attr(mx.Double3(mt))
+            if mr not in node: node.add_attr(mx.Double3(mr))
+            node[mt], node[mr] = table[:3], table[3:]
 
     def get_mirror_cmds(self, direction, axis='x'):
         if 'mirror_{}t'.format(axis) not in self.node:

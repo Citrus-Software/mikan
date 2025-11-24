@@ -537,44 +537,40 @@ class Control(object):
         return Group.get_from_node(self.node)
 
     @staticmethod
-    def create_mirror_table(node0, node1, axis='x'):
-        w0 = node0.world_transform.get_value()
-        w1 = node1.world_transform.get_value()
-        p0 = node0.get_parent().world_transform.get_value()
-        p1 = node1.get_parent().world_transform.get_value()
+    def create_mirror_table(node0, node1, axis='x', epsilon=0.0001):
 
-        ti0 = V3f(*[p0.get(0, i) for i in range(3)])
-        tj0 = V3f(*[p0.get(1, i) for i in range(3)])
-        tk0 = V3f(*[p0.get(2, i) for i in range(3)])
-        ti1 = V3f(*[p1.get(0, i) for i in range(3)])
-        tj1 = V3f(*[p1.get(1, i) for i in range(3)])
-        tk1 = V3f(*[p1.get(2, i) for i in range(3)])
-        ri0 = V3f(*[w0.get(0, i) for i in range(3)])
-        rj0 = V3f(*[w0.get(1, i) for i in range(3)])
-        rk0 = V3f(*[w0.get(2, i) for i in range(3)])
-        ri1 = V3f(*[w1.get(0, i) for i in range(3)])
-        rj1 = V3f(*[w1.get(1, i) for i in range(3)])
-        rk1 = V3f(*[w1.get(2, i) for i in range(3)])
+        def extract(p, w):
+            return (
+                [V3f(*[p.get(j, i) for i in range(3)]) for j in range(3)],
+                [V3f(*[w.get(j, i) for i in range(3)]) for j in range(3)]
+            )
 
-        d0 = 1 if ti0.cross(tj0).dot(tk0) > 0 else -1  # det
-        d1 = 1 if ti1.cross(tj1).dot(tk1) > 0 else -1  # det
+        def flip(v, a):
+            if a in ('x', 'yz'):  return V3f(-v.x, v.y, v.z)
+            if a in ('y', 'xz'):  return V3f(v.x, -v.y, v.z)
+            if a in ('z', 'xy'):  return V3f(v.x, v.y, -v.z)
+            return v
 
-        x0 = [ti0, tj0, tk0, ri0, rj0, rk0]
-        x1 = [ti1, tj1, tk1, ri1, rj1, rk1]
-        x0[3:] = map(lambda x: x * d0, x0[3:])
-        x1[3:] = map(lambda x: x * d1 * -1, x1[3:])
+        p0, w0 = extract(node0.parent_world_transform.get_value(), node0.world_transform.get_value())
+        p1, w1 = extract(node1.parent_world_transform.get_value(), node1.world_transform.get_value())
 
-        if axis in ['x', 'yz']:
-            x1 = map(lambda x: V3f(-x.x, x.y, x.z), x1)
-        elif axis in ['y', 'xz']:
-            x1 = map(lambda x: V3f(x.x, -x.y, x.z), x1)
-        elif axis in ['z', 'xy']:
-            x1 = map(lambda x: V3f(x.x, x.y, -x.z), x1)
+        d0 = 1 if p0[0].cross(p0[1]).dot(p0[2]) > 0 else -1  # det
+        d1 = 1 if p1[0].cross(p1[1]).dot(p1[2]) > 0 else -1  # det
 
-        table = map(lambda x: copysign(1, x[0].dot(x[1])), zip(x0, x1))
-        table = list(map(lambda x: x / abs(x) if x else 0, table))
-        if 0 in table:
-            table = [1, 1, 1, 1, 1, 1]
+        w0 = [v * d0 for v in w0]
+        w1 = [v * d1 * -1 for v in w1]
+
+        p1 = [flip(v, axis) for v in p1]
+        w1 = [flip(v, axis) for v in w1]
+
+        dot = [(a.dot(b)) for a, b in zip(p0 + w0, p1 + w1)]
+
+        table = [
+            1 if v > epsilon else
+            -1 if v < -epsilon else
+            (-1 if i < 3 else 1)
+            for i, v in enumerate(dot)
+        ]
 
         for node in (node0, node1):
             mt = f'mirror_{axis}t'
