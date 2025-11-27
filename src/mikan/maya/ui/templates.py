@@ -561,10 +561,10 @@ class TemplateManager(QMainWindow, OptVarSettings):
                 self.tree.tree_items[item].update(rebuild=True)
 
     def mode_dev_changed(self):
-        self.set_optvar('mode_dev', bool(self.wd_dev.isChecked()))
+        self.set_optvar('mode_dev', self.wd_dev.isChecked())
 
     def mode_debug_changed(self):
-        self.set_optvar('mode_debug', bool(self.wd_debug.isChecked()))
+        self.set_optvar('mode_debug', self.wd_debug.isChecked())
 
     def mode_changed(self):
         self.set_optvar('mode', self.wd_mode.currentIndex())

@@ -187,9 +187,9 @@ class FunctionAutoUI(MayaWindow):
             if value in ['True', 'False']:
                 check = self.def_args_fields[index]
                 if value == 'True':
-                    check.setCheckState(Qt.Checked)
+                    check.setChecked(True)
                 else:
-                    check.setCheckState(Qt.Unchecked)
+                    check.setChecked(False)
 
             else:
                 field = self.def_args_fields[index]
@@ -270,9 +270,9 @@ class FunctionAutoUI(MayaWindow):
                 # field    
                 check = QCheckBox('')
                 if default_value == 'True':
-                    check.setCheckState(Qt.Checked)
+                    check.setChecked(True)
                 else:
-                    check.setCheckState(Qt.Unchecked)
+                    check.setChecked(False)
                 grid.addWidget(check, i, 1, stretch=6)
 
                 btn.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -768,7 +768,7 @@ class FunctionAutoUI(MayaWindow):
             self.def_args_values_history[i].append(self.def_args_fields[i].value())
 
         elif isinstance(self.def_args_fields[i], QCheckBox):
-            self.def_args_values_history[i].append(self.def_args_fields[i].checkState())
+            self.def_args_values_history[i].append(self.def_args_fields[i].isChecked())
 
     def undo_value(self, i):
         log.debug('undo_value', self.def_args_values_history[i])
@@ -796,7 +796,7 @@ class FunctionAutoUI(MayaWindow):
             self.def_args_values_history[i].pop()
 
         elif isinstance(self.def_args_fields[i], QCheckBox):
-            self.def_args_fields[i].setCheckState(self.def_args_values_history[i][i_last])
+            self.def_args_fields[i].setChecked(self.def_args_values_history[i][i_last])
             self.def_args_values_history[i].pop()
 
         log.debug('undo_value', self.def_args_values_history[i])
@@ -830,9 +830,9 @@ class FunctionAutoUI(MayaWindow):
 
         elif isinstance(self.def_args_fields[i], QCheckBox):
             if self.def_args_merge[key] == 'True':
-                self.def_args_fields[i].setCheckState(Qt.Checked)
+                self.def_args_fields[i].setChecked(True)
             else:
-                self.def_args_fields[i].setCheckState(Qt.Unchecked)
+                self.def_args_fields[i].setChecked(False)
             self.update_labels(i, reset=True)
 
     def select_args(self, i):
@@ -875,7 +875,7 @@ class FunctionAutoUI(MayaWindow):
             elif isinstance(self.def_args_fields[i], QSlider):
                 str_proc_call += str(self.def_args_fields[i].value())
             elif isinstance(self.def_args_fields[i], QCheckBox):
-                if self.def_args_fields[i].checkState() == Qt.Checked:
+                if self.def_args_fields[i].isChecked():
                     str_proc_call += 'True'
                 else:
                     str_proc_call += 'False'

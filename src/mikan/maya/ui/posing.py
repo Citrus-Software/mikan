@@ -118,13 +118,13 @@ class PosingManager(QMainWindow, OptVarSettings):
 
         self.chk_auto = QCheckBox('Auto')
         self.chk_auto.setStyleSheet('QCheckBox {padding: 3px;}')
-        self.chk_auto.setCheckState(Qt.Checked if self.get_optvar('mod_auto', False) else Qt.Unchecked)
+        self.chk_auto.setChecked(self.get_optvar('mod_auto', False))
         self.chk_auto.toggled.connect(self.switch_chk_auto)
         _row.addWidget(self.chk_auto, 3)
 
         self.chk_clean = QCheckBox('Clean')
         self.chk_clean.setStyleSheet('QCheckBox {padding: 3px;}')
-        self.chk_clean.setCheckState(Qt.Checked if self.get_optvar('mod_clean', False) else Qt.Unchecked)
+        self.chk_clean.setChecked(self.get_optvar('mod_clean', False))
         self.chk_clean.toggled.connect(self.switch_chk_clean)
         _row.addWidget(self.chk_clean, 3)
 
@@ -475,11 +475,11 @@ class PosingManager(QMainWindow, OptVarSettings):
                 export_driver_to_mod(self.driver, self.group)
 
     def switch_chk_auto(self):
-        v = bool(self.chk_auto.checkState())
+        v = self.chk_auto.isChecked()
         self.set_optvar('mod_auto', v)
 
     def switch_chk_clean(self):
-        v = bool(self.chk_clean.checkState())
+        v = self.chk_clean.isChecked()
         self.set_optvar('mod_clean', v)
 
     # API callbacks ----------------------------------------------------------------------------------------------------
@@ -1123,8 +1123,7 @@ class ShapeAttributeEditor(QTreeWidget):
         mc.inViewMessage(msg=_msg, pos='topCenter', fade=True)
 
         # auto mod backup
-        auto = bool(self.manager.chk_auto.checkState())
-        if auto:
+        if self.manager.chk_auto.isChecked():
             with BusyCursor():
                 export_plugs_to_mod(self.manager.driver)
                 export_driver_to_mod(self.manager.driver, self.manager.group, plugs=[driver.name(long=False)])
@@ -1169,8 +1168,7 @@ class ShapeAttributeEditor(QTreeWidget):
         mc.inViewMessage(msg=_msg, pos='topCenter', fade=True)
 
         # auto mod cleanup
-        auto = bool(self.manager.chk_clean.checkState())
-        if auto:
+        if self.manager.chk_clean.isChecked():
             with BusyCursor():
                 export_plugs_to_mod(self.manager.driver)
                 clear_driver_mod(self.manager.driver, plugs=plugs)

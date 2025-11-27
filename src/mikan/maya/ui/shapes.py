@@ -56,7 +56,7 @@ class ShapesManager(StackWidget):
         _col = self.add_column(_box_row, spacing=1, margins=0)
 
         self.chk_selection = QCheckBox('use selection')
-        self.chk_selection.setCheckState(Qt.Checked)
+        self.chk_selection.setChecked(True)
         _col.addWidget(self.chk_selection)
 
         _col.addSpacing(6)
@@ -78,7 +78,7 @@ class ShapesManager(StackWidget):
         _col.addSpacing(4)
 
         self.chk_keep_color = QCheckBox('keep color')
-        self.chk_keep_color.setCheckState(Qt.Checked)
+        self.chk_keep_color.setChecked(True)
         _col.addWidget(self.chk_keep_color)
 
         _col.addSpacing(6)
@@ -323,7 +323,7 @@ class ShapesManager(StackWidget):
                 return axis
 
     def opt_selection(self):
-        return bool(self.chk_selection.isChecked())
+        return self.chk_selection.isChecked()
 
     def opt_mode(self):
         if self.btn_mode_add.isChecked():
@@ -387,7 +387,7 @@ class ShapesManager(StackWidget):
                         _s = Shape(_shp)
                         if not _s.get_shapes():
                             continue
-                        if self.chk_keep_color.checkState() and saved_color is None:
+                        if self.chk_keep_color.isChecked() and saved_color is None:
                             saved_color = _s.get_color()
                         bb.expand(_shp.bounding_box)
 
@@ -417,7 +417,7 @@ class ShapesManager(StackWidget):
                         mc.parent(str(shp_src), str(parent))
 
                 elif mode == 'replace' and s.get_shapes():
-                    if self.chk_keep_color.checkState() and saved_color is None:
+                    if self.chk_keep_color.isChecked() and saved_color is None:
                         saved_color = s.get_color()
                     saved_dim = s.get_dimensions()
 

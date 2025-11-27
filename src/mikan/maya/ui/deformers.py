@@ -80,7 +80,7 @@ class DeformerManager(QMainWindow, OptVarSettings):
         self.tree_deformers.itemClicked.connect(self.update_widget_edit)
 
         # load data
-        self.tree_group.load(dry=not self.wd_load.checkState())
+        self.tree_group.load(dry=not self.wd_load.isChecked())
 
     def build_toolbar(self):
         toolbar = self.addToolBar('Deformer manager')
@@ -124,7 +124,7 @@ class DeformerManager(QMainWindow, OptVarSettings):
 
         # auto load?
         self.wd_load = QCheckBox('always load')
-        self.wd_load.setCheckState(Qt.Checked if self.get_optvar('load', False) else Qt.Unchecked)
+        self.wd_load.setChecked(self.get_optvar('load', False))
         toolbar.addWidget(self.wd_load)
 
         self.wd_load.stateChanged.connect(self.load_changed)
@@ -188,7 +188,7 @@ class DeformerManager(QMainWindow, OptVarSettings):
         self.reload()
 
     def load_changed(self):
-        self.set_optvar('load', bool(self.wd_load.checkState()))
+        self.set_optvar('load', self.wd_load.isChecked())
 
 
 class DeformerGroupTreeWidget(QTreeWidget):

@@ -489,10 +489,7 @@ class BoolPlugWidget(AbstractValueWidget):
         self.widget.blockSignals(True)
 
         self.value = bool(value)
-        st = Qt.Unchecked
-        if self.value:
-            st = Qt.Checked
-        self.widget.setCheckState(st)
+        self.widget.setChecked(self.value)
 
         self.widget.blockSignals(False)
         self.value_changed.emit()
