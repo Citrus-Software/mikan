@@ -282,8 +282,12 @@ class MayaDockMixin(MayaQWidgetDockableMixin, QMainWindow, OptVarSettings):
     def save_geometry(self):
         floating = self.save_floating()
         if self._save_geometry and floating:
-            self.set_optvar('geometry', self.parent().geometry())
-            self.set_optvar('position', self.parent().mapToGlobal(QtCore.QPoint(0, 0)))
+            try:
+                parent = self.parent()
+            except:
+                return
+            self.set_optvar('geometry', parent.geometry())
+            self.set_optvar('position', parent.mapToGlobal(QtCore.QPoint(0, 0)))
 
     def floatingChanged(self, floating):
         if isinstance(floating, string_types):
