@@ -324,17 +324,20 @@ def cleanup_rig_shapes(root=None):
         node['v'] = False
 
 
-def cleanup_rig_history():
-    hidenodes = [
-        'dagPose',
-        'decomposeMatrix', 'multMatrix', 'fourByFourMatrix', 'wtAddMatrix', 'composeMatrix', 'inverseMatrix',
-        'multDoubleLinear', 'addDoubleLinear', 'blendTwoAttr', 'multiplyDivide', 'plusMinusAverage', 'vectorProduct',
-        'condition', 'distanceBetween', 'blendWeighted', 'pairBlend', 'blendColors', 'clamp',
-        'pointOnCurveInfo', 'motionPath', 'polyEdgeToCurve',
-        'pointOnSurfaceInfo', 'loft',
-    ]
+HIDDEN_TYPES = [
+    'dagPose',
+    'decomposeMatrix', 'multMatrix', 'fourByFourMatrix', 'wtAddMatrix', 'composeMatrix', 'inverseMatrix',
+    str(om.MNodeClass(om.MTypeId(mx.tMultDoubleLinear))),
+    str(om.MNodeClass(om.MTypeId(mx.tAddDoubleLinear))),
+    'blendTwoAttr', 'multiplyDivide', 'plusMinusAverage', 'vectorProduct',
+    'condition', 'distanceBetween', 'blendWeighted', 'pairBlend', 'blendColors', 'clamp',
+    'pointOnCurveInfo', 'motionPath', 'polyEdgeToCurve',
+    'pointOnSurfaceInfo', 'loft',
+]
 
-    for nodetype in hidenodes:
+
+def cleanup_rig_history():
+    for nodetype in HIDDEN_TYPES:
         for node in mx.ls(et=nodetype):
             node['ihi'] = False
 
