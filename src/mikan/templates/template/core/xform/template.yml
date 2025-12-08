@@ -15,6 +15,12 @@ opts:
   do_skin:
     value: off
 
+  prefix:
+    help: Adds a prefix to the node name.
+    value: ""
+  root:
+    help: If enabled, creates a root node.
+    value: off
   joint:
     help: If enabled, creates a joint instead of a transform group.
     value: off
@@ -28,6 +34,9 @@ opts:
   copy_orient:
     help: Matches the locator orientation to the template joint.
     value: on
+  local_orient:
+    help: Transfer orientation to the controller if root is enabled.
+    value: off
 
   copy_shapes:
     help: Copies nurbs curve shapes from the template onto the locator.
@@ -35,6 +44,13 @@ opts:
   locator:
     help: Adds a locator shape to the transform.
     value: off
+
+
+shapes:
+  ctrls.node:
+    parent: .
+    shape: locator
+    color: limegreen
 
 
 hierarchy:
