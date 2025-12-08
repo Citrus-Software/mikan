@@ -1169,6 +1169,9 @@ class Template(abstract.Template):
     # shapes -----------------------------------------------------------------------------------------------------------
 
     def add_shapes(self):
+        if not self.get_opt('do_ctrl'):
+            return
+
         data = deepcopy(self.template_data.get('shapes', {}))
         if not data:
             return
