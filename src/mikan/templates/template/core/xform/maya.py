@@ -23,7 +23,7 @@ class Template(mk.Template):
 
         # prefix
         prefix = self.get_opt('prefix')
-        if not prefix.endswith('_'):
+        if prefix and not prefix.endswith('_'):
             prefix += '_'
 
         do_ctrl = self.get_opt('do_ctrl')
