@@ -59,12 +59,12 @@ class Template(mk.Template):
             loc['jo'] = root['r'].read()
             root['r'] = (0, 0, 0)
 
+        if self.do_flip() and self.get_opt('flip_orient'):
+            mc.xform(str(orient_node), r=1, os=1, ro=(180, 0, 0))
+
         if do_joint:
             mc.makeIdentity(str(orient_node), a=1, r=1)
             fix_inverse_scale(loc)
-
-        if self.do_flip() and self.get_opt('flip_orient'):
-            mc.xform(str(loc), r=1, os=1, ro=(180, 0, 0))
 
         ro = mx.Euler.orders[self.get_opt('rotate_order')]
         if root:
