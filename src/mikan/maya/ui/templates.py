@@ -152,6 +152,7 @@ class TemplateManager(QMainWindow, OptVarSettings):
         left_key = QShortcut(QtGui.QKeySequence(Qt.Key_Left), self.tree)
         right_key = QShortcut(QtGui.QKeySequence(Qt.Key_Right), self.tree)
         f_key = QShortcut(QtGui.QKeySequence(Qt.Key_F), self.tree)
+        f_key.setContext(Qt.WidgetShortcut)
 
         up_key.activated.connect(partial(self.navigate, 0, -1))
         dn_key.activated.connect(partial(self.navigate, 0, 1))

@@ -47,6 +47,7 @@ class ShapesManager(StackWidget):
         _shelf.setSpacing(0)
         _shelf.setStyleSheet('QListWidget {background-color: #333; border: none;}')
         _shelf.setContextMenuPolicy(Qt.NoContextMenu)
+        _shelf.setFocusPolicy(Qt.NoFocus)
 
         shapes_list = Shape.shapes
         for shape in sorted(shapes_list):
@@ -195,6 +196,7 @@ class ShapesManager(StackWidget):
         _shelf.setSpacing(0)
         _shelf.setStyleSheet('QListWidget {background-color: #333; border: none;}')
         _shelf.setContextMenuPolicy(Qt.NoContextMenu)
+        _shelf.setFocusPolicy(Qt.NoFocus)
 
         for color in Shape.maya_color_list:
             self.shelf_add_color(_shelf, color)
@@ -214,6 +216,7 @@ class ShapesManager(StackWidget):
         _shelf.setSpacing(0)
         _shelf.setStyleSheet('QListWidget {background-color: #333; border: none}')
         _shelf.setContextMenuPolicy(Qt.NoContextMenu)
+        _shelf.setFocusPolicy(Qt.NoFocus)
 
         colors = list(Shape.color_names)
         colors.sort(key=lambda c: Shape.color_step_hex(Shape.color_names[c], 8))

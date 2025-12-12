@@ -1556,7 +1556,7 @@ class PhonemesManager(StackWidget):
                 _layout.setContentsMargins(0, 0, 0, 0)
                 _layout.addWidget(_get)
                 _layout.addWidget(_set)
-                self.grid.addLayout(_layout, j + 1, i + 1, align=Qt.AlignCenter)
+                self.grid.addLayout(_layout, j + 1, i + 1, Qt.AlignCenter)
 
     def find_node(self):
         self.node = None
