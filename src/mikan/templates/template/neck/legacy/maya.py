@@ -20,12 +20,16 @@ class Template(mk.Template):
     def build_template(self, data):
         root = self.node
 
-        with mx.DagModifier() as md:
-            head = md.create_node(mx.tJoint, parent=root)
-            head_tip = md.create_node(mx.tJoint, parent=head)
+        parent = root
+        for i in range(data.get('neck_joints')):
+            with mx.DagModifier() as md:
+                j = md.create_node(mx.tJoint, parent=parent)
+            j['t'] = (0, 1, 0.1)
+            parent = j
 
-        root['t'] = (0, 0.1, 0)
-        head['t'] = (0, 1, 0.1)
+        with mx.DagModifier() as md:
+            head_tip = md.create_node(mx.tJoint, parent=parent)
+
         head_tip['t'] = (0, 3, 0)
 
     def rename_template(self):
