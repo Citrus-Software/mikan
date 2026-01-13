@@ -1,5 +1,37 @@
 # coding: utf-8
 
+"""Maya Deformer Management Module.
+
+This module provides a comprehensive framework for managing deformers in Maya,
+including reading, writing, transferring weights, and organizing deformer data.
+It serves as the base implementation for Maya-specific deformers in the mikan rigging system.
+
+The module supports:
+    - Deformer data serialization and deserialization
+    - Weight map management and transfer
+    - Deformer layering and grouping
+    - NURBS-based weight mapping
+    - Cross-geometry weight transfer
+
+Classes:
+    Deformer: Main class for individual deformer management.
+    DeformerGroup: Container for managing multiple deformers as a group.
+    WeightMapInterface: Interface for weight map node management.
+    NurbsWeightMap: NURBS-based weight mapping system.
+
+Examples:
+    Creating a deformer from an existing Maya node:
+        >>> dfm = Deformer.create(geometry, deformer_node, read=True)
+        >>> dfm.read_deformer()
+
+    Creating a deformer group from selected geometries:
+        >>> group = DeformerGroup.create(selected_nodes, read=True)
+        >>> group.write()
+
+    Transferring weights between geometries:
+        >>> new_dfm = dfm.transfer(target_geometry, mirror=True, axis='x')
+"""
+
 import uuid
 import yaml
 import time
@@ -35,6 +67,60 @@ log = create_logger()
 
 
 class Deformer(abstract.Deformer):
+    """Maya-specific deformer management class.
+
+    This class provides a complete interface for managing Maya deformers,
+    including reading/writing deformer data, weight maps, membership, and connectivity.
+    It inherits from abstract.Deformer and implements Maya-specific functionality.
+
+    Attributes:
+        deformer (str): Type of deformer (e.g., 'skin', 'blendShape', 'cluster').
+        transform (mx.Node): Transform node being deformed.
+        transform_id (str): Unique identifier for the transform.
+        node (mx.Node): The deformer node itself.
+        id (str): Unique identifier for this deformer instance.
+        geometry (mx.Node): The shape node being deformed.
+        geometry_id (str): Unique identifier for the geometry.
+        root (mx.Node): Root node for path resolution.
+        data (dict): Dictionary containing all deformer data (weights, maps, etc.).
+        protected (bool): Whether this deformer is protected from modification.
+        order (str): Deformer stack order ('default', 'front', 'isolated').
+        input (tuple): Input connection (node, transform).
+        input_id (str): Identifier for input connection.
+        output (tuple): Output connection (node, transform).
+        output_id (str): Identifier for output connection.
+        decimals (int): Precision for weight values.
+        ini (ConfigParser): Configuration parser for data storage.
+        unresolved (list): List of unresolved node references.
+        priority (int): Evaluation priority for the deformer.
+
+    Examples:
+        Create a deformer from existing Maya nodes:
+            >>> geo = mx.encode('pSphere1')
+            >>> skin_node = mx.encode('skinCluster1')
+            >>> dfm = Deformer.create(geo, skin_node, read=True)
+
+        Create a deformer from stored data:
+            >>> data = {
+            ...     'deformer': 'skin',
+            ...     'transform': 'pSphere1',
+            ...     'data': {'maps': {}, 'infs': {}}
+            ... }
+            >>> dfm = Deformer(**data)
+            >>> dfm.build()
+
+        Transfer deformer to another geometry:
+            >>> target = mx.encode('pSphere2')
+            >>> new_dfm = dfm.transfer(target, mirror=True, axis='x')
+
+    Note:
+        When creating custom deformers, inherit from this class and override:
+        - node_class: Maya node type constant
+        - read(): Method to read deformer-specific data
+        - write(): Method to write deformer-specific data
+        - build(): Method to create the deformer node
+    """
+
     software = 'maya'
 
     shape_types = (
@@ -70,6 +156,14 @@ class Deformer(abstract.Deformer):
 
     @classmethod
     def is_node(cls, node):
+        """Check if a node is a valid deformer of the type Deformer.node_class.
+
+        Args:
+            node (mx.Node or str): Node to check.
+
+        Returns:
+            bool: True if node is a valid deformer type.
+        """
         if not isinstance(node, mx.Node):
             node = mx.encode(str(node))
         if cls.node_class and node.is_a(cls.node_class):
@@ -77,6 +171,23 @@ class Deformer(abstract.Deformer):
         return False
 
     def encode_data(self):
+        """Encode deformer data to YAML string format.
+
+        Serializes all deformer information including transform, ID, geometry, order, connections,
+        and protection status into a YAML-formatted string suitable for storage.
+
+        Returns:
+            str: YAML-formatted string containing all deformer data.
+
+        Examples:
+            >>> data_str = dfm.encode_data()
+            >>> print(data_str)
+            #!100
+            deformer: skin
+            transform: pSphere1
+            id: skin.0
+            ...
+        """
         data = 'deformer: {}\n'.format(self.deformer)
 
         if self.transform:
@@ -115,7 +226,11 @@ class Deformer(abstract.Deformer):
         return data
 
     def update_ini(self):
+        """Update the backup node with current deformer data.
 
+        Writes the current state of the deformer back to its associated configuration parser (from backup node),
+        preserving comments.
+        """
         if self.ini is None:
             return
 
@@ -129,7 +244,20 @@ class Deformer(abstract.Deformer):
 
     @classmethod
     def parse(cls, ini):
+        """Parse deformer data from configuration section.
 
+        Args:
+            ini (ConfigParser or str): Configuration section or raw YAML string.
+
+        Returns:
+            dict: Parsed deformer data dictionary.
+
+        Examples:
+            >>> cfg = ConfigParser(node)
+            >>> ini = cfg['deformer'][0]
+            >>> data = Deformer.parse(ini)
+            >>> dfm = Deformer(**data)
+        """
         # get data
         root = None
         if ConfigParser.is_section(ini):
@@ -175,6 +303,15 @@ class Deformer(abstract.Deformer):
         return True
 
     def parse_nodes(self):
+        """Resolve all node references in deformer data.
+
+        Attempts to resolve all string node references (root, transform, input, output) to actual Maya node objects.
+        Unresolved references are added to the unresolved list.
+
+        Note:
+            This method is typically called after loading deformer data from storage
+            but before building or updating the deformer.
+        """
         del self.unresolved[:]
 
         # get root
@@ -211,6 +348,15 @@ class Deformer(abstract.Deformer):
         self.data = parse_nodes(self.data, failed=self.unresolved, exclude=self.get_parser_excluded_keys(), root=self.root)
 
     def update_transform(self, transform=None):
+        """Update the target transform for this deformer.
+
+        Changes the deformer's target geometry and resets all cached node
+        references. This is useful when retargeting a deformer to a different
+        piece of geometry.
+
+        Args:
+            transform (mx.Node or str, optional): New transform node. If None, resets to None.
+        """
         if transform is not None and not isinstance(transform, mx.Node):
             transform = mx.encode(str(transform))
 
@@ -227,12 +373,44 @@ class Deformer(abstract.Deformer):
         self.input_id = None
 
     def read_deformer(self):
+        """Read all deformer data from the Maya scene.
+
+        Reads membership, deformer-specific data, and rounds values to the specified precision.
+        This is the main entry point for extracting deformer information from an existing Maya deformer node.
+
+        Examples:
+            >>> dfm = Deformer.create(geo, skin_node, read=False)
+            >>> dfm.read_deformer()
+            >>> print(len(dfm.data['maps']))
+        """
         self.read_membership()
         self.read()
         self.round()
 
     @staticmethod
     def create(geo, deformer, root=None, read=True):
+        """Create a Deformer instance from existing Maya nodes.
+
+        Factory method that creates the appropriate Deformer subclass instance based on the deformer node type.
+        Automatically determines the correct geometry and validates the deformer connection.
+
+        Args:
+            geo (mx.Node or str): Geometry transform or shape node.
+            deformer (mx.Node or str): Deformer node.
+            root (mx.Node or str, optional): Root node for path resolution.
+            read (bool): If True, immediately read deformer data from scene.
+
+        Returns:
+            Deformer: Instance of appropriate Deformer subclass.
+
+        Raises:
+            RuntimeError: If geometry type is invalid or deformer is not connected to the specified geometry.
+
+        Examples:
+            >>> dfm = Deformer.create('pSphere1', 'skinCluster1', read=True)
+            >>> print(dfm.deformer)
+            skin
+        """
         if not isinstance(geo, mx.Node):
             geo = mx.encode(str(geo))
         if not isinstance(deformer, mx.Node):
@@ -275,10 +453,28 @@ class Deformer(abstract.Deformer):
             return dfm
 
     def update(self):
+        """Write all deformer data back to the Maya scene.
+
+        Updates the Maya deformer node with the current data stored in this instance,
+        including membership and deformer-specific attributes.
+
+        Examples:
+            >>> dfm.data['maps'][0].weights[10] = 0.5
+            >>> dfm.update()
+        """
         self.write_membership()
         self.write()
 
     def reorder(self):
+        """Reorder the deformer in the deformation stack.
+
+        Adjusts the deformer's position in the deformation chain based on the order attribute ('front', 'isolated', or default).
+        Handles reconnecting input/output plugs as needed.
+
+        Note:
+            Requires order, input, and output to be set.
+            Called internally during deformer build.
+        """
         if any(filter(lambda x: x is None, (self.order, self.output[0], self.input[0]))):
             return
 
@@ -317,6 +513,19 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_geo_deformers(geo, mikan=True, check=False):
+        """Get all deformers affecting a geometry.
+
+        Retrieves all deformer nodes in the geometry's history,
+        optionally filtering to only mikan-compatible deformers.
+
+        Args:
+            geo (mx.Node or str): Geometry node to query.
+            mikan (bool): If True, only return mikan-compatible deformers.
+            check (bool): If True, validate that deformers have members.
+
+        Returns:
+            list: List of deformer nodes (mx.Node).
+        """
         # get all valid mikan deformers from history
         if not isinstance(geo, mx.Node):
             geo = mx.encode(str(geo))
@@ -395,6 +604,15 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_deformer_output(node, transform):
+        """Get the output plug of a deformer or geometry node.
+
+        Args:
+            node (mx.Node or str): Deformer or geometry node.
+            transform (mx.Node or str): Transform node for context.
+
+        Returns:
+            mx.Plug: Output plug of the node.
+        """
         if not isinstance(node, mx.Node):
             node = mx.encode(str(node))
         if not isinstance(transform, mx.Node):
@@ -426,6 +644,15 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_deformer_input(node, transform):
+        """Get the input plug of a deformer or geometry node.
+
+        Args:
+            node (mx.Node or str): Deformer or geometry node.
+            transform (mx.Node or str): Transform node for context.
+
+        Returns:
+            mx.Plug: Input plug of the node.
+        """
         if not isinstance(node, mx.Node):
             node = mx.encode(str(node))
         if not isinstance(transform, mx.Node):
@@ -463,6 +690,22 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_input_id(plug):
+        """Get the deformer ID from a plug's input connection.
+
+        Traverses the input connection chain to find the source deformer or geometry and returns its identifier string.
+
+        Args:
+            plug (mx.Plug): Plug to trace input from.
+
+        Returns:
+            str or None: Identifier string in format 'transform->id', or None.
+
+        Examples:
+            >>> plug = skin_node['input'][0]['inputGeometry']
+            >>> input_id = Deformer.get_input_id(plug)
+            >>> print(input_id)
+            pSphere1->source
+        """
         # get deformer id from given plug input
         if not isinstance(plug, mx.Plug):
             raise ValueError('invalid plug given ({})'.format(plug))
@@ -523,6 +766,22 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_output_id(plug):
+        """Get the deformer ID from a plug's output connection.
+
+        Traverses the output connection chain to find the destination deformer or geometry and returns its identifier string.
+
+        Args:
+            plug (mx.Plug): Plug to trace output from.
+
+        Returns:
+            str or None: Identifier string in format 'transform->id', or None.
+
+        Examples:
+            >>> plug = skin_node['outputGeometry'][0]
+            >>> output_id = Deformer.get_output_id(plug)
+            >>> print(output_id)
+            pSphere1->shape
+        """
         # get deformer id from given plug output
         if not isinstance(plug, mx.Plug):
             raise ValueError('invalid plug given ({})'.format(plug))
@@ -589,16 +848,47 @@ class Deformer(abstract.Deformer):
         log.debug('/!\\ no deformer input id from "" found'.format(plug))
 
     def get_input(self):
+        """Get the input plug for this deformer.
+
+        Returns:
+            mx.Plug or None: Input plug of the deformer node.
+        """
         if self.transform:
             return Deformer.get_deformer_input(self.node, self.transform)
 
     def get_output(self):
+        """Get the output plug for this deformer.
+
+        Returns:
+            mx.Plug or None: Output plug of the deformer node.
+        """
         if self.transform:
             plug_out = Deformer.get_deformer_output(self.node, self.transform)
             return plug_out
 
     @staticmethod
     def get_deformer_ids(xfo, root=None):
+        """Get all registered deformer and geometry IDs for a transform.
+
+        Retrieves a dictionary of all tagged nodes (deformers, shapes, sources) associated with a transform,
+
+        Args:
+            xfo (mx.Node or str): Transform node to query.
+            root (mx.Node or str, optional): Root node for path resolution.
+
+        Returns:
+            dict: Dictionary mapping ID strings to nodes. Always includes:
+                - 'xfo': The transform node itself
+                - 'shape': The main visible shape (if exists)
+                - 'source': The original/intermediate shape (if exists)
+                Plus any custom tagged nodes (e.g., 'skin.0', 'blend.1').
+
+        Examples:
+            >>> ids = Deformer.get_deformer_ids('pSphere1')
+            >>> print(list(ids))
+            ['xfo', 'shape', 'source', 'skin.0']
+            >>> skin_node = ids['skin.0']
+        """
         if not isinstance(xfo, mx.Node):
             xfo = mx.encode(str(xfo))
 
@@ -657,15 +947,21 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_geometry_id(tag, root=None, add_hook=False):
-        """Resolve a geometry id from a string of form transform->deformer/geometry(@hook)
+        """Resolve a geometry ID to its corresponding node or plug.
 
-        Arguments:
-            tag (str): the geometry id to resolve
-            root (mx.Node, optional): root node to help resolve path
+        Parses a geometry identifier string and resolves it to the actual Maya node or plug.
+        Supports hooks for custom plug access.
+
+        Args:
+            tag (str): Geometry ID in format 'transform->id[@hook]'.
+                Examples: 'pSphere1->shape', 'pCube1->skin.0@enable'.
+            root (mx.Node or str, optional): Root node for path resolution.
+            add_hook (bool): If True, create hook plug if it doesn't exist.
 
         Returns:
-            (mx.Node|mx.Plug, mx.Node): a tuple containing the object
-            resolved from the id and its associated transform node
+            tuple: (node, transform) where node is the resolved mx.Node or mx.Plug,
+                and transform is the associated transform node.
+                Returns (None, None) if resolution fails.
         """
         hook = None
         if '@' in tag:
@@ -700,7 +996,18 @@ class Deformer(abstract.Deformer):
             return xfo, xfo
 
     def set_geometry_id(self, node, key):
+        """Register a node with a geometry ID tag.
 
+        Assigns a unique identifier to a node so it can be referenced later.
+        Handles both DAG nodes (using attributes) and DG nodes (using a tag network node).
+
+        Args:
+            node (mx.Node): Node to register.
+            key (str): Base key for the ID (e.g., 'skin', 'blend', 'ffd').
+
+        Returns:
+            str: The assigned ID tag.
+        """
         transform = self.transform
         if node.is_a(Deformer.shape_types):
             transform = node.parent()
@@ -770,6 +1077,14 @@ class Deformer(abstract.Deformer):
         return tag
 
     def set_id(self):
+        """Set or update the deformer's unique ID.
+
+        Assigns a unique identifier to the deformer node. If an ID is already set in self.id, uses that;
+        otherwise generates a new one based on the deformer type.
+
+        Returns:
+            str: The assigned ID, or empty string if node doesn't exist.
+        """
         if not isinstance(self.node, mx.Node) or not self.node.exists:
             return ''
 
@@ -781,6 +1096,15 @@ class Deformer(abstract.Deformer):
         return self.id
 
     def get_id(self):
+        """Get the full deformer ID including transform path.
+
+        Returns:
+            str or None: Full ID in format 'transform->id', or None if no node exists.
+
+        Examples:
+            >>> dfm.get_id()
+            'pSphere1->skin.0'
+        """
         if self.node is None:
             return
 
@@ -791,6 +1115,13 @@ class Deformer(abstract.Deformer):
         return '{}->{}'.format(name, self.id)
 
     def set_protected(self, protected=None):
+        """Set the protected status of the deformer.
+
+        Protected deformers are marked to prevent accidental modification during batch operations.
+
+        Args:
+            protected (bool, optional): Protection status. If None, uses self.protected value.
+        """
         if not self.node:
             return
 
@@ -810,6 +1141,13 @@ class Deformer(abstract.Deformer):
                 self.node[attr] = protected
 
     def find_root(self):
+        """Resolve the root node reference.
+
+        Updates self.root and self.root_id based on available information.
+
+        Note:
+            Called internally during deformer setup.
+        """
         if isinstance(self.root, mx.DagNode):
             self.root_id = Deformer.get_unique_name(self.root)
         elif isinstance(self.root, string_types):
@@ -817,6 +1155,13 @@ class Deformer(abstract.Deformer):
             self.root = None
 
     def find_transform(self):
+        """Resolve the transform node reference.
+
+        Updates self.transform and self.transform_id based on available information.
+
+        Note:
+            Called internally during deformer setup.
+        """
         if isinstance(self.transform, mx.DagNode):
             self.transform_id = Deformer.get_unique_name(self.transform, root=self.root)
         else:
@@ -824,6 +1169,16 @@ class Deformer(abstract.Deformer):
             self.transform = None
 
     def find_geometry(self):
+        """Find and set the geometry shape node for this deformer.
+
+        Locates the appropriate shape node being deformed, handling intermediate shapes and special cases.
+
+        Raises:
+            RuntimeError: If no valid deformable geometry is found.
+
+        Note:
+            Sets self.geometry to the found shape node.
+        """
         if self.geometry_id:
             node, xfo = self.get_geometry_id(self.geometry_id, self.root)
             if node.is_a(Deformer.shape_types):
@@ -867,6 +1222,18 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_deformer_plug(dfm, xfo, hook):
+        """Get a custom plug from a deformer using a hook name.
+
+        Calls the deformer class's hook() method to retrieve custom plugs.
+
+        Args:
+            dfm (mx.Node): Deformer node.
+            xfo (mx.Node): Transform node.
+            hook (str): Hook name (e.g., 'matrix', 'envelope').
+
+        Returns:
+            mx.Plug or None: The requested plug, or None if not found.
+        """
         if not isinstance(xfo, mx.Node):
             xfo = mx.encode(str(xfo))
         if not isinstance(dfm, mx.Node):
@@ -877,16 +1244,18 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_unique_name(node, root=None):
-        """Returns the shortest unique path of a node based on a specific set of hierarchy
+        """Get the shortest unique path for a node.
+
+        Returns the shortest path that uniquely identifies a node within a given hierarchy,
+        excluding nodes from other assets.
 
         Args:
-            node (mx.Node|str):
-            root (mx.Node|str, optional): restricts the search for the path to this root
+            node (mx.Node or str): Node to get path for.
+            root (mx.Node or str, optional): Root node to restrict search.
 
         Returns:
-            (str): shortest path
+            str: Shortest unique path with '/' separators.
         """
-
         if not isinstance(node, mx.Node):
             node = mx.encode(str(node))
         if root is not None and not isinstance(root, mx.Node):
@@ -926,7 +1295,7 @@ class Deformer(abstract.Deformer):
 
             other_paths.append(_node.path())
 
-        # find shortest path
+        # find the shortest path
         node_path = node.name(namespace=True)
         if other_paths:
             previous_path = None
@@ -949,19 +1318,27 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_node(node_name, root=None, namespace=None):
-        """Resolve a node from a list of ids and node paths
+        """Resolve a node from its name or path.
+
+        Searches for a node by name, handling namespaces, multiple paths, and asset filtering.
+        Supports space-separated alternatives.
 
         Args:
-            node_name (str): list of ids and paths separated by spaces
-            root (mx.Node, optional): root node to help resolve path
+            node_name (str): Node name or path. Can include multiple space-separated alternatives.
+            root (mx.Node or str, optional): Root to restrict search.
+            namespace (str, optional): Namespace to prepend to search.
 
         Returns:
-            mx.Node: resolved node
+            mx.Node: The resolved node.
 
         Raises:
-            RuntimeError: if nothing is found
-        """
+            RuntimeError: If node is not found or multiple matches exist.
 
+        Examples:
+            >>> node = Deformer.get_node('pSphere1')
+            >>> node = Deformer.get_node('arm.L::skin.0 sk_shoulder_L', root=root)
+            >>> node = Deformer.get_node('group/pSphere1', namespace='geo')
+        """
         if isinstance(node_name, mx.Node):
             return node_name
 
@@ -1057,6 +1434,22 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_node_id(node, find=None):
+        """Get the ID string from a node's gem_id attribute.
+
+        Called internally during data dump.
+
+        Args:
+            node (mx.Node): Node to query.
+            find (str, optional): Specific ID pattern to search for.
+
+        Returns:
+            str: ID string plus node name.
+
+        Examples:
+            >>> id_str = Deformer.get_node_id(joint_node, find='::skin.')
+            >>> print(id_str)
+            arm.L::skin.0 sk_shoulder_L
+        """
         if 'gem_id' in node:
             if find and str(find) in node['gem_id'].read():
                 for tag in node['gem_id'].read().split(';'):
@@ -1069,7 +1462,19 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_deformer_members(dfm, geo):
-        """return components of geo deformed by dfm"""
+        """Get the component members affected by a deformer.
+
+        Retrieves the vertices/CVs/points that are in the deformer's deformer set.
+        Handles both legacy deformer sets and modern component tag expressions.
+
+        Args:
+            dfm (mx.Node): Deformer node.
+            geo (mx.Node): Geometry shape node.
+
+        Returns:
+            om.MFnComponent or None: Component function set for the members,
+                or None if all components or retrieval failed.
+        """
         fn = oma.MFnGeometryFilter(dfm.object())
 
         try:
@@ -1137,9 +1542,21 @@ class Deformer(abstract.Deformer):
         log.debug('/!\\ failed to find deformed set members of {} from {}'.format(geo, dfm))
 
     def get_members(self):
+        """Get the component members for this deformer.
+
+        Returns:
+            om.MFnComponent or None: Component function set.
+        """
         return Deformer.get_deformer_members(self.node, self.geometry)
 
     def get_membership(self):
+        """Get the membership map for this deformer.
+
+        Creates a binary weight map indicating which components are affected by the deformer (1) and which are not (0).
+
+        Returns:
+            list or None: List of 0/1 values for each component, or None if all components are affected.
+        """
         # get membership map
         cp_fn = self.get_members()
         if cp_fn is None or cp_fn.isComplete:
@@ -1154,6 +1571,13 @@ class Deformer(abstract.Deformer):
         return mmap
 
     def read_membership(self):
+        """Read membership from Maya scene and store in data.
+
+        Reads which components are in the deformer set and stores as a WeightMap in self.data['membership'].
+
+        Note:
+            Only applies to geometry filter deformers.
+        """
         if not self.node.is_a(mx.kGeometryFilter):
             return
 
@@ -1164,6 +1588,14 @@ class Deformer(abstract.Deformer):
             self.data.pop('membership', None)
 
     def write_membership(self):
+        """Write membership data to Maya scene.
+
+        Updates the deformer set in Maya to match the membership map stored in self.data['membership'].
+        Handles both legacy deformer sets and modern component tag expressions.
+
+        Note:
+            Only applies to geometry filter deformers.
+        """
         if not self.node.is_a(mx.kGeometryFilter):
             return
 
@@ -1280,6 +1712,22 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_shape_components_size(shp):
+        """Get the total number of components in a shape.
+
+        Args:
+            shp (mx.Node or str): Shape node.
+
+        Returns:
+            int: Total number of components (vertices, CVs, or points).
+
+        Raises:
+            ValueError: If shape type is not supported.
+
+        Examples:
+            >>> mesh = mx.encode('pSphereShape1')
+            >>> count = Deformer.get_shape_components_size(mesh)
+            >>> print(f"Mesh has {count} vertices")
+        """
         if not isinstance(shp, mx.Node):
             shp = mx.encode(str(shp))
 
@@ -1315,6 +1763,21 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_components_indices(fn, shp):
+        """Convert component function set to flat index list.
+
+        Converts component indices from their native format (single, double, or triple indexed)
+        to a flat list of integer indices.
+
+        Args:
+            fn (om.MFnComponent): Component function set.
+            shp (mx.Node): Shape node for context.
+
+        Returns:
+            list: Flat list of integer component indices.
+
+        Raises:
+            ValueError: If shape type is not supported.
+        """
         if isinstance(fn, om.MFnSingleIndexedComponent):
             return list(fn.getElements())
 
@@ -1355,6 +1818,25 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_components_mobject(shp, ids=None):
+        """Create a component MObject for specified indices.
+
+        Creates a Maya API component object for the given shape and indices.
+        If no indices are provided, creates a complete component set.
+
+        Args:
+            shp (mx.Node or str): Shape node.
+            ids (list, optional): List of component indices. If None, creates a complete set.
+
+        Returns:
+            om.MObject: Component MObject.
+
+        Examples:
+            >>> # Create component for specific vertices
+            >>> comp = Deformer.get_components_mobject(mesh, [0, 5, 10])
+
+            >>> # Create complete component set
+            >>> all_comp = Deformer.get_components_mobject(mesh)
+        """
         if not isinstance(shp, mx.Node):
             shp = mx.encode(str(shp))
 
@@ -1418,6 +1900,11 @@ class Deformer(abstract.Deformer):
         return mobj
 
     def get_size(self):
+        """Get the total component count for this deformer's geometry.
+
+        Returns:
+            int: Number of components.
+        """
         if not self.geometry:
             try:
                 self.find_geometry()
@@ -1431,6 +1918,36 @@ class Deformer(abstract.Deformer):
     # map edit --------------------------------------------------------------------------------------------------------
 
     def transfer(self, xfo, flip=False, mirror=False, axis='x'):
+        """Transfer deformer data to another geometry.
+
+        Creates a new deformer instance with data transferred from this deformer to a target geometry.
+        Supports flipping and mirroring across an axis.
+
+        Args:
+            xfo (mx.Node or str): Target transform node.
+            flip (bool): If True, flip data across the specified axis.
+            mirror (bool): If True, mirror data across the specified axis.
+            axis (str): Axis for flip/mirror operation ('x', 'y', or 'z').
+
+        Returns:
+            Deformer: New deformer instance with transferred data.
+
+        Raises:
+            RuntimeError: If axis is invalid or geometry type not supported.
+
+        Note:
+            Uses temporary skin clusters and closest point transfer.
+            The returned deformer has not been built yet. Call build() to create the actual Maya node.
+
+        Examples:
+            >>> source_dfm = Deformer.create(source_geo, skin_node)
+            >>> target_geo = mx.encode('target_mesh')
+            >>> new_dfm = source_dfm.transfer(target_geo)
+            >>> new_dfm.build()
+
+            >>> # Transfer with mirroring
+            >>> mirrored_dfm = source_dfm.transfer(target_geo, mirror=True, axis='x')
+        """
         _sl = mc.ls(sl=1)
 
         if not isinstance(xfo, mx.Node):
@@ -1548,6 +2065,26 @@ class Deformer(abstract.Deformer):
 
     @classmethod
     def get_layers(cls, xfo, root=None):
+        """Get all deformer editing layers for a geometry.
+
+        Deformer layers allow non-destructive editing by creating intermediate shape nodes.
+        This method retrieves all layer shapes and identifies the top (final) layer.
+
+        Args:
+            xfo (mx.Node or str): Transform node.
+            root (mx.Node or str, optional): Root for path resolution.
+
+        Returns:
+            dict: Dictionary mapping layer numbers to shape nodes. The top layer is keyed by cls.top_layer (infinity).
+
+        Examples:
+            >>> layers = Deformer.get_layers(geo)
+            >>> for layer_num, shape in layers.items():
+            ...     if layer_num == Deformer.top_layer:
+            ...         print(f"Top layer: {shape}")
+            ...     else:
+            ...         print(f"Layer {layer_num}: {shape}")
+        """
         ids = cls.get_deformer_ids(xfo, root)
         layers = {}
         top_layer = cls.top_layer
@@ -1575,6 +2112,22 @@ class Deformer(abstract.Deformer):
 
     @classmethod
     def get_current_layer(cls, xfo, root=None):
+        """Get the currently visible layer number.
+
+        Args:
+            xfo (mx.Node or str): Transform node.
+            root (mx.Node or str, optional): Root for path resolution.
+
+        Returns:
+            int or float: Layer number, or cls.top_layer if top layer is active.
+
+        Examples:
+            >>> current = Deformer.get_current_layer(geo)
+            >>> if current == Deformer.top_layer:
+            ...     print("Viewing final result")
+            ... else:
+            ...     print(f"Editing layer {current}")
+        """
         ids = cls.get_deformer_ids(xfo, root)
         if 'shape' not in ids:
             return
@@ -1589,6 +2142,28 @@ class Deformer(abstract.Deformer):
 
     @classmethod
     def toggle_layers(cls, xfo, root=None, layer=None, top=False, lodv=False):
+        """Toggle visibility of deformer editing layers.
+
+        Controls which layer shape is visible by setting intermediate object flags.
+        Allows switching between edit layers and the final result.
+
+        Args:
+            xfo (mx.Node or str): Transform node.
+            root (mx.Node or str, optional): Root for path resolution.
+            layer (int or float, optional): Layer number to show. If None, cycles to next layer.
+            top (bool): If True, force display of top (final) layer.
+            lodv (bool): If True, use level of detail visibility instead of intermediate flag for top layer.
+
+        Examples:
+            >>> # Show final result
+            >>> Deformer.toggle_layers(geo, top=True)
+
+            >>> # Cycle to next layer
+            >>> Deformer.toggle_layers(geo)
+
+            >>> # Show specific layer
+            >>> Deformer.toggle_layers(geo, layer=0)
+        """
         layers = cls.get_layers(xfo, root)
         top_layer = cls.top_layer
 
@@ -1646,6 +2221,15 @@ class Deformer(abstract.Deformer):
 
     @classmethod
     def remove_layers(cls, xfo, root=None):
+        """Remove all deformer editing layers from a geometry.
+
+        Deletes all intermediate layer shapes and restores the geometry to its final state.
+        Fixes membership issues that may occur in Maya 2018+.
+
+        Args:
+            xfo (mx.Node or str): Transform node.
+            root (mx.Node or str, optional): Root for path resolution.
+        """
         if not isinstance(xfo, mx.Node):
             xfo = mx.encode(str(xfo))
 
@@ -1675,6 +2259,25 @@ class Deformer(abstract.Deformer):
 
     @classmethod
     def inject_layers(cls, xfo, root=None):
+        """Inject editing layers into the deformer stack.
+
+        Creates intermediate shape nodes for each skin cluster,
+        enabling non-destructive layer-based editing of deformer weights.
+
+        Args:
+            xfo (mx.Node or str): Transform node.
+            root (mx.Node or str, optional): Root for path resolution.
+
+        Note:
+            Only affects skin cluster deformers. Other deformer types are not layered.
+
+        Examples:
+            >>> # Enable layer editing for skin clusters
+            >>> Deformer.inject_layers(geo)
+            >>>
+            >>> # Now you can toggle between layers
+            >>> Deformer.toggle_layers(geo, layer=0)
+        """
         if not isinstance(xfo, mx.Node):
             xfo = mx.encode(str(xfo))
 
