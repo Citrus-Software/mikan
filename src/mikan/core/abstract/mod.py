@@ -1,5 +1,31 @@
 # coding: utf-8
 
+"""Abstract Mod (Modifier) Module.
+
+This module provides the base classes for managing modifiers in the Mikan framework.
+Modifiers are instructions that can be executed on rig elements, such as creating
+constraints, setting attributes, or performing custom actions during rig building.
+
+The module supports:
+    - Dynamic modifier class registration via templates
+    - Variable substitution and parsing
+    - Execution status tracking and error handling
+    - Cross-platform modifier abstraction
+
+Classes:
+    Mod: Abstract base class for modifier management.
+    ModError: Exception raised for modifier execution errors.
+    ModArgumentError: Exception raised for invalid modifier arguments.
+
+Examples:
+    Creating and executing a modifier:
+        >>> mod = Mod('constraint', node=joint_node, data={'target': ctrl_node})
+        >>> status = mod.execute()
+
+    Using variable substitution:
+        >>> mod.parse_vars({'target': '$my_variable'})
+"""
+
 import re
 import sys
 import logging
@@ -23,6 +49,39 @@ log = create_logger()
 
 
 class Mod(JobMonitor):
+    """Abstract base class for modifier management.
+
+    This class provides the core interface for managing modifiers across different
+    DCC applications. Modifiers are operations that execute during rig building,
+    such as creating constraints, setting attributes, expressions, or driven keys.
+
+    Attributes:
+        modules (dict): Registry of available modifier modules.
+        classes (dict): Cache of instantiated modifier classes.
+        software (str): Identifier for the DCC software (e.g., 'maya').
+        mod (str): Type of modifier (e.g., 'constraint', 'setAttr').
+        mod_data (OrderedDict): Default configuration data for the modifier type.
+        nodes (dict): Node references for parser resolution.
+        id_prefix (str): Prefix for modifier IDs, defaults to 'mod.'.
+        node: The target node for this modifier.
+        data (dict): Dictionary containing modifier parameters.
+        source: Source template or node for variable resolution.
+        modes (set): Active modes for the modifier.
+
+    Examples:
+        Creating a modifier from template data:
+            >>> mod = Mod('constraint', node=joint, data={'type': 'parent'})
+            >>> status = mod.execute()
+
+        Checking execution status:
+            >>> if status == Mod.STATUS_DONE:
+            ...     print('Modifier executed successfully')
+
+    Note:
+        This is an abstract base class. Use software-specific implementations
+        like mikan.maya.core.mod.Mod for actual modifier operations.
+    """
+
     modules = {}
     classes = {}
     software = None
@@ -35,6 +94,19 @@ class Mod(JobMonitor):
 
     @classmethod
     def get_all_modules(cls, module=mikan.templates.mod):
+        """Discover and register all available modifier modules.
+
+        Scans the templates.mod package for modifier implementations,
+        loads their configuration from mod.yml files, and registers
+        them in the modules dictionary. Also handles legacy name mappings.
+
+        Args:
+            module: The parent module to scan for modifier packages.
+                Defaults to mikan.templates.mod.
+
+        Note:
+            This method is called automatically at module import time.
+        """
         cls.modules.clear()
         cls.classes.clear()
 
@@ -98,6 +170,21 @@ class Mod(JobMonitor):
 
     @classmethod
     def get_class(cls, name):
+        """Get or create a modifier class for the specified modifier type.
+
+        Retrieves a cached modifier class or dynamically loads and instantiates
+        it from the corresponding template module.
+
+        Args:
+            name (str): Name of the modifier type (e.g., 'constraint', 'setAttr').
+
+        Returns:
+            type: The modifier class for the specified type, or None if not found.
+
+        Examples:
+            >>> ConstraintMod = Mod.get_class('constraint')
+            >>> mod = ConstraintMod('constraint', node=joint)
+        """
         if name in cls.classes:
             return cls.classes[name]
 
@@ -115,10 +202,29 @@ class Mod(JobMonitor):
                 return new_cls
 
     def __new__(cls, mod, node=None, data=None, source=None):
+        """Create a new modifier instance of the appropriate type.
+
+        Args:
+            mod (str): Type of modifier to create.
+            node: Target node for the modifier.
+            data (dict, optional): Modifier parameters.
+            source: Source template for variable resolution.
+
+        Returns:
+            Mod: New modifier instance of the appropriate subclass.
+        """
         new_cls = cls.get_class(mod)
         return super(Mod, new_cls).__new__(new_cls)
 
     def __init__(self, mod, node=None, data=None, source=None):
+        """Initialize a modifier instance.
+
+        Args:
+            mod (str): Type of modifier.
+            node: Target node for the modifier.
+            data (dict, optional): Modifier parameters.
+            source: Source template for variable resolution.
+        """
         self.node = node
         self.data = data or {}
         self.data = deepcopy(self.data)
@@ -134,10 +240,37 @@ class Mod(JobMonitor):
         JobMonitor.__init__(self)
 
     def run(self):
-        """ placeholder """
+        """Execute the modifier's main operation.
+
+        Must be implemented by software-specific subclasses.
+
+        Note:
+            This is a placeholder. Override in subclasses.
+        """
 
     def execute(self, modes=None, source=None):
+        """Execute the modifier.
 
+        Resolves node references, runs the modifier operation,
+        and handles errors. Logs status and returns a status code.
+
+        Args:
+            modes (set, optional): Active modes for execution behavior.
+            source (str, optional): Source identifier for logging.
+
+        Returns:
+            int: Status code indicating result:
+                - STATUS_DONE: Successfully executed
+                - STATUS_DELAY: Waiting for unresolved dependencies
+                - STATUS_INVALID: Invalid arguments provided
+                - STATUS_ERROR: ModError occurred
+                - STATUS_CRASH: Unexpected exception occurred
+
+        Examples:
+            >>> status = mod.execute(modes={'mirror'}, source='template.yml')
+            >>> if status == Mod.STATUS_DONE:
+            ...     print('Modifier executed successfully')
+        """
         if modes is None:
             modes = set()
         self.modes = modes
@@ -183,9 +316,21 @@ class Mod(JobMonitor):
             return Mod.STATUS_CRASH
 
     def parse_nodes(self):
-        """placeholder"""
+        """Parse and resolve node references in modifier data.
+
+        Resolves string identifiers to actual DCC nodes.
+        Must be implemented by software-specific subclasses.
+
+        Note:
+            This is a placeholder. Override in subclasses.
+        """
 
     def delay_parser(self):
+        """Check if parsing should be delayed due to unresolved dependencies.
+
+        Returns:
+            bool: True if there are unresolved module or connection references.
+        """
         if self.unresolved:
             for n in self.unresolved:
                 if '::mod.' in n or '::!mod.' in n or '->' in n:
@@ -193,6 +338,24 @@ class Mod(JobMonitor):
         return False
 
     def parse_vars(self, data):
+        """Parse and substitute variables in data structures.
+
+        Recursively processes data, replacing $variable references
+        with their resolved values from the source template.
+
+        Args:
+            data: Data structure to process (dict, list, or string).
+
+        Returns:
+            The processed data with variables substituted.
+
+        Examples:
+            >>> mod.parse_vars({'target': '$my_node'})
+            {'target': <resolved_node>}
+
+            >>> mod.parse_vars('$prefix_name')
+            'L_arm'
+        """
         if isinstance(data, dict):
             new_data = type(data)()
             for k, v in data.items():
@@ -221,15 +384,51 @@ class Mod(JobMonitor):
 
     @staticmethod
     def add_var(var, node):
-        """placeholder"""
+        """Add a variable to the node's variable storage.
+
+        Args:
+            var (str): Variable name.
+            node: Node to store the variable on.
+
+        Note:
+            This is a placeholder. Override in subclasses.
+        """
 
     @staticmethod
     def get_var(var, node):
-        """placeholder"""
+        """Get a variable value from the node's variable storage.
+
+        Args:
+            var (str): Variable name to retrieve.
+            node: Node to get the variable from.
+
+        Returns:
+            The variable value, or 0 if not found.
+
+        Note:
+            This is a placeholder. Override in subclasses.
+        """
         return 0
 
     @staticmethod
     def parse_ini_replace(ini):
+        """Parse variable definitions from INI-style comments.
+
+        Extracts variables defined in #> comment lines.
+
+        Args:
+            ini: INI parser instance with get_lines() method.
+
+        Returns:
+            dict: Dictionary of parsed variable names and values.
+
+        Examples:
+            >>> # In template file:
+            >>> # #> {side: L, limb: arm}
+            >>> vars = Mod.parse_ini_replace(ini)
+            >>> vars
+            {'side': 'L', 'limb': 'arm'}
+        """
         vars = {}
 
         for line in ini.get_lines():
@@ -246,6 +445,25 @@ class Mod(JobMonitor):
 
     @staticmethod
     def parse_replace(mod, data):
+        """Parse and expand template replacement patterns.
+
+        Replaces <key> patterns in mod string with values from data.
+        If data values are lists, generates multiple mod strings.
+
+        Args:
+            mod (str): Template string with <key> placeholders.
+            data (dict): Dictionary of replacement values.
+
+        Returns:
+            list: List of expanded mod strings.
+
+        Examples:
+            >>> Mod.parse_replace('joint_<side>', {'side': ['L', 'R']})
+            ['joint_L', 'joint_R']
+
+            >>> Mod.parse_replace('<limb>_ctrl', {'limb': 'arm'})
+            ['arm_ctrl']
+        """
         mods = [mod]
         keys = {}
 
@@ -291,18 +509,45 @@ class Mod(JobMonitor):
         return mods
 
     def get_template(self):
+        """Get the template associated with this modifier's source.
+
+        Returns:
+            Template: The template instance, or None if not found.
+        """
         return Template.get_from_node(self.source)
 
     def set_id(self, node, tag, subtag=None):
-        """placeholder"""
+        """Set an ID tag on a node.
+
+        Args:
+            node: Node to tag.
+            tag (str): Primary tag identifier.
+            subtag (str, optional): Secondary tag identifier.
+
+        Note:
+            This is a placeholder. Override in subclasses.
+        """
 
 
 class ModError(Exception):
-    pass
+    """Exception raised for modifier execution errors.
+
+    Raised when a modifier operation fails in an expected way,
+    such as missing nodes or invalid operations.
+
+    Examples:
+        >>> raise ModError('Target node not found')
+    """
 
 
 class ModArgumentError(Exception):
-    pass
+    """Exception raised for invalid modifier arguments.
+
+    Raised when modifier arguments are invalid or missing.
+
+    Examples:
+        >>> raise ModArgumentError('Missing required parameter: target')
+    """
 
 
 Mod.get_all_modules()
