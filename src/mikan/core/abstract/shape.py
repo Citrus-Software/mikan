@@ -1,5 +1,40 @@
 # coding: utf-8
 
+"""Abstract Shape Module.
+
+This module provides shape and color management utilities for the Mikan framework.
+It handles loading control shapes from YAML templates and provides color conversion
+functions for working with different color formats and spaces.
+
+The module supports:
+    - Loading shape definitions from YAML template files
+    - Color name to RGB/hex conversion using CSS color names
+    - RGB to hex and hex to RGB conversions
+    - sRGB gamma correction conversions
+    - Maya color index matching
+    - Color flipping for symmetry (hue shifting)
+    - Color sorting utilities
+
+Classes:
+    Shape: Utility class for shape loading and color operations.
+
+Examples:
+    Loading shapes from templates:
+        >>> Shape.load_shapes_from_path()
+        >>> circle_shape = Shape.shapes['circle']
+
+    Converting colors:
+        >>> rgb = Shape.hex_to_rgb('#ff0000')
+        >>> rgb
+        (1.0, 0.0, 0.0)
+
+        >>> rgb = Shape.color_to_rgb('red')
+        >>> hex_val = Shape.rgb_to_hex(rgb)
+
+    Getting Maya color index:
+        >>> color_id = Shape.color_to_id('blue')
+"""
+
 import os
 import re
 import colorsys
@@ -13,10 +48,46 @@ __all__ = ['Shape']
 
 
 class Shape(object):
+    """Utility class for shape loading and color operations.
+
+    Provides static methods for loading control curve shapes from YAML files
+    and converting colors between various formats (hex, RGB, sRGB, Maya index).
+
+    Attributes:
+        shapes (dict): Registry of loaded shape definitions keyed by name.
+        color_names (dict): CSS color name to hex value mapping.
+        maya_color_list (list): Maya's indexed color palette as RGB tuples.
+
+    Examples:
+        Loading and accessing shapes:
+            >>> Shape.load_shapes_from_path()
+            >>> cube_data = Shape.shapes['cube']
+
+        Color conversions:
+            >>> rgb = Shape.color_to_rgb('dodgerblue')
+            >>> maya_id = Shape.closest_color_id(rgb)
+
+    Note:
+        Shapes are automatically loaded at module import time from the
+        default templates.shapes path.
+    """
+
     shapes = {}
 
     @staticmethod
     def load_shapes_from_path(path=mikan.templates.shapes.__path__[0]):
+        """Load shape definitions from YAML files in a directory.
+
+        Scans the specified path for .yml files and loads each as a
+        shape definition into the shapes registry.
+
+        Args:
+            path (str): Directory path to scan for shape files.
+                Defaults to mikan.templates.shapes package path.
+
+        Note:
+            Called automatically at module import time.
+        """
         for f in os.listdir(path):
             if f.endswith('.yml'):
                 p = os.path.join(path, f)
@@ -76,9 +147,23 @@ class Shape(object):
 
     @staticmethod
     def hex_to_rgb(hex_value):
-        """
-        Convert a hexadecimal color value to a 3-tuple of integers
-        suitable for use in an ``rgb()`` triplet specifying that color.
+        """Convert a hexadecimal color value to normalized RGB tuple.
+
+        Args:
+            hex_value (str): Hex color string (e.g., '#ff0000' or '#f00').
+
+        Returns:
+            tuple: RGB values as floats in range [0, 1].
+
+        Raises:
+            ValueError: If hex_value is not a valid hexadecimal color.
+
+        Examples:
+            >>> Shape.hex_to_rgb('#ff0000')
+            (1.0, 0.0, 0.0)
+
+            >>> Shape.hex_to_rgb('#0f0')
+            (0.0, 1.0, 0.0)
         """
         re_hex_color = re.compile(r'^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$')
         match = re_hex_color.match(hex_value)
@@ -101,14 +186,38 @@ class Shape(object):
 
     @staticmethod
     def rgb_to_hex(rgb):
-        """
-        convert a 3-tuple of integers color triplet, to a normalized hexadecimal value for that color.
+        """Convert normalized RGB tuple to hexadecimal color string.
+
+        Args:
+            rgb (tuple): RGB values as floats in range [0, 1].
+
+        Returns:
+            str: Hexadecimal color string (e.g., '#ff0000').
+
+        Examples:
+            >>> Shape.rgb_to_hex((1.0, 0.0, 0.0))
+            '#ff0000'
         """
         rgb = map(lambda v: int(v * 255), rgb)
         return '#{:02x}{:02x}{:02x}'.format(*rgb)
 
     @staticmethod
     def color_to_rgb(color):
+        """Convert a color name or hex value to RGB tuple.
+
+        Args:
+            color (str): CSS color name or hex value.
+
+        Returns:
+            tuple: RGB values as floats in range [0, 1].
+
+        Examples:
+            >>> Shape.color_to_rgb('red')
+            (1.0, 0.0, 0.0)
+
+            >>> Shape.color_to_rgb('#00ff00')
+            (0.0, 1.0, 0.0)
+        """
         if color in Shape.color_names:
             color = Shape.color_names[color]
         rgb = Shape.hex_to_rgb(color)
@@ -116,14 +225,42 @@ class Shape(object):
 
     @staticmethod
     def rgb_to_srgb(color):
+        """Convert linear RGB to sRGB with gamma correction.
+
+        Args:
+            color (tuple): Linear RGB values.
+
+        Returns:
+            list: sRGB values with gamma applied (power 0.4545).
+        """
         return [pow(c if c > 0 else 0, 0.4545) for c in color]
 
     @staticmethod
     def srgb_to_rgb(color):
+        """Convert sRGB to linear RGB (remove gamma correction).
+
+        Args:
+            color (tuple): sRGB values.
+
+        Returns:
+            list: Linear RGB values (power 2.2).
+        """
         return [pow(c, 2.2) for c in color]
 
     @staticmethod
     def color_to_id(color):
+        """Convert a color to the closest Maya color index.
+
+        Args:
+            color (str): CSS color name or hex value.
+
+        Returns:
+            int: Maya color index (0-31).
+
+        Examples:
+            >>> Shape.color_to_id('red')
+            13
+        """
         if color in Shape.color_names:
             color = Shape.color_names[color]
         rgb = Shape.hex_to_rgb(color)
@@ -131,6 +268,17 @@ class Shape(object):
 
     @staticmethod
     def closest_color_id(rgb_in):
+        """Find the closest Maya color index to an RGB value.
+
+        Uses Euclidean distance in RGB space to find the nearest match
+        from Maya's indexed color palette.
+
+        Args:
+            rgb_in (tuple): RGB values as floats in range [0, 1].
+
+        Returns:
+            int: Maya color index (0-31).
+        """
         min_colors = {}
         for i, rgb in enumerate(Shape.maya_color_list):
             rd = (rgb[0] - rgb_in[0]) ** 2
@@ -141,6 +289,21 @@ class Shape(object):
 
     @staticmethod
     def get_color_flip(rgb, direction=1):
+        """Shift color hue for symmetry (left/right side differentiation).
+
+        Rotates the hue by 1/3 (120 degrees) in the specified direction,
+        useful for distinguishing left and right side controls.
+
+        Args:
+            rgb (tuple): RGB values as floats.
+            direction (int): Direction of hue shift (1 or -1).
+
+        Returns:
+            list: RGB values with shifted hue.
+
+        Examples:
+            >>> flipped = Shape.get_color_flip((1.0, 0.0, 0.0), direction=1)
+        """
         direction = -float(direction)
         hsv = list(colorsys.rgb_to_hsv(*rgb))
         hsv[0] = (hsv[0] + 0.333333 * direction) % 1
@@ -149,6 +312,19 @@ class Shape(object):
 
     @staticmethod
     def color_step(r, g, b, repetitions=1):
+        """Calculate color sorting values based on hue and luminance.
+
+        Useful for sorting colors in a visually pleasing order.
+
+        Args:
+            r (float): Red component.
+            g (float): Green component.
+            b (float): Blue component.
+            repetitions (int): Number of grouping steps.
+
+        Returns:
+            tuple: (hue_step, luminance, value_step) for sorting.
+        """
         lum = math.sqrt(.241 * r + .691 * g + .068 * b)
 
         h, s, v = colorsys.rgb_to_hsv(r, g, b)
@@ -165,6 +341,15 @@ class Shape(object):
 
     @staticmethod
     def color_step_hex(hex_value, repetitions=1):
+        """Calculate color sorting values from a hex color.
+
+        Args:
+            hex_value (str): Hexadecimal color string.
+            repetitions (int): Number of grouping steps.
+
+        Returns:
+            tuple: (hue_step, luminance, value_step) for sorting.
+        """
         r, g, b = Shape.hex_to_rgb(hex_value)
         return Shape.color_step(r, g, b, repetitions)
 
