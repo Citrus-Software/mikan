@@ -21,6 +21,7 @@ mikan_src = os.path.split(mikan_src)[0]
 env = os.environ.copy()
 env["TANG_MIKAN_PATH"] = mikan_src
 env["MIKAN_MENU"] = "on"
+env["QT_PREFERRED_BINDING"] = "PySide2"
 
 # run tangerine
 subprocess.Popen([path_exe], cwd=path_cwd, env=env)
