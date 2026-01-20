@@ -3287,7 +3287,7 @@ class TemplateDuplicateUI(MayaWindow):
 
         layout = QGridLayout()
         layout.setSpacing(2)
-        layout.setMargin(3)
+        layout.setContentsMargins(3, 3, 3, 3)
 
         layout.addWidget(QLabel(' Copies: '), 0, 0, alignment=Qt.AlignRight)
         layout.addWidget(self.spin_n, 0, 1)
@@ -3354,7 +3354,7 @@ class TemplateRenamerUI(MayaWindow):
 
         layout = QGridLayout()
         layout.setSpacing(2)
-        layout.setMargin(2)
+        layout.setContentsMargins(2, 2, 2, 2)
 
         layout.addWidget(QLabel(" Pattern:", alignment=Qt.AlignRight), 0, 0)
         layout.addWidget(self.edit_pattern, 0, 1)
@@ -3402,7 +3402,7 @@ class TemplateModRenamerUI(MayaWindow):
 
         layout = QGridLayout()
         layout.setSpacing(2)
-        layout.setMargin(2)
+        layout.setContentsMargins(2, 2, 2, 2)
 
         layout.addWidget(QLabel(" Pattern:", alignment=Qt.AlignRight), 0, 0)
         layout.addWidget(self.edit_pattern, 0, 1)
@@ -3460,7 +3460,7 @@ class TemplateModDuplicateUI(MayaWindow):
 
         layout = QGridLayout()
         layout.setSpacing(2)
-        layout.setMargin(2)
+        layout.setContentsMargins(2, 2, 2, 2)
 
         layout.addWidget(QLabel(" Number of copy:", alignment=Qt.AlignRight), 0, 0)
         layout.addWidget(self.spin_number, 0, 1)
