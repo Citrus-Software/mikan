@@ -247,13 +247,29 @@ class MikanUI(MayaDockMixin):
         path_help = sep.join(base_path[:-1]) + sep + 'help.yml'
 
         # get prefs
-        menus = []
-        menus.append(('&Tools', path_tools))
-        menus += UserPrefs.get('user_menu_paths', [])
-        menus.append(('&Help', path_help))
+        menu_items = []
+        menu_items.append(('&Tools', path_tools))
+        menu_items += UserPrefs.get('user_menu_paths', [])
+
+        _menu_items = Prefs.get('menu_paths', {})
+        for k in _menu_items:
+            menu_items.append([k, _menu_items[k]])
+
+        menu_items.append(('&Help', path_help))
+
+        # remove duplicates
+        menu_items_clean = []
+        seen_paths = set()
+        for item in menu_items:
+            path = item[1]
+            norm_path = os.path.normpath(path)
+            norm_path = os.path.normcase(norm_path)
+            if norm_path not in seen_paths:
+                seen_paths.add(norm_path)
+                menu_items_clean.append(item)
 
         # update ui
-        for name, path in menus:
+        for name, path in menu_items_clean:
             MikanUI.PATHS = self.get_paths_dict(path)
             menu = self.load_menu(name, path)
             if menu and 'Help' not in name:
