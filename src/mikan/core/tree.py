@@ -1,17 +1,51 @@
 # coding: utf-8
 
 import re
+import sys
 from fnmatch import fnmatch
 from abc import abstractmethod
 from copy import copy, deepcopy
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 try:
-    from collections.abc import Mapping, MutableMapping
+    from collections.abc import Mapping, MutableMapping, MutableSet
 except ImportError:
-    from collections import Mapping, MutableMapping
+    from collections import Mapping, MutableMapping, MutableSet
 
 __all__ = ['Tree', 'SuperTree']
+
+is_python_3 = (sys.version_info[0] == 3)
+ordered_dict = dict
+if sys.version_info[0] != 3:
+    ordered_dict = OrderedDict
+
+
+class OrderedSet(MutableSet):
+
+    def __init__(self, iterable=None):
+        self._map = ordered_dict()
+        if iterable is not None:
+            self |= iterable
+
+    def __contains__(self, key):
+        return key in self._map
+
+    def add(self, value):
+        if value not in self._map:
+            self._map[value] = None
+
+    def discard(self, value):
+        if value in self._map:
+            del self._map[value]
+
+    def __iter__(self):
+        return iter(self._map)
+
+    def __len__(self):
+        return len(self._map)
+
+    def __repr__(self):
+        return f"OrderedSet({list(self._map)})"
 
 
 class BaseTree(MutableMapping):
@@ -106,7 +140,7 @@ class Tree(BaseTree):
     def __init__(self, data=None, sep='.'):
         BaseTree.__init__(self, sep=sep)
 
-        self._branches = defaultdict(set)
+        self._branches = defaultdict(OrderedSet)
         self._items = {}
         if data:
             self.update(data)
