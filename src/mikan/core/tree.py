@@ -45,7 +45,7 @@ class OrderedSet(MutableSet):
         return len(self._map)
 
     def __repr__(self):
-        return f"OrderedSet({list(self._map)})"
+        return 'OrderedSet({})'.format(list(self._map))
 
 
 class BaseTree(MutableMapping):
