@@ -1211,7 +1211,7 @@ class Deformer(abstract.Deformer):
 
                 # skip data shape
                 if 'gem_deformer' in shp and 'data.' in shp['gem_deformer'].read():
-                        continue
+                    continue
 
                 # found!
                 self.geometry = shp
@@ -1476,9 +1476,14 @@ class Deformer(abstract.Deformer):
                 or None if all components or retrieval failed.
         """
         fn = oma.MFnGeometryFilter(dfm.object())
-
+        dfm_set = None
         try:
-            dfm_set = mx.Node(fn.deformerSet)
+            dfm_set_obj = fn.deformerSet
+            dfm_set = mx.Node(dfm_set_obj)
+        except:
+            pass
+
+        if dfm_set:
             fn_set = om.MFnSet(dfm_set.object())
             sl = fn_set.getMembers(flatten=True)
             it = om.MItSelectionList(sl)
@@ -1502,7 +1507,7 @@ class Deformer(abstract.Deformer):
 
                 it.next()
 
-        except:
+        else:
             dfm_id = fn.indexForOutputShape(geo.object())
             if 'componentTagExpression' in dfm:
                 tag = dfm['input'][dfm_id]['componentTagExpression'].read()
