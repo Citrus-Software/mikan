@@ -172,9 +172,16 @@ class Asset(abstract.Asset):
 
         dfm_nodes = [str(node) for node in _nodes]
 
+        remove_tags = (
+            '*#::menu', '*::group*',
+            '*::mod',
+            '*::hook*', '*::root*', '*::node', '*::ctrl*',
+            '::bind', '::rig',
+        )
+
         dg_nodes = []
         dag_nodes = []
-        for tag in ('*#::menu', '*::group*', '*::mod.*', '*::hook*', '*::root*', '*::node', '*::ctrl*', '::bind', '::rig'):
+        for tag in remove_tags:
             nodes = Nodes.get_id(tag) or []
             if not isinstance(nodes, list):
                 nodes = [nodes]
@@ -184,14 +191,23 @@ class Asset(abstract.Asset):
                 else:
                     dg_nodes.append(node)
 
+        dgb_nodes = []
+        dga_nodes = []
+        for node in dg_nodes:
+            if node.is_a((mx.tDecomposeMatrix, mx.kConstraint)):
+                dgb_nodes.append(node)
+            else:
+                dga_nodes.append(node)
+
         for node in dag_nodes:
             for n in set(node.connections(type=mx.kConstraint)):
-                dg_nodes.append(n)
+                dga_nodes.append(n)
 
-        dg_nodes = [str(node) for node in dg_nodes]
+        dgb_nodes = [str(node) for node in dgb_nodes]
+        dga_nodes = [str(node) for node in dga_nodes]
         dag_nodes = [str(node) for node in dag_nodes]
 
-        for node in itertools.chain(dfm_nodes, dg_nodes, dag_nodes):
+        for node in itertools.chain(dgb_nodes, dfm_nodes, dga_nodes, dag_nodes):
             if mc.objExists(node):
                 mc.delete(node)
 
