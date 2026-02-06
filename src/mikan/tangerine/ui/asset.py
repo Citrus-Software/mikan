@@ -1077,7 +1077,6 @@ if do_rig_menu and not batch_mode:
 
     # tools menu
     path = path_utils + sep + 'tools.yml'
-    log.warning(path)
     load_menu(path, _menu)
 
     # prefs menu
