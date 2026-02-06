@@ -3,6 +3,7 @@
 import os
 import yaml
 import inspect
+import traceback
 from functools import partial
 
 from PySide2 import QtGui, QtWidgets
@@ -20,6 +21,7 @@ from tang_gui.tang_action import add_action, TangAction
 from mikan.core.ui.widgets import *
 from mikan.core.utils import ordered_load
 from mikan.core.logger import create_logger, get_version
+from mikan.core.prefs import Prefs
 from mikan.tangerine.core import Asset, Control, Group
 from mikan.tangerine.core.control import cached_groups
 from mikan.tangerine.lib.commands import *
@@ -947,12 +949,16 @@ class AssetMenu:
 # -- debug menu
 
 def load_menu(file_menu, parent):
+    if not os.path.isfile(file_menu):
+        log.error('could not find menu file "{}"'.format(file_menu))
+        return
+
     data = None
     with open(file_menu, 'r') as stream:
         try:
             data = ordered_load(stream)
         except yaml.YAMLError as exc:
-            print(exc)
+            log.error(exc)
 
     if not data:
         return
@@ -1052,14 +1058,12 @@ paths = {'mikan': path_mikan, 'utils': path_utils, 'scripts': path_scripts}
 
 
 def fix_path(path):
-    path = os.path.relpath(path)
-
     for r in paths.keys():
         re = '$' + str(r).strip()
         if re in path:
             path = path.replace(re, paths[r])
 
-    path = path.replace('\\', '/')
+    path = os.path.normpath(path)
     return path
 
 
@@ -1069,32 +1073,25 @@ do_rig_menu = os.getenv('MIKAN_MENU', 'false').lower() not in {'false', 'no', 'o
 
 if do_rig_menu and not batch_mode:
     main_window = app.main_window
-    _menu = main_window.menuBar().addMenu('mikan')
+    _menu = main_window.menuBar().addMenu('Mikan')
 
     # tools menu
     path = path_utils + sep + 'tools.yml'
+    log.warning(path)
     load_menu(path, _menu)
 
-    # sandbox
-    # _menu.addSeparator()
-    # _sandbox = _menu.addMenu('sandbox')
-    #
-    # sep = os.path.sep
-    # path = inspect.getfile(mikan.tangerine.sandbox)
-    # path = sep.join(os.path.abspath(path).split(sep)[:-1])
-    # files = glob.glob(path + '/**/*.py', recursive=True)
-    # folders = {}
-    #
-    # for f in files:
-    #     _path, _f = os.path.split(f)
-    #     if _f == '__init__.py':
-    #         continue
-    #
-    #     _path = _path.replace(path, '')
-    #     if _path and _path not in folders:
-    #         _parent, _sub = os.path.split(_path)
-    #         _submenu = folders.get(_parent, _sandbox).addMenu(_sub)
-    #         folders[_path] = _submenu
-    #
-    #     _act = folders.get(_path, _sandbox).addAction(_f.replace('.py', ''))
-    #     _act.triggered.connect(partial(exec_file_globals, f))
+    # prefs menu
+    _paths = Prefs.get('tangerine_menu_paths', {})
+    if _paths and isinstance(_paths, dict):
+        _menu.addSeparator()
+
+    for k in _paths:
+        try:
+            _submenu_path = _paths[k]
+            _submenu_path = os.path.normpath(_submenu_path)
+
+            _submenu = _menu.addMenu(k + '  ')
+            load_menu(_submenu_path, _submenu)
+
+        except:
+            log.error(traceback.format_exc())
