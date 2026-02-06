@@ -1,29 +1,21 @@
 # coding: utf-8
 
-from functools import partial
-import inspect
 import os
-import glob
 import yaml
+import inspect
+from functools import partial
 
 from PySide2 import QtGui, QtWidgets
 from PySide2.QtCore import Qt
 
 import meta_nodal_py as kl
+from tang_core import profile as cp
 from tang_core.callbacks import Callbacks
 from tang_core.selection import modifiers_to_selection_mode
-from tang_core import profile as cp
 from tang_core.monitoring import Monitoring
-from tang_gui.tang_action import add_action, TangAction
-from tang_core.anim import set_animated_plug_value
-
-try:
-    from tang_core.anim import get_key_if_any
-except ImportError:
-    get_key_if_any = None  # >= 1.4.45 TODO: clean
+from tang_core.anim import set_animated_plug_value, get_key_if_any, get_animated_target
 from tang_core.logger import info, warning
-
-from tang_core.anim import get_animated_target
+from tang_gui.tang_action import add_action, TangAction
 
 from mikan.core.ui.widgets import *
 from mikan.core.utils import ordered_load
@@ -192,23 +184,22 @@ def right_click_menu(doc, menu, active_viewport):
 
 
 def get_tangents(plug, inv, src_plug, frame, layer_name):
-    if get_key_if_any is not None:  # None if old version of tang
-        if src_plug is None:
-            key = None
-            warning("No source plug found for plug: " + plug.get_full_name())
-        else:
-            key = get_key_if_any(src_plug, frame, layer_name)
-        if key is not None:
-            if inv:
-                # mirror key custom tangents
-                if key.left_tangent_mode == kl.TangentMode.custom:
-                    left = key.get_left_tangent()
-                    key.set_left_tangent(kl.Imath.V2f(left.x, -left.y))
-                if key.right_tangent_mode == kl.TangentMode.custom:
-                    right = key.get_right_tangent()
-                    key.set_right_tangent(kl.Imath.V2f(right.x, -right.y))
-    else:
+    if src_plug is None:
         key = None
+        warning("No source plug found for plug: " + plug.get_full_name())
+    else:
+        key = get_key_if_any(src_plug, frame, layer_name)
+
+    if key is not None:
+        if inv:
+            # mirror key custom tangents
+            if key.left_tangent_mode == kl.TangentMode.custom:
+                left = key.get_left_tangent()
+                key.set_left_tangent(kl.Imath.V2f(left.x, -left.y))
+            if key.right_tangent_mode == kl.TangentMode.custom:
+                right = key.get_right_tangent()
+                key.set_right_tangent(kl.Imath.V2f(right.x, -right.y))
+
     return key
 
 
