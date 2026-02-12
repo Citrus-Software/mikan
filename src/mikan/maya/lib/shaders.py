@@ -1,5 +1,4 @@
 # coding: utf-8
-
 import re
 import glob
 import json
@@ -18,7 +17,10 @@ from mikan.core.utils import ordered_load, re_get_keys
 from .configparser import ConfigParser
 from .geometry import get_hard_edges
 
-__all__ = ['export_shaders', 'transfer_shading', 'get_shading', 'texture_file_nodes_fix_udim']
+__all__ = [
+    'export_shaders', 'transfer_shading', 'get_shading', 'texture_file_nodes_fix_udim',
+    'export_materials', 'TangerineMaterialData'
+]
 
 log = create_logger('mikan.shaders')
 
@@ -29,6 +31,12 @@ def export_shaders(node):
     shaders = ShaderData(node)
     shaders.write()
     return shaders.db
+
+
+def export_materials(node):
+    data = TangerineMaterialData(node)
+    data.write()
+    return data.db
 
 
 def export_hard_edges():
@@ -170,6 +178,7 @@ def texture_file_nodes_fix_udim():
 
 
 class ShaderData(object):
+    """deprecated"""
 
     def __init__(self, node):
         if not isinstance(node, mx.Node):
@@ -535,4 +544,375 @@ class ShaderData(object):
 
         # TODO: faire un scan recursif si on chaine les blend
 
+        return data
+
+
+def round_list(array, decimals=4):
+    new = []
+    for i, v in enumerate(array):
+        new.append(round(v, decimals))
+    return new
+
+
+def linear_to_srgb(color):
+    return [pow(c if c > 0 else 0, 0.4545) for c in color]
+
+
+class TangerineMaterialData(object):
+
+    def __init__(self, node):
+        if not isinstance(node, mx.Node):
+            node = mx.encode(str(node))
+
+        self.node = node
+        self.db = {}
+
+        self.read()
+
+    def read(self):
+        processed_shapes = set()
+
+        for shape in self.node.descendents(type='mesh'):
+
+            if shape in processed_shapes:
+                continue
+
+            if shape['io'].read():
+                continue
+
+            for i in shape['instObjGroups'].array_indices:
+                sgs = shape['instObjGroups'][i].outputs(type='shadingEngine')
+                sgs = [sg for sg in sgs if sg]  # Filter None
+
+                if not sgs:
+                    continue
+
+                sg = sgs[0]
+
+                material = sg['surfaceShader'].input()
+                if not material:
+                    continue
+
+                mat_data = self._get_material_data(material)
+
+                geo_path = self._resolve_geo_path(shape, instance_index=i)
+                if geo_path:
+                    mat_data['meshs'].add(geo_path)
+
+            processed_shapes.add(shape)
+
+        # burn sets
+        for k in self.db:
+            if 'meshs' in self.db[k]:
+                self.db[k]['meshs'] = list(self.db[k]['meshs'])
+
+    def write(self):
+        if 'gem_materials' not in self.node:
+            self.node.add_attr(mx.String('gem_materials'))
+
+        # Sérialisation identique à l'original
+        json_data = json.dumps(self.db)
+        compressed_data = base64.b64encode(zlib.compress(json_data.encode('utf-8'), 9)).decode('utf-8')
+
+        self.node['gem_materials'] = compressed_data
+
+    def _resolve_geo_path(self, shape, instance_index):
+        geo_path = None
+
+        if shape.isInstanced():
+            mobj = shape.object()
+
+            for dag_path in om.MDagPath.getAllPathsTo(mobj):
+                if dag_path.instanceNumber() == instance_index:
+                    full_path = dag_path.fullPathName()
+                    geo_path = '|'.join(full_path.split('|')[:-1])
+                    break
+        else:
+            geo_path = str(shape.parent())
+
+        return geo_path
+
+    def _get_material_data(self, material):
+        mat_name = str(material)
+        mat_data = self.parse_material(material)
+
+        if mat_name not in self.db:
+            self.db[mat_name] = {
+                'meshs': set(),
+                'shader': mat_data,
+            }
+
+        return self.db[mat_name]
+
+    # -- materials
+    def parse_material(self, material_node):
+        # Base dict
+        data = {
+            'type': 'basic',
+        }
+
+        nt = material_node.type_name
+
+        # -- Standard Shaders
+        if nt in {'lambert', 'phong', 'blinn', 'anisotropic'}:
+            _data = self.resolve_color_alpha(material_node['color'], material_node['transparency'])
+            if isinstance(_data, dict):
+                data.update(_data)
+
+        # -- Flat Shaders
+        elif nt == 'surfaceShader':
+            _data = self.resolve_color_alpha(material_node['outColor'], material_node['outTransparency'])
+            if isinstance(_data, dict):
+                data.update(_data)
+
+        # -- Custom Attributes (Notes / ConfigParser)
+        cfg = ConfigParser(material_node)['shader'].read()
+        if not cfg:
+            return data
+
+        cfg = ordered_load(cfg)
+        if not isinstance(cfg, dict):
+            return data
+
+        for k in cfg:
+            _k = k.replace('-', '_').strip()
+
+            if k == 'transparency':
+                material_node['transparency'] = cfg[k]
+                material_node['transparent'] = True
+            elif _k == 'double_sided':
+                material_node['backface_culling'] = not bool(cfg[k])
+            elif _k == 'backface_culling':
+                material_node['backface_culling'] = bool(cfg[k])
+            elif _k == 'alpha_layer':
+                material_node['alpha_layer'] = int(cfg[k])
+
+        return data
+
+    def resolve_color_alpha(self, color_plug, alpha_plug=None, depth=0):
+        depth += 1
+        data = {}
+
+        color_data = self.resolve_plug(color_plug, depth=depth)
+
+        if 'layers' in color_data:
+            return color_data
+
+        if isinstance(color_data, dict) and ('file' in color_data or 'skia' in color_data):
+            data.update(color_data)
+        else:
+            data['color'] = color_data
+
+        # get alpha
+        alpha = 1.0
+
+        if alpha_plug:
+            alpha_data = self.resolve_plug(alpha_plug, depth=depth)
+
+            if isinstance(alpha_data, dict) and 'choice' in alpha_data:
+                alpha = alpha_data
+
+            elif isinstance(alpha_data, (int, float)):
+                alpha = alpha_data
+            elif isinstance(alpha_data, (list, tuple)):
+                alpha = 1 - round(max(0.0, min(alpha_data)), 3)
+
+        data['alpha'] = alpha
+        return data
+
+    def resolve_plug(self, plug, depth=0):
+        if not isinstance(plug, mx.Plug):
+            return
+
+        depth += 1
+        input_node = plug.input()
+
+        # flat value
+        if not input_node:
+            value = plug.read()
+            if isinstance(value, (list, tuple)) and len(value) == 3:
+                return round_list(linear_to_srgb(value), 3)
+            return value
+
+        # upward connection
+        nt = input_node.type_name
+
+        if nt in {'file', 'pxrTexture'}:
+            return self._get_file_data(input_node, depth=depth)
+
+        elif nt == 'layeredTexture':
+            if depth <= 2:
+                return self._get_layered_data(input_node, depth=depth)
+            else:
+                log.warning('cannot resolve layered texture at depth {}'.format(depth))
+
+        elif nt == 'blendColors':
+            if depth <= 2:
+                return self._get_blend_data(input_node, depth=depth)
+            else:
+                log.warning('cannot resolve blend colors at depth {}'.format(depth))
+
+        elif nt == 'choice':
+            return self._resolve_choice_node(input_node, depth=depth)
+
+        elif nt == 'skiaTexture':
+            return self._get_skia_data(input_node)
+
+        elif nt == 'projection':
+            # TODO: projection
+            return {}
+
+        elif nt == 'transform':
+            input_plug = plug.input(plug=True)
+            return {'plug': input_plug.name()}
+
+        # fallback
+        input_plug = plug.input(plug=True)
+        value = input_plug.read()
+        if isinstance(value, (list, tuple)) and len(value) == 3:
+            return round_list(linear_to_srgb(value), 3)
+        return value
+
+    def _get_file_data(self, node, depth=0):
+        depth += 1
+
+        # 1. Récupération du path brut
+        plug = None
+        if node.type_name == 'file':
+            plug = node['ftn']  # 'ftn' alias pour fileTextureName
+        elif node.type_name == 'pxrTexture':
+            plug = node['filename']
+
+        if not isinstance(plug, mx.Plug):
+            return
+
+        path = plug.read()
+        if path and os.path.isfile(path):
+            path = os.path.realpath(path)
+
+        data = {'file': path}
+
+        # default color
+        if node.type_name == 'file':
+            data['color'] = self.resolve_plug(node['defaultColor'])
+
+        # connected filename?
+        input_node = plug.input()
+        if input_node:
+            input_fn = self.resolve_plug(plug, depth=depth)
+            if isinstance(input_fn, dict) and 'switch' in input_fn:
+                data['color'] = {'plug': input_fn['plug'], 'switch': {}}
+                data['file'] = {'plug': input_fn['plug'], 'switch': {}}
+                for k in input_fn['switch']:
+                    _k = input_fn['switch'][k]
+                    if 'color' in _k:
+                        data['color']['switch'][k] = _k['color']
+                    if 'file' in _k:
+                        data['file']['switch'][k] = _k['file']
+            else:
+                data['file'] = input_fn
+
+        # 2. Gestion Séquence (Logique conservée de ton script)
+        use_frame_ext = False
+        if node.type_name == 'file' and node['useFrameExtension'].read():
+            use_frame_ext = True
+
+        if use_frame_ext:
+            # TODO: faire la récursion choice/sequence quand y'a un input à ftn en envoyant seq_data à choice
+
+            # Pattern regex pour trouver le numéro de frame à la fin
+            pattern_regex = r'(\d+)(?=\.[^.]*$)'
+            # On remplace le numéro par * pour le glob
+            search_pattern = re.sub(pattern_regex, '*', path)
+
+            seq_data = {}
+            found_files = glob.glob(search_pattern)
+
+            # Si glob ne trouve rien (ex: path réseau non monté), on garde le path original
+            if found_files:
+                for file_path in found_files:
+                    match = re.search(pattern_regex, file_path)
+                    if match:
+                        frame_num = int(match.group(1))
+                        seq_data[frame_num] = file_path
+
+                # Récupération de l'anim curve ou de l'expression qui drive l'extension
+                frame_plug = node['frameExtension'].input(plug=True)
+                if frame_plug:
+                    # On stocke juste le nom de la connexion pour reconstruction
+                    seq_data['plug'] = frame_plug.name(long=False)
+
+                return {'file': seq_data}
+
+        # Retour cas simple
+        return data
+
+    def _get_layered_data(self, node, depth=0):
+        depth += 1
+        data = {'layers': {}, 'blends': {}}
+
+        for i in node['inputs'].array_indices:
+            layer_input = node['inputs'][i]
+            data['layers'][i] = {}
+            data['blends'][i] = {}
+
+            color = self.resolve_plug(layer_input['color'], depth=depth)
+            alpha = self.resolve_plug(layer_input['alpha'], depth=depth)
+
+            if 'layers' in color:
+                log.warning('invalid layer entry at {} ({})'.format(i, node))
+                continue
+
+            if 'file' in color or 'skia' in color:
+                data['layers'][i] = color
+                data['blends'][i] = 1.0
+                if not isinstance(alpha, dict) or 'file' not in alpha and 'skia' not in alpha:
+                    data['blends'][i] = alpha
+            else:
+                data['layers'][i] = {'color': color, 'alpha': 1.0}
+                data['blends'][i] = alpha
+
+        return data
+
+    def _get_blend_data(self, node, depth=0):
+        depth += 1
+        data = {'layers': {}, 'blends': {}}
+
+        # Layer 1 (Top) -> input 1
+        data['layers'][0] = self.resolve_plug(node['color1'], depth=depth)
+
+        # Layer 2 (Base) -> input 2
+        data['layers'][1] = self.resolve_plug(node['color2'], depth=depth)
+
+        # alpha blend
+        data['blends'][0] = self.resolve_plug(node['blender'], depth=depth)
+
+        # TODO: compiler les blend récursif sur un unique layer
+        return data
+
+    def _resolve_choice_node(self, node, depth=0):
+        data = {'switch': {}}
+
+        selector = self.resolve_plug(node['selector'], depth=depth)
+        if isinstance(selector, dict):
+            data.update(selector)
+        else:
+            data['plug'] = selector
+
+        # TODO: compiler les selector connecté avec un autre choice
+
+        for i in node['input'].array_indices:
+            value = self.resolve_plug(node['input'][i], depth=depth)
+            if value is not None:
+                data['switch'][i] = value
+
+        return data
+
+    def _get_skia_data(self, node):
+        root = node['rm'].input()
+        if not root:
+            return
+
+        data = {}
+        data['skia'] = str(root)
         return data

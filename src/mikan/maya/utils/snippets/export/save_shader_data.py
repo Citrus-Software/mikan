@@ -4,7 +4,7 @@ import maya.cmds as mc
 import maya.api.OpenMaya as om
 
 from pprint import pprint
-from mikan.maya.lib.shaders import export_shaders
+from mikan.maya.lib.shaders import export_materials
 
 from mikan.core.logger import create_logger
 
@@ -18,7 +18,7 @@ if len(_sl) == 0:
 _n = 0
 
 for node in _sl:
-    data = export_shaders(node)
+    data = export_materials(node)
     pprint(data)
 
     _n += len(data)
