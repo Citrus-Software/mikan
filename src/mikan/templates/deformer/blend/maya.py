@@ -272,12 +272,7 @@ class Deformer(mk.Deformer):
 
                 for item in _target_data:
                     _target = _target_data[item]
-                    item = item * 1000 + 5000
-
-                    if item == 6000:
-                        name = xfo.name(namespace=False)
-                        if shp.is_a(mx.kGeometryFilter):
-                            name = shp.name(namespace=False)
+                    item = int(item * 1000 + 5000)
 
                     if isinstance(_target, string_types):
                         shp, xfo = Deformer.get_geometry_id(_target)
@@ -294,6 +289,11 @@ class Deformer(mk.Deformer):
                             mk.DeformerError('invalid blend target: {}'.format(_target))
                     else:
                         raise mk.DeformerError('invalid blend target: {}'.format(_target))
+
+                    if item == 6000:
+                        name = xfo.name(namespace=False)
+                        if shp.is_a(mx.kGeometryFilter):
+                            name = shp.name(namespace=False)
 
                     target = shp, xfo
 
