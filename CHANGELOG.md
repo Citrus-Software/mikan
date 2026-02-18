@@ -5,6 +5,27 @@ All notable changes to this project will be documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Support for blendshape in-betweens and target groups weighting
+- Added custom menu loader for Maya and Tangerine
+- Added creation options for `neck.legacy`
+
+### Changed
+
+- Reworked the shading exporter from Maya to Tangerine
+- Reworked template `core.xform` to add root/local orient options and prefix naming support
+
+### Fixed
+
+- Misc Python and PySide compatibility issues
+- Misc rig cleanup in Maya
+- Restored proper Maya viewport focus with Mikan UI
+- Fixed template `core.xform` flip orient regression.
+- Refactored mirror table generation
+
 ## [1.0.4] - 2025-11-07
 
 ### Added
