@@ -4,7 +4,9 @@ import meta_nodal_py as kl
 from meta_nodal_py.Imath import V3f
 
 import mikan.tangerine.core as mk
-from mikan.core import re_is_int, create_logger
+from mikan.core import re_is_int, create_logger, unique
+from mikan.tangerine import connect_driven_curve, connect_add
+from mikan.tangerine.lib.commands import add_plug
 
 log = create_logger()
 
@@ -25,23 +27,33 @@ class Deformer(mk.Deformer):
             self.find_geometry()
 
         # build target list
-        targets = {}
+        self.targets = {}
 
         for key in ('targets', 'weights', 'names', 'delta'):
             for t, v in self.data.get(key, {}).items():
-                if t not in targets:
-                    targets[t] = {}
-                targets[t][key.strip('s')] = v
+                if t not in self.targets:
+                    self.targets[t] = {}
+                self.targets[t][key.strip('s')] = v
 
-        n = 1
-        if targets:
-            n = max(targets) + 1
+        last_id = 0
+        if self.targets:
+            last_id = max(self.targets)
+
+        for t, target_data in self.targets.items():
+            target_data['inbetweens'] = {}
+            for k in {'target', 'delta'}:
+                if k not in target_data or not isinstance(target_data[k], dict):
+                    continue
+                for i in target_data[k]:
+                    if i != 1 and i not in target_data['inbetweens']:
+                        last_id += 1
+                        target_data['inbetweens'][i] = last_id
 
         # insert deformer
-        self.node = kl.BlendShape(n, self.geometry, 'blendshape')
+        self.node = kl.BlendShape(last_id + 1, self.geometry, 'blendshape')
 
-        if not self.node.get_dynamic_plug('names'):
-            self.node.add_dynamic_plug("names", str(), n)
+        if not self.node.get_dynamic_plug('_names'):
+            add_plug(self.node, '_names', str, array=True, size=last_id + 1)
 
         if isinstance(self.geometry, kl.SplineCurve):
             node_in_plug = self.geometry.spline_in.get_input()
@@ -54,8 +66,27 @@ class Deformer(mk.Deformer):
             self.node.mesh_in.connect(node_in_plug)
             self.geometry.mesh_in.connect(self.node.mesh_out)
 
+        # build groups
+        group_plugs = {}
+
+        groups = self.data.get('groups', {})
+        group_max = 1
+        if groups:
+            group_max = max(groups) + 1
+        group_names = add_plug(self.node, '_group_names', str, array=True, size=group_max)
+
+        for gid in groups:
+            group_name = groups[gid].get('name', 'group{}'.format(gid))
+            group_names[gid].set_value(group_name)
+
+            group_plugs[gid] = add_plug(
+                self.node, '_g{}'.format(gid),
+                float, min_value=0, max_value=1,
+            )
+            group_plugs[gid].set_value(groups[gid].get('weight', 1.0))
+
         # update targets
-        for t, data in targets.items():
+        for t, data in self.targets.items():
             w = 0
             w_in = data.get('weight')
             if isinstance(w_in, str):
@@ -63,42 +94,107 @@ class Deformer(mk.Deformer):
             elif isinstance(w_in, (float, int)):
                 w = w_in
 
-            target_in = Deformer._add_target(self.node, self.transform, t, w)
+            # add target plugs
+            if 'target' in data and not isinstance(data['target'], dict):
+                data['target'] = {1.0: data['target']}
+            if 'delta' in data and not isinstance(data['delta'], dict):
+                data['delta'] = {1.0: data['delta']}
 
+            ib_keys = unique(list(data.get('target', {})) + list(data.get('delta', {})))
+            ib_targets = {}
+
+            target_inputs = {}
+            for ib in sorted(ib_keys):
+                target_id = t
+                if ib != 1.0:
+                    target_id = data['inbetweens'][ib]
+
+                ib_targets[ib] = target_id
+
+                _w = w if ib == 1.0 else 0.0
+                target_inputs[ib] = Deformer._add_target(self.node, self.transform, target_id, _w, in_between=ib != 1.0)
+
+            # weight plug
+            plug_weight = self.node.get_dynamic_plug(f'_w{t}')
             if kl.is_plug(w_in):
-                self.node.get_dynamic_plug('w{}'.format(t)).connect(w_in)
+                plug_weight.connect(w_in)
 
-            name = ''
-            if 'target' in data:
-                _target = data['target']
-                shp, xfo = None, None
+            # in between emulation
+            if len(ib_keys) > 1:
+                for ib, target_id in ib_targets.items():
+                    curve_keys = {0: 0}
+                    for _ib in ib_keys:
+                        curve_keys[_ib] = 0
+                    curve_keys[ib] = 1
 
-                if isinstance(_target, str):
-                    shp, xfo = Deformer.get_geometry_id(_target)
-                elif isinstance(_target, (list, tuple)) and len(_target) == 2:
-                    shp, xfo = _target
-                elif isinstance(_target, kl.Node):
-                    if isinstance(_target, kl.SceneGraphNode):
-                        xfo = _target
-                        shp = Deformer.get_deformer_ids(xfo).get('shape')
+                    weight_curve = connect_driven_curve(
+                        plug_weight,
+                        None,
+                        keys=curve_keys,
+                        tangent_mode='linear',
+                        pre='linear',
+                        post='linear'
+                    )
+
+                    # group weight
+                    _groups = self._get_target_hierarchy_indices(groups, t)
+                    if _groups:
+                        _plugs = [group_plugs[gid] for gid in _groups]
+                        _plugs.append(weight_curve.result)
+                        mult = create_multiply_chain(_plugs, self.node)
+                        self.node.weights_in[target_id].connect(mult)
                     else:
-                        shp = _target
-                        xfo = shp.get_parent()
+                        self.node.weights_in[target_id].connect(weight_curve.result)
 
-                if not shp or not xfo:
-                    mk.DeformerError('invalid blend target: {}'.format(_target))
+            # no in between: direct connection
+            else:
+                _groups = self._get_target_hierarchy_indices(groups, t)
+                if _groups:
+                    _plugs = [group_plugs[gid] for gid in _groups]
+                    _plugs.append(plug_weight)
+                    mult = create_multiply_chain(_plugs, self.node)
+                    self.node.weights_in[t].connect(mult)
+                else:
+                    self.node.weights_in[t].connect(plug_weight)
 
-                name = xfo.get_name()
+            # connect geometry
+            name = ''
 
-                target = Deformer.get_deformer_output(shp, xfo)
-                target_in.connect(target)
+            if 'target' in data:
+
+                for ib, target_id in target_inputs:
+                    if ib not in data['target'] or not isinstance(data['target'], dict):
+                        continue
+                    _target = data['target'][ib]
+
+                    shp, xfo = None, None
+
+                    if isinstance(_target, str):
+                        shp, xfo = Deformer.get_geometry_id(_target)
+                    elif isinstance(_target, (list, tuple)) and len(_target) == 2:
+                        shp, xfo = _target
+                    elif isinstance(_target, kl.Node):
+                        if isinstance(_target, kl.SceneGraphNode):
+                            xfo = _target
+                            shp = Deformer.get_deformer_ids(xfo).get('shape')
+                        else:
+                            shp = _target
+                            xfo = shp.get_parent()
+
+                    if not shp or not xfo:
+                        mk.DeformerError('invalid blend target: {}'.format(_target))
+
+                    name = xfo.get_name()
+
+                    target = Deformer.get_deformer_output(shp, xfo)
+                    target_inputs[ib].connect(target)
 
             name = data.get('name', name)
 
-            name_size = self.node.names.get_size()
+            name_size = self.node._names.get_size()
             if t + 1 > name_size:
-                self.node.names.resize(t - 1)
-            self.node.names[t].set_value(name)
+                self.node._names.resize(t - 1)
+            self.node._names[t].set_value(name)
 
         # update i/o
         self.reorder()
@@ -113,23 +209,36 @@ class Deformer(mk.Deformer):
             if 1 not in delta:
                 continue
 
-            ref_points = []
-            if 'REFERENCE' in self.data.get('names', {}).get(t, ''):
-                if isinstance(self.geometry, kl.Geometry):
-                    mesh = self.geometry.mesh_in.get_value()
-                    ref_points = mesh.positions()
+            if not isinstance(delta, dict):
+                delta = {1.0: delta}
 
-            points = []
-            wm = delta[1].weights
-            count = len(wm)
-            for i in range(count):
-                pt = V3f(*wm[i * 3:i * 3 + 3])
-                points.append(pt)
+            target_ids = {1.0: t}
+            if t in self.targets and 'inbetweens' in self.targets[t]:
+                target_ids.update(self.targets[t]['inbetweens'])
 
-            for i in range(len(ref_points)):
-                points[i] -= ref_points[i]
+            for ib in delta:
+                if ib not in target_ids:
+                    # log?
+                    continue
 
-            self.node.shapes_deltas_in[t].set_value(points)
+                ref_points = []
+                if 'REFERENCE' in self.data.get('names', {}).get(t, ''):
+                    if isinstance(self.geometry, kl.Geometry):
+                        mesh = self.geometry.mesh_in.get_value()
+                        ref_points = mesh.positions()
+
+                points = []
+                wm = delta[ib].weights
+                count = len(wm)
+                for i in range(count):
+                    pt = V3f(*wm[i * 3:i * 3 + 3])
+                    points.append(pt)
+
+                for i in range(len(ref_points)):
+                    points[i] -= ref_points[i]
+
+                target_id = target_ids[ib]
+                self.node.shapes_deltas_in[target_id].set_value(points)
 
         # periodic spline fix?
         if isinstance(self.geometry, kl.SplineCurve):
@@ -196,22 +305,46 @@ class Deformer(mk.Deformer):
             hook = hook.split('.')
 
             if re_is_int.match(hook[1]):
-                return bs.get_dynamic_plug('w{}'.format(int(hook[1])))
+                return bs.get_dynamic_plug('_w{}'.format(int(hook[1])))
 
             else:
-                for t in range(bs.names.get_size()):
-                    name = bs.names[t].get_value()
+                for t in range(bs._names.get_size()):
+                    name = bs._names[t].get_value()
                     if hook[1] == name:
-                        return bs.get_dynamic_plug('w{}'.format(t))
+                        return bs.get_dynamic_plug('_w{}'.format(t))
+
+        elif hook.startswith('group.'):
+            hook = hook.split('.')
+
+            if re_is_int.match(hook[1]):
+                return bs.get_dynamic_plug('_g{}'.format(int(hook[1])))
+
+            else:
+                for t in range(bs._group_names.get_size()):
+                    name = bs._group_names[t].get_value()
+                    if hook[1] == name:
+                        return bs.get_dynamic_plug('_g{}'.format(t))
 
     @staticmethod
-    def _add_target(bs, xfo, index, weight=0, target=None):
+    def _add_target(bs, xfo, index, weight=0, target=None, in_between=False):
 
-        plug_weight_name = 'w{}'.format(index)
+        plug_weight_name = '_w{}'.format(index)
         if bs.get_dynamic_plug(plug_weight_name):
             raise mk.DeformerError('weight index already exists')
-        plug_weight = bs.add_dynamic_plug(plug_weight_name, float(weight))
-        bs.weights_in[index].connect(plug_weight)
+
+        if in_between:
+            if index >= bs.weights_in.get_size():
+                bs.weights_in.resize(index + 1)
+                bs.shapes_in.resize(index + 1)
+                bs.references_in.resize(index + 1)
+
+                bs.shapes_deltas_in.resize(index + 1)
+                bs.shapes_vertex_indices_in.resize(index + 1)
+                bs.shapes_vertex_weights_in.resize(index + 1)
+        else:
+            plug_weight = add_plug(bs, plug_weight_name, float, min_value=0, max_value=1)
+            plug_weight.set_value(weight)
+            bs.weights_in[index].connect(plug_weight)
 
         plug_target = bs.shapes_in[index]
         if target:
@@ -223,4 +356,51 @@ class Deformer(mk.Deformer):
 
         return plug_target
 
-kl.Blend
+    @staticmethod
+    def _get_target_hierarchy_indices(groups, index):
+
+        current_group_id = None
+
+        # find first parent
+        for group_id, group_data in groups.items():
+            targets = group_data.get('targets', [])
+            if index in targets:
+                current_group_id = group_id
+                break
+
+        if current_group_id is None:
+            return []
+
+        # find hierarchy
+        hierarchy_ids = []
+
+        while current_group_id is not None:
+            hierarchy_ids.append(current_group_id)
+            group_data = groups.get(current_group_id)
+            if not group_data:
+                break
+
+            current_group_id = group_data.get('parent')
+
+        return hierarchy_ids
+
+
+def create_multiply_chain(plugs, parent):
+    count = len(plugs)
+
+    if count == 0:
+        return None
+    if count == 1:
+        return plugs[0]
+
+    mult = kl.Mult(parent, '_mult')
+    mult.input1.connect(plugs[0])
+    mult.input2.connect(plugs[1])
+
+    for next_plug in plugs[2:]:
+        mult_new = kl.Mult(parent, '_mult')
+        mult_new.input1.connect(mult.output)
+        mult_new.input2.connect(next_plug)
+        mult = mult_new
+
+    return mult.output

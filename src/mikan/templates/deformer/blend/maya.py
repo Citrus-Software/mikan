@@ -71,32 +71,35 @@ class Deformer(mk.Deformer):
                 self.data['weights'][t] = w
 
             name = self.node._fn.plugsAlias(self.node['weight'][t].plug())
+            self.data['names'][t] = name
 
-            tgt = None
-            for i in self.node['it'][oid]['itg'][t]['iti'].array_indices:
-                if i == 6000:
-                    tgt = self.node['it'][oid]['itg'][t]['iti'][i]['igt'].input()
+            reference = 'REFERENCE' in name
+            if reference:
+                self.data['weights'][t] = 1
 
-            if tgt:
-                if tgt.is_a(mx.kShape):
-                    tgt = tgt.parent()
-                    self.data['targets'][t] = '{}->shape'.format(tgt)
-                else:
-                    pass
-                    # YAGNI: récuperer l'attribut de connexion dans le cas d'un deformer (balaise)
+            target_plug = self.node['inputTarget'][oid]['inputTargetGroup'][t]['inputTargetItem']
+            for i in target_plug.array_indices:
+                item = (i - 5000) / 1000.0
+                tgt = target_plug[i]['inputGeomTarget'].input()
 
-                if name != tgt.name():
-                    self.data['names'][t] = name
+                if tgt:
+                    if tgt.is_a(mx.kShape):
+                        if t not in self.data['targets']:
+                            self.data['targets'][t] = {}
+                        self.data['targets'][t][item] = '{}->shape'.format(tgt.parent())
+                    else:
+                        # YAGNI: récuperer l'attribut de connexion dans le cas d'un deformer (balaise)
+                        pass
 
-            else:
-                reference = False
-                if 'REFERENCE' in name:
-                    reference = True
-                    self.data['weights'][t] = 1
-                delta = self.get_delta_weightmaps(self.node, t, reference=reference)
-                if delta:
-                    self.data['delta'][t] = delta
-                self.data['names'][t] = name
+            delta = self.get_delta_weightmaps(self.node, t, reference=reference)
+            if delta:
+                self.data['delta'][t] = delta
+
+            # cleanup names
+            if t in self.data['targets'] and 1.0 in self.data['targets'][t]:
+                tgt_name = self.data['targets'][t][1.0].split('->')[0].split('/')[-1]
+                if name == tgt_name:
+                    del self.data['names'][t]
 
             # target weights
             weights_plug = self.node['inputTarget'][0]['inputTargetGroup'][t]['targetWeights']
@@ -117,6 +120,17 @@ class Deformer(mk.Deformer):
             if len(weights_plug.array_indices):
                 self.data['maps'][t] = mk.WeightMap(wmap)
 
+        # cleanup targets
+        for t in self.data['targets']:
+            if isinstance(self.data['targets'][t], dict):
+                if len(self.data['targets'][t]) == 1 and 1.0 in self.data['targets'][t]:
+                    self.data['targets'][t] = self.data['targets'][t][1.0]
+
+        for t in self.data['delta']:
+            if isinstance(self.data['delta'][t], dict):
+                if len(self.data['delta'][t]) == 1 and 1.0 in self.data['delta'][t]:
+                    self.data['delta'][t] = self.data['delta'][t][1.0]
+
         # groups
         group_names = []
         for i in self.node['targetDirectory'].array_indices:
@@ -124,7 +138,7 @@ class Deformer(mk.Deformer):
                 continue
             bsi = self.node['targetDirectory'][i]
 
-            name = bsi['dtn'].read()
+            name = bsi['directoryName'].read()
             if name in group_names:
                 while name in group_names:
                     head = name.rstrip('0123456789')
@@ -133,15 +147,22 @@ class Deformer(mk.Deformer):
                         tail = 1
                     tail = int(tail) + 1
                     name = head + str(tail)
-                bsi['dtn'] = name
+                bsi['directoryName'] = name
             group_names.append(name)
 
-            data = {}
-            data['name'] = name
-            parent = bsi['pnid'].read()
+            data = {
+                'name': name,
+                'targets': []
+            }
+
+            dw = bsi['directoryWeight'].read()
+            if dw != 1:
+                data['weight'] = dw
+
+            parent = bsi['parentIndex'].read()
             if parent:
                 data['parent'] = parent
-            data['targets'] = []
+
             self.data['groups'][i] = data
 
         for i in self.node['parentDirectory'].array_indices:
@@ -164,10 +185,12 @@ class Deformer(mk.Deformer):
 
         # build rig
         self.node = None
+
         if self.node:
-            pass
             # check rig? et connecter geommatrix au bon index
             # ajouter le deformer existant à la geo
+            pass
+
         else:
             io = self.geometry['io'].read()
             self.geometry['io'] = False
@@ -193,8 +216,11 @@ class Deformer(mk.Deformer):
         # build groups
         groups = self.data.get('groups', {})
         for gid in groups:
-            self.node['targetDirectory'][gid]['dtn'] = groups[gid].get('name', 'group{}'.format(gid))
-            self.node['targetDirectory'][gid]['pnid'] = groups[gid].get('parent', 0)
+            plug_dir = self.node['targetDirectory'][gid]
+            plug_dir['directoryName'] = groups[gid].get('name', 'group{}'.format(gid))
+            plug_dir['parentIndex'] = groups[gid].get('parent', 0)
+            if 'weight' in groups[gid]:
+                plug_dir['directoryWeight'] = groups[gid]['weight']
 
         for gid in self.node['targetDirectory'].array_indices:
             cid = []
@@ -231,38 +257,50 @@ class Deformer(mk.Deformer):
             elif isinstance(w_in, (float, int)):
                 w = w_in
 
-            name = ''
-
-            target = None
-            if 'target' in data:
-                _target = data['target']
-                if isinstance(_target, string_types):
-                    shp, xfo = Deformer.get_geometry_id(_target)
-                elif isinstance(_target, (list, tuple)) and len(_target) == 2:
-                    shp, xfo = _target
-                elif isinstance(_target, mx.Node):
-                    if _target.is_a(mx.tTransform):
-                        xfo = _target
-                        shp = _target.shape()
-                    else:
-                        shp = _target
-                        xfo = shp.parent()
-                    if not shp:
-                        mk.DeformerError('invalid blend target: {}'.format(_target))
-                else:
-                    raise mk.DeformerError('invalid blend target: {}'.format(_target))
-
-                name = xfo.name(namespace=False)
-                if shp.is_a(mx.kGeometryFilter):
-                    name = shp.name(namespace=False)
-
-                target = shp, xfo
-
-            name = data.get('name', name)
+            name = data.get('name')
             if name:
                 name = name.split(':')[-1]
 
-            Deformer.add_target(self.node, index=t, weight=w, target=target, alias=name)
+            # build empty target
+            Deformer.add_target(self.node, index=t, weight=w)
+
+            # connect targets
+            if 'target' in data:
+                _target_data = data['target']
+                if not isinstance(_target_data, dict):
+                    _target_data = {1.0: _target_data}
+
+                for item in _target_data:
+                    _target = _target_data[item]
+                    item = item * 1000 + 5000
+
+                    if item == 6000:
+                        name = xfo.name(namespace=False)
+                        if shp.is_a(mx.kGeometryFilter):
+                            name = shp.name(namespace=False)
+
+                    if isinstance(_target, string_types):
+                        shp, xfo = Deformer.get_geometry_id(_target)
+                    elif isinstance(_target, (list, tuple)) and len(_target) == 2:
+                        shp, xfo = _target
+                    elif isinstance(_target, mx.Node):
+                        if _target.is_a(mx.tTransform):
+                            xfo = _target
+                            shp = _target.shape()
+                        else:
+                            shp = _target
+                            xfo = shp.parent()
+                        if not shp:
+                            mk.DeformerError('invalid blend target: {}'.format(_target))
+                    else:
+                        raise mk.DeformerError('invalid blend target: {}'.format(_target))
+
+                    target = shp, xfo
+
+                    Deformer.add_target(self.node, index=t, weight=w, target=target, item=item)
+
+            if name:
+                Deformer.set_target_alias(self.node, t, name)
 
             if isinstance(w_in, mx.Plug):
                 w_in >> self.node['weight'][t]
@@ -277,9 +315,13 @@ class Deformer(mk.Deformer):
 
         # delta
         for t, delta in iteritems(self.data.get('delta', {})):
+            if not isinstance(delta, dict):
+                delta = {1.0: delta}
+
             reference = False
             if 'REFERENCE' in self.data.get('names', {}).get(t, ''):
                 reference = True
+
             self.set_delta_weightmaps(self.node, t, delta, reference=reference)
 
         # target weights
@@ -326,7 +368,6 @@ class Deformer(mk.Deformer):
                 return bs['it'][oid]['itg'][index]['iti'][6000]['igt']
 
         elif hook.startswith('weight.'):
-
             hook = hook.split('.')
 
             if re_is_int.match(hook[1]):
@@ -345,8 +386,28 @@ class Deformer(mk.Deformer):
                     if name == hook[1]:
                         return plug
 
+        elif hook.startswith('group.'):
+            hook = hook.split('.')
+
+            if re_is_int.match(hook[1]):
+                return bs['targetDirectory'][int(hook[1])]['directoryWeight']
+
+            else:
+                group_names = {}
+                for i in bs['targetDirectory'].array_indices:
+                    if i == 0:
+                        continue
+                    bsi = bs['targetDirectory'][i]
+                    name = bsi['directoryName'].read()
+                    if name == hook[1]:
+                        return bsi['directoryWeight']
+
+                    group_names[name] = bsi['directoryWeight']
+
+                # todo: gérer un match si on trouve pas
+
     @staticmethod
-    def add_target(bs, index=None, weight=0, target=None, alias=None):
+    def add_target(bs, index=None, weight=0, target=None, alias=None, item=6000):
 
         # get next index
         if index is None:
@@ -355,11 +416,13 @@ class Deformer(mk.Deformer):
             if _indices:
                 index = _indices[-1] + 1
 
+        item = int(item)
+
         # add empty target
         with mx.DGModifier() as md:
             md.set_attr(bs['weight'][index], weight)
-        mel.eval('setAttr "{}" -type "pointArray" 0;'.format(bs['it'][0]['itg'][index]['iti'][6000]['ipt'].path()))
-        mel.eval('setAttr "{}" -type "componentList";'.format(bs['it'][0]['itg'][index]['iti'][6000]['ict'].path()))
+        mel.eval('setAttr "{}" -type "pointArray" 0;'.format(bs['it'][0]['itg'][index]['iti'][item]['ipt'].path()))
+        mel.eval('setAttr "{}" -type "componentList";'.format(bs['it'][0]['itg'][index]['iti'][item]['ict'].path()))
         # mc.blendShape(str(bs), edit=True, resetTargetDelta=(0, index))
 
         # connect target
@@ -373,14 +436,15 @@ class Deformer(mk.Deformer):
             plug = Deformer.get_deformer_output(*target)
 
             with mx.DGModifier() as md:
-                md.connect(plug, bs['it'][0]['itg'][index]['iti'][6000]['igt'])
+                md.connect(plug, bs['it'][0]['itg'][index]['iti'][item]['igt'])
 
-        # alias?
-        if alias:
-            alias = str(alias)
-            mc.aliasAttr(alias, bs['weight'][index].path())
+        if alias is not None:
+            Deformer.set_target_alias(bs, index, alias)
 
-        return index
+    @staticmethod
+    def set_target_alias(bs, index, alias):
+        alias = str(alias)
+        mc.aliasAttr(alias, bs['weight'][index].path())
 
     @staticmethod
     def remove_target(bs, index):
@@ -442,10 +506,7 @@ class Deformer(mk.Deformer):
                 k = j / 1000. - 5
                 maps[k] = zip(cpts, points)
 
-        if maps:
-            return maps
-        log.error('{} has no delta at target index {}'.format(bs, index))
-        return {}
+        return maps
 
     @staticmethod
     def get_delta_weightmaps(bs, index, reference=False):
