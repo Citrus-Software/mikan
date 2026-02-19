@@ -33,3 +33,8 @@ class Deformer(mk.Deformer):
 
         # update i/o
         self.reorder()
+
+    @staticmethod
+    def hook(node, xfo, hook):
+        if hook == 'level':
+            node['divisions']
