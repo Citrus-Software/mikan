@@ -776,10 +776,10 @@ class TangerineMaterialData(object):
     def _get_file_data(self, node, depth=0):
         depth += 1
 
-        # 1. Récupération du path brut
+        # get raw path
         plug = None
         if node.type_name == 'file':
-            plug = node['ftn']  # 'ftn' alias pour fileTextureName
+            plug = node['fileTextureName']
         elif node.type_name == 'pxrTexture':
             plug = node['filename']
 
@@ -796,7 +796,7 @@ class TangerineMaterialData(object):
         if node.type_name == 'file':
             data['color'] = self.resolve_plug(node['defaultColor'])
 
-        # connected filename?
+        # connected filename
         input_node = plug.input()
         if input_node:
             input_fn = self.resolve_plug(plug, depth=depth)
@@ -812,7 +812,7 @@ class TangerineMaterialData(object):
             else:
                 data['file'] = input_fn
 
-        # 2. Gestion Séquence (Logique conservée de ton script)
+        # image sequence
         use_frame_ext = False
         if node.type_name == 'file' and node['useFrameExtension'].read():
             use_frame_ext = True
@@ -820,15 +820,12 @@ class TangerineMaterialData(object):
         if use_frame_ext:
             # TODO: faire la récursion choice/sequence quand y'a un input à ftn en envoyant seq_data à choice
 
-            # Pattern regex pour trouver le numéro de frame à la fin
             pattern_regex = r'(\d+)(?=\.[^.]*$)'
-            # On remplace le numéro par * pour le glob
             search_pattern = re.sub(pattern_regex, '*', path)
 
             seq_data = {}
             found_files = glob.glob(search_pattern)
 
-            # Si glob ne trouve rien (ex: path réseau non monté), on garde le path original
             if found_files:
                 for file_path in found_files:
                     match = re.search(pattern_regex, file_path)
@@ -836,15 +833,12 @@ class TangerineMaterialData(object):
                         frame_num = int(match.group(1))
                         seq_data[frame_num] = file_path
 
-                # Récupération de l'anim curve ou de l'expression qui drive l'extension
                 frame_plug = node['frameExtension'].input(plug=True)
                 if frame_plug:
-                    # On stocke juste le nom de la connexion pour reconstruction
                     seq_data['plug'] = frame_plug.name(long=False)
 
                 return {'file': seq_data}
 
-        # Retour cas simple
         return data
 
     def _get_layered_data(self, node, depth=0):
