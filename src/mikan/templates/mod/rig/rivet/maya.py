@@ -100,7 +100,7 @@ class Mod(mk.Mod):
             with mx.DGModifier() as md:
                 _cp = md.create_node(mx.tClosestPointOnMesh, name='_closest#')
 
-            shp['worldMatrix'][0] >> _cp['inputMatrix']
+            xfo['worldMatrix'][0] >> _cp['inputMatrix']
             shp_output >> _cp['inMesh']
 
             if 'raycast' not in self.data:
