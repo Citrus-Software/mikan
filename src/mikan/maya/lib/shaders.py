@@ -851,6 +851,8 @@ class TangerineMaterialData(object):
         depth += 1
         data = {'layers': {}, 'blends': {}}
 
+        remove_ids = []
+
         for i in node['inputs'].array_indices:
             layer_input = node['inputs'][i]
             data['layers'][i] = {}
@@ -870,7 +872,20 @@ class TangerineMaterialData(object):
                     data['blends'][i] = alpha
             else:
                 data['layers'][i] = {'color': color, 'alpha': 1.0}
-                data['blends'][i] = alpha
+                data['blends'][i] = 1.0
+                if not isinstance(alpha, dict) or 'plug' in alpha:
+                    data['blends'][i] = alpha
+
+                if isinstance(alpha, dict) and 'file' in alpha:
+                    log.warning('invalid alpha entry at index {} of {}: {}'.format(i, node, alpha))
+                    remove_ids.append(i)
+
+            if alpha == 0:
+                remove_ids.append(i)
+
+        for i in remove_ids:
+            del data['layers'][i]
+            del data['blends'][i]
 
         return data
 
