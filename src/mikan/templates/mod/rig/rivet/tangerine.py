@@ -4,7 +4,7 @@ import meta_nodal_py as kl
 from meta_nodal_py.Imath import V3f, M44f, Euler
 
 import mikan.tangerine.core as mk
-from mikan.tangerine.lib.rig import merge_transform, connect_expr, connect_reverse
+from mikan.tangerine.lib.rig import merge_transform, connect_expr, connect_reverse, add_plug
 from mikan.core.logger import create_logger
 from mikan.core import cleanup_str
 
@@ -100,6 +100,17 @@ class Mod(mk.Mod):
                 name += f'_{node.get_name()}'
 
         rvt = kl.SceneGraphNode(parent, name)
+
+        # add subdiv level attribute
+        if do_subdiv:
+            add_plug(rvt, 'level', int, min_value=0, max_value=3, keyable=True)
+            rvt.level.set_value(subdiv.level.get_value())
+
+            input_level = subdiv.level.get_input()
+            if kl.is_plug(input_level):
+                connect_expr('level = max(a, b)', level=subdiv.level, a=rvt.level, b=input_level)
+            else:
+                subdiv.level.connect(rvt.level)
 
         # projection
         _cp = kl.Closest(node, 'closest')

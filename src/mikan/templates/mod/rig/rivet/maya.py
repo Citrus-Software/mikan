@@ -95,6 +95,20 @@ class Mod(mk.Mod):
         with mx.DagModifier() as md:
             rvt = md.create_node(mx.tTransform, parent=parent, name=name)
 
+        # add subdiv level attribute
+        if do_subdiv:
+            with mx.DagModifier() as md:
+                md.add_attr(rvt, mx.Long('level', min=0, max=3, keyable=True))
+            with mx.DagModifier() as md:
+                md.set_attr(rvt['level'], subdiv['divisions'].read())
+
+            input_level = subdiv['divisions'].input(plug=True)
+            if isinstance(input_level, mx.Plug):
+                connect_expr('level = max(a, b)', level=subdiv['divisions'], a=rvt['level'], b=input_level)
+            else:
+                with mx.DGModifier() as md:
+                    md.connect(rvt['level'], subdiv['divisions'])
+
         # connect
         if do_closest:
             with mx.DGModifier() as md:
