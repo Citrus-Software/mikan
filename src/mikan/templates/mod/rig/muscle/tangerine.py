@@ -300,6 +300,8 @@ class Mod(mk.Mod):
             if do_hook:
                 matrix_constraint(mu, node)
             else:
-                node.reparent(mu)
+                offset = kl.SceneGraphNode(mu, f'mu_offset_{node.get_name()}')
+                copy_transform(node.get_parent(), offset)
+                node.reparent(offset)
 
             self.set_id(mu, 'muscle')
