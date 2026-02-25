@@ -206,8 +206,6 @@ class Deformer(mk.Deformer):
 
         # delta
         for t, delta in self.data.get('delta', {}).items():
-            if 1 not in delta:
-                continue
 
             if not isinstance(delta, dict):
                 delta = {1.0: delta}
@@ -239,6 +237,8 @@ class Deformer(mk.Deformer):
 
                 target_id = target_ids[ib]
                 self.node.shapes_deltas_in[target_id].set_value(points)
+                log.warning(f'set delta for target {t}, ib {ib}')
+                print(t, delta)
 
         # periodic spline fix?
         if isinstance(self.geometry, kl.SplineCurve):
