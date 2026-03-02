@@ -271,6 +271,8 @@ class ExpressionParser(object):
             if_false = self.evaluate_stack(s)
             if_true = self.evaluate_stack(s)
             condition = self.evaluate_stack(s)
+            if condition not in self.conditionals:
+                raise ValueError('Invalid ternary condition operator: {}'.format(condition))
             second_term = self.evaluate_stack(s)
             first_term = self.evaluate_stack(s)
             return self.get_op_result(op, self.condition, first_term, condition, second_term, if_true, if_false)
@@ -313,7 +315,7 @@ class ExpressionParser(object):
             value = self.kwargs.get(op)
             if value is None:
                 if self.connect:
-                    raise Exception('invalid identifier "{}"'.format(op))
+                    raise ValueError('invalid identifier {}'.format(op))
                 else:
                     self.parsed_kw['invalid'].add(op)
             else:
@@ -336,7 +338,7 @@ class ExpressionParser(object):
             return float(op)
 
         else:
-            raise Exception('invalid operator: {}'.format(op))
+            raise ValueError('invalid operator: {}'.format(op))
 
     def get_op_result(self, op, func, *args):
         op_str = self.op_str(op, *args)
