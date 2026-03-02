@@ -138,12 +138,12 @@ class JobMonitor(object):
             self.log_warning('unresolved ids: {}'.format(self.unresolved), insert=1)
 
         for level, msg in self.logs:
-            if level == logging.WARNING:
-                log.warning(msg)
-            elif level == logging.ERROR:
-                log.error(msg)
-            elif level == logging.CRITICAL:
-                log.critical(msg)
+            msg = msg.strip()
+            if msg.startswith('Traceback'):
+                lines = msg.split('\n')
+                lines = [lines[-1]] + lines
+                msg = '\n'.join(lines)
+            log.log(level, msg)
 
     def count_warnings(self):
         """Count the number of warnings.
