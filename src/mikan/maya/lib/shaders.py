@@ -747,10 +747,7 @@ class TangerineMaterialData(object):
                 log.warning('cannot resolve layered texture at depth {}'.format(depth))
 
         elif nt == 'blendColors':
-            if depth <= 2:
-                return self._get_blend_data(input_node, depth=depth)
-            else:
-                log.warning('cannot resolve blend colors at depth {}'.format(depth))
+            return self._get_blend_data(input_node, depth=depth)
 
         elif nt == 'choice':
             return self._resolve_choice_node(input_node, depth=depth)
@@ -854,6 +851,8 @@ class TangerineMaterialData(object):
 
             color = self.resolve_plug(layer_input['color'], depth=depth)
             alpha = self.resolve_plug(layer_input['alpha'], depth=depth)
+            if isinstance(alpha, dict) and 'blends' in alpha:
+                alpha = alpha['blends'][0]
 
             if 'layers' in color:
                 log.warning('invalid layer entry at {} ({})'.format(i, node))
