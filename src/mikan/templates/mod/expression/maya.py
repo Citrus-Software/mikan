@@ -20,7 +20,11 @@ class Mod(mk.Mod):
         args = deepcopy(self.data)
         op = args.pop('op')
 
-        parsed = connect_expr(op, connect=False, **args)
+        try:
+            parsed = connect_expr(op, connect=False, **args)
+        except ValueError as e:
+            raise mk.ModArgumentError(e)
+
         invalid = parsed['invalid']
 
         if 'time' in invalid or 'frame' in invalid:
