@@ -5,6 +5,18 @@ All notable changes to this project will be documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Changed
+
+- Improved error logging verbosity and traceback readability in core modules
+- Consolidated shader export pipeline between Maya and Tangerine
+- Consolidated build logic for `mod.rivet` and `mod.muscle`
+
+### Fixed
+
+- Fixed a major regression in `deformer.blend` build
+
 ## [1.0.5] - 2026-02-18
 
 ### Added
