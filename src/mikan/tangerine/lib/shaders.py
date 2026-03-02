@@ -155,9 +155,8 @@ def _create_shader_plug(name, data, rig_node, root_node):
 def _apply_color(shader, color_data, rig_node):
     # flat value
     if isinstance(color_data, (list, tuple)):
-        rgb = list(color_data)
-        if len(rgb) == 3:
-            rgb.append(1.0)
+        rgb = [max(0.0, min(1.0, float(c))) for c in color_data[:3]]
+        rgb.append(1.0)
         shader.filled_color.set_value(Color4f(*rgb))
 
     # switch
@@ -287,9 +286,9 @@ def _build_switch_node(rig_node, data, mode='color'):
         val = data['switch'][str(k)]
 
         if mode == 'color':
-            if isinstance(val, (list, tuple)):  # Color
-                if len(val) == 3:
-                    val = list(val) + [1.0]
+            if isinstance(val, (list, tuple)):
+                val = [max(0.0, min(1.0, float(c))) for c in val[:3]]
+                val.append(1.0)
                 val = Color4f(*val)
 
         elif mode == 'file':
