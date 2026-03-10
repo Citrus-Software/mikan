@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - Fixed a major regression in `deformer.blend` build
+- Fixed glitches and stabilized maintain offset when using an up object in the Tangerine aim constraint
 
 ## [1.0.5] - 2026-02-18
 
