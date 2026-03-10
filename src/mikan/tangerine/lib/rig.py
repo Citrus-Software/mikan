@@ -861,14 +861,6 @@ def twist_constraint(
         node.transform.connect(plug_out)
 
         merge_transform(node, r_in=cnst_out, r_axes=axes)
-        # if isinstance(srt, kl.SRTToJointTransform):
-        #     if srt.joint_orient_rotate.get_input():
-        #         v = srt.joint_orient_rotate.get_input().get_node()
-        #         v.x.set_value(0)
-        #         v.y.set_value(0)
-        #         v.z.set_value(0)
-        #     else:
-        #         srt.joint_orient_rotate.set_value(V3f(0, 0, 0))
 
     return cnst
 
@@ -906,13 +898,28 @@ def aim_constraint(
     cnst.up_vector.set_value(up_vector)
     cnst.up_vector_world.set_value(up_vector_world)
     cnst.up_vector_in_space.set_value(up_vector_object)
-    if up_object is not None:
-        cnst.up_vector_space.connect(up_object.world_transform)
-        if maintain_offset:
-            cnst.initial_up_vector_space.set_value(up_object.world_transform.get_value())
 
-    if up_vector_world.length():
-        log.warning('/!\\ up vector world does not work with maintain offset yet')
+    if up_object is not None:
+        is_object_rotation_up = up_vector_object.length() > 0.0001
+
+        if is_object_rotation_up:
+            up_srt_out = kl.TransformToSRTNode(node, '_up_srt_out')
+            up_srt_out.transform.connect(up_object.world_transform)
+
+            up_srt_in = kl.SRTToTransformNode(node, '_up_srt_in')
+            up_srt_in.rotate.connect(up_srt_out.rotate)
+            up_srt_in.rotate_order.connect(up_srt_out.rotate_order)
+            up_srt_in.scale.connect(up_srt_out.scale)
+
+            cnst.up_vector_space.connect(up_srt_in.transform)
+
+            if maintain_offset:
+                 cnst.initial_up_vector_space.set_value(up_srt_in.transform.get_value())
+
+        else:
+            cnst.up_vector_space.connect(up_object.world_transform)
+            if maintain_offset:
+                cnst.initial_up_vector_space.set_value(up_object.world_transform.get_value())
 
     _init_constraint(cnst, targets, weights=weights, world=world, maintain_offset=maintain_offset)
 
@@ -926,14 +933,6 @@ def aim_constraint(
             create_srt_in(node)
 
         merge_transform(node, r_in=cnst_out, r_axes=axes, force_blend=force_blend)
-        # if isinstance(srt, kl.SRTToJointTransform):
-        #     if srt.joint_orient_rotate.get_input():
-        #         v = srt.joint_orient_rotate.get_input().get_node()
-        #         v.x.set_value(0)
-        #         v.y.set_value(0)
-        #         v.z.set_value(0)
-        #     else:
-        #         srt.joint_orient_rotate.set_value(V3f(0, 0, 0))
 
     return cnst
 

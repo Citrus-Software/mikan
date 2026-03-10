@@ -610,7 +610,6 @@ class TangerineMaterialData(object):
         if 'gem_materials' not in self.node:
             self.node.add_attr(mx.String('gem_materials'))
 
-        # Sérialisation identique à l'original
         json_data = json.dumps(self.db)
         compressed_data = base64.b64encode(zlib.compress(json_data.encode('utf-8'), 9)).decode('utf-8')
 
