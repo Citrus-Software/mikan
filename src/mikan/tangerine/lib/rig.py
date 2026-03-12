@@ -14,7 +14,7 @@ from mikan.core.logger import create_logger
 log = create_logger()
 
 __all__ = [
-    'create_srt_in', 'create_srt_out', 'find_srt',
+    'create_srt_in', 'create_srt_out', 'find_srt', 'safe_reparent',
     'point_constraint', 'parent_constraint', 'orient_constraint', 'twist_constraint',
     'aim_constraint', 'scale_constraint', 'merge_transform', 'matrix_constraint', 'find_target', 'find_closest_node',
     'str_to_rotate_order', 'axis_to_vector', 'get_stretch_axis',
@@ -281,6 +281,38 @@ def find_srt(node, ro=Euler.XYZ, vectors=True):
             return create_srt_out(node, vectors=vectors)
 
     return create_srt_out(node, vectors=vectors, ro=ro)
+
+
+def safe_reparent(*args):
+    args = list(_flatten(args))
+    if len(args) < 2 or not all(isinstance(x, kl.Node) for x in args):
+        raise ValueError('2 or more kl.Node objects expected (children nodes followed by the parent)')
+
+    nodes = args[:-1]
+    parent = args[-1]
+
+    for node in nodes:
+        if not isinstance(node, kl.SceneGraphNode):
+            continue
+        if node.get_parent() == parent:
+            continue
+
+        data = {}
+        for child in node.get_children():
+            if isinstance(child, kl.Constrain):
+                xfo = child.constrain_transform.get_value()
+                data[child] = child.parent_world_transform.get_value() * xfo
+
+        node.reparent(parent)
+
+        for child in node.get_children():
+            if isinstance(child, kl.Constrain):
+                child.initial_parent_world_transform.set_value(child.parent_world_transform.get_value())
+                child.initial_target_world_transform.set_value(child.input_target_world_transform.get_value())
+
+                xfo = data[child] * child.parent_world_transform.get_value().inverse()
+                child.input_transform.set_value(xfo)
+                child.initial_input_transform.set_value(xfo)
 
 
 # constraints ----------------------------------------------------------------------------------------------------------
@@ -711,9 +743,9 @@ def merge_transform(node,
     return srt
 
 
-def _init_constraint(constraint, targets, weights=None, world=None, maintain_offset=False):
-    if world is not None:
-        constraint.input_world.connect(world.world_transform)
+def _init_constraint(constraint, node, targets, weights=None, maintain_offset=False):
+    constraint.input_world.connect(node.parent_world_transform)
+    constraint.parent_world_transform.connect(node.parent_world_transform)
 
     if weights is None:
         weights = [1] * len(targets)
@@ -737,12 +769,11 @@ def point_constraint(targets, node, maintain_offset=False, mo=None, axes='xyz', 
         raise ValueError
     if mo is not None:
         maintain_offset = bool(mo)
-    world = node.get_parent()
 
     # apply safe constraint
     plug_out = node.transform.get_input()
     cnst = kl.PointConstrain(node, 'point_constrain', len(targets))
-    _init_constraint(cnst, targets, weights=weights, world=world, maintain_offset=maintain_offset)
+    _init_constraint(cnst, node, targets, weights=weights, maintain_offset=maintain_offset)
 
     # merge constraint
     if plug_out or force_blend or axes != 'xyz':
@@ -768,12 +799,11 @@ def parent_constraint(targets, node, maintain_offset=False, mo=None, weights=Non
         raise ValueError
     if mo is not None:
         maintain_offset = bool(mo)
-    world = node.get_parent()
 
     # apply safe constraint
     plug_out = node.transform.get_input()
     cnst = kl.ParentConstrain(node, 'parent_constrain', len(targets), bw_size if bw_size is not None else len(targets))
-    _init_constraint(cnst, targets, weights=weights, world=world, maintain_offset=maintain_offset)
+    _init_constraint(cnst, node, targets, weights=weights, maintain_offset=maintain_offset)
 
     # merge constraint
     if plug_out or force_blend or translate_axes != 'xyz' or rotate_axes != 'xyz':
@@ -806,12 +836,11 @@ def orient_constraint(targets, node, maintain_offset=False, mo=None, axes='xyz',
         raise ValueError
     if mo is not None:
         maintain_offset = bool(mo)
-    world = node.get_parent()
 
     # apply safe constraint
     plug_out = node.transform.get_input()
     cnst = kl.OrientConstrain(node, 'orient_constrain', len(targets), bw_size if bw_size is not None else len(targets))
-    _init_constraint(cnst, targets, weights=weights, world=world, maintain_offset=maintain_offset)
+    _init_constraint(cnst, node, targets, weights=weights, maintain_offset=maintain_offset)
 
     # merge constraint
     if plug_out or force_blend or axes != 'xyz':
@@ -823,14 +852,6 @@ def orient_constraint(targets, node, maintain_offset=False, mo=None, axes='xyz',
             create_srt_in(node)
 
         merge_transform(node, r_in=cnst_out, r_axes=axes, force_blend=force_blend)
-        # if isinstance(srt, kl.SRTToJointTransform):
-        #     if srt.joint_orient_rotate.get_input():
-        #         v = srt.joint_orient_rotate.get_input().get_node()
-        #         v.x.set_value(0)
-        #         v.y.set_value(0)
-        #         v.z.set_value(0)
-        #     else:
-        #         srt.joint_orient_rotate.set_value(V3f(0, 0, 0))
 
     return cnst
 
@@ -847,13 +868,12 @@ def twist_constraint(
         maintain_offset = bool(mo)
     if not isinstance(twist_vector, V3f):
         twist_vector = V3f(*twist_vector)
-    world = node.get_parent()
 
     # apply safe constraint
     plug_out = node.transform.get_input()
     cnst = kl.TwistConstrain(node, 'twist_constrain', len(targets))
     cnst.axis.set_value(twist_vector)
-    _init_constraint(cnst, targets, weights=weights, world=world, maintain_offset=maintain_offset)
+    _init_constraint(cnst, node, targets, weights=weights, maintain_offset=maintain_offset)
 
     # merge constraint
     if plug_out or axes != 'xyz':
@@ -888,8 +908,6 @@ def aim_constraint(
     if not isinstance(up_vector_object, V3f):
         up_vector_object = V3f(*up_vector_object)
 
-    world = node.get_parent()
-
     # apply safe constraint
     plug_out = node.transform.get_input()
     cnst = kl.AimConstrain(node, 'aim_constrain', len(targets))
@@ -903,10 +921,10 @@ def aim_constraint(
         is_object_rotation_up = up_vector_object.length() > 0.0001
 
         if is_object_rotation_up:
-            up_srt_out = kl.TransformToSRTNode(node, '_up_srt_out')
+            up_srt_out = kl.TransformToSRTNode(cnst, '_up_srt_out')
             up_srt_out.transform.connect(up_object.world_transform)
 
-            up_srt_in = kl.SRTToTransformNode(node, '_up_srt_in')
+            up_srt_in = kl.SRTToTransformNode(cnst, '_up_srt_in')
             up_srt_in.rotate.connect(up_srt_out.rotate)
             up_srt_in.rotate_order.connect(up_srt_out.rotate_order)
             up_srt_in.scale.connect(up_srt_out.scale)
@@ -914,14 +932,14 @@ def aim_constraint(
             cnst.up_vector_space.connect(up_srt_in.transform)
 
             if maintain_offset:
-                 cnst.initial_up_vector_space.set_value(up_srt_in.transform.get_value())
+                cnst.initial_up_vector_space.set_value(up_srt_in.transform.get_value())
 
         else:
             cnst.up_vector_space.connect(up_object.world_transform)
             if maintain_offset:
                 cnst.initial_up_vector_space.set_value(up_object.world_transform.get_value())
 
-    _init_constraint(cnst, targets, weights=weights, world=world, maintain_offset=maintain_offset)
+    _init_constraint(cnst, node, targets, weights=weights, maintain_offset=maintain_offset)
 
     # merge constraint
     if plug_out or force_blend or axes != 'xyz':
@@ -945,12 +963,11 @@ def scale_constraint(targets, node, maintain_offset=False, mo=None, axes='xyz', 
         raise ValueError
     if mo is not None:
         maintain_offset = bool(mo)
-    world = node.get_parent()
 
     # apply safe constraint
     plug_out = node.transform.get_input()
     cnst = kl.ScaleConstrain(node, 'scale_constrain', len(targets))
-    _init_constraint(cnst, targets, weights=weights, world=world, maintain_offset=maintain_offset)
+    _init_constraint(cnst, node, targets, weights=weights, maintain_offset=maintain_offset)
 
     # merge constraint
     if plug_out or force_blend or axes != 'xyz':

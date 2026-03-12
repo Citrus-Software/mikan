@@ -5,6 +5,7 @@ import meta_nodal_py as kl
 import mikan.tangerine.core as mk
 from mikan.core import flatten_list
 from mikan.core.logger import create_logger
+from mikan.tangerine.lib.rig import safe_reparent
 
 log = create_logger()
 
@@ -40,6 +41,4 @@ class Mod(mk.Mod):
             raise mk.ModArgumentError('invalid parent')
 
         # parent
-        for node in nodes:
-            if node.get_parent() != parent:
-                node.reparent(parent)
+        safe_reparent(nodes, parent)
