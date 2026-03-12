@@ -614,7 +614,7 @@ def merge_transform(node,
             if type(s0_node) in scale_types or force_blend:
                 do_blend = True
             if do_blend and not override:
-                if node.get_dynamic_plug('blend_translate'):
+                if node.get_dynamic_plug('blend_scale'):
                     raise RuntimeError('/!\\ cannot merge scale input connections, already blended')
                 blend = kl.BlendTransformsNode(srt, 'blend_scale')
                 if isinstance(s0_node, kl.FloatToV3f):
