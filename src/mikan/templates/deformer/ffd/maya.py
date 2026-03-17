@@ -34,16 +34,32 @@ class Deformer(mk.Deformer):
         data['lattice'] = ffl.name() + '->xfo'
         data['base'] = ffb.name() + '->xfo'
 
-        # proxies
+        # backup shapes
+        prx_shapes = [
+            shp for shp in ffl.shapes()
+            if shp.is_a(mx.tMesh) and 'gem_deformer' in shp and shp['gem_deformer'].read() == 'data.tweak'
+        ]
+
+        if any(shp.isReferenced() for shp in prx_shapes):
+            for shp in prx_shapes:
+                if not shp.isReferenced():
+                    mx.delete(shp)
+
         prx = self.get_geometry_id('{}->data.tweak'.format(ffl.name()), self.root)
         if prx[0]:
-            mx.delete(prx[0])
-        prx = create_lattice_proxy(ffl)
-        shp = prx.shape()
-        mc.parent(str(shp), str(ffl), r=1, s=1)
-        mx.delete(prx)
-        shp['v'] = False
-        self.set_geometry_id(shp, 'data.tweak')
+            prx = prx[0]
+        else:
+            prx = None
+
+        if prx and not prx.isReferenced():
+            # update tweak shape if not referenced
+            mx.delete(prx)
+            prx = create_lattice_proxy(ffl)
+            shp = prx.shape()
+            mc.parent(str(shp), str(ffl), r=1, s=1)
+            mx.delete(prx)
+            shp['v'] = False
+            self.set_geometry_id(shp, 'data.tweak')
 
         prx, _prx = self.get_geometry_id('{}->data.base'.format(ffb.name()), self.root)
         if not prx:
