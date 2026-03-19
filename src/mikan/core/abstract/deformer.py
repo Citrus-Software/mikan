@@ -479,6 +479,7 @@ class Deformer(JobMonitor):
             self.build()
             self.set_id()
             self.set_protected()
+            self.post_build()
 
             if not self.logs and not self.unresolved:
                 log.debug('-- bind: {}'.format(self) + source_str)
@@ -617,6 +618,15 @@ class Deformer(JobMonitor):
 
     def set_protected(self):
         """Mark this deformer as protected from modification.
+
+        Must be implemented by software-specific subclasses.
+
+        Note:
+            This is a placeholder. Override in subclasses.
+        """
+
+    def post_build(self):
+        """Update deformer after build
 
         Must be implemented by software-specific subclasses.
 

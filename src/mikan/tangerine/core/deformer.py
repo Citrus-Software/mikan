@@ -469,6 +469,16 @@ class Deformer(abstract.Deformer):
 
         return self.id
 
+    def post_build(self):
+        if not self.node or not self.geometry:
+            return
+
+        # set user normal on deformer
+        if self.geometry.get_dynamic_plug('noNormals'):
+            if self.geometry.noNormals.get_value() == 0:
+                if self.node.get_plug('custom_normals_in'):
+                    self.node.custom_normals_in.set_value(True)
+
     def find_root(self):
         if isinstance(self.root, kl.SceneGraphNode):
             self.root_id = Deformer.get_unique_name(self.root)
