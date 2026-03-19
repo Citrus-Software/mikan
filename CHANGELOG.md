@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Added
+
+- Added support of user normals in Tangerine deformers
+
 ### Changed
 
 - Improved error logging verbosity and traceback readability in core modules
@@ -15,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- Fixed a major regression in `deformer.blend` build
+- Fixed a major regression in Tangerine `deformer.blend` build
 - Fixed glitches and stabilized maintain offset when using an up object in the Tangerine aim constraint
 - Fixed SRT manipulations when reparenting and blending channels in Tangerine
 - Fixed shape duplication with FFD backup in Maya
