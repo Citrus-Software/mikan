@@ -196,9 +196,11 @@ def _apply_color(shader, color_data, rig_node):
 
 
 def _apply_file(shader, file_data, rig_node):
+
     # flat value
     if isinstance(file_data, str):
-        file_data = convert_map_to_jpg(file_data)
+        if file_data[-3:] not in ('jpg', 'png'):
+            file_data = convert_map_to_jpg(file_data)
         shader.diffuse_path.set_value(file_data)
 
     # switch or sequence
@@ -293,7 +295,8 @@ def _build_switch_node(rig_node, data, mode='color'):
 
         elif mode == 'file':
             if isinstance(val, str):
-                val = convert_map_to_jpg(val)
+                if val[-3:] not in ('jpg', 'png'):
+                    val = convert_map_to_jpg(val)
 
         switch_node.input[k].set_value(val)
 
