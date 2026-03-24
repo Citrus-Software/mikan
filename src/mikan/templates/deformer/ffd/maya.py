@@ -54,6 +54,9 @@ class Deformer(mk.Deformer):
         if prx and not prx.isReferenced():
             # update tweak shape if not referenced
             mx.delete(prx)
+            prx = None
+
+        if prx is None:
             prx = create_lattice_proxy(ffl)
             shp = prx.shape()
             mc.parent(str(shp), str(ffl), r=1, s=1)
