@@ -162,7 +162,7 @@ class Deformer(mk.Deformer):
 
             if 'target' in data:
 
-                for ib, target_id in target_inputs:
+                for ib, target_id in target_inputs.items():
                     if ib not in data['target'] or not isinstance(data['target'], dict):
                         continue
                     _target = data['target'][ib]
