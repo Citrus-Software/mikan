@@ -1,5 +1,8 @@
 # coding: utf-8
 
+import re
+import os
+
 from mikan.maya import cmds as mc
 import mikan.maya.cmdx as mx
 
@@ -14,6 +17,21 @@ log = create_logger()
 class Mod(mk.Mod):
 
     def run(self):
+
+        # check bifrost
+        if not check_bifrost_status():
+            raise mk.ModError('Bifrost not available')
+
+        bf_version = mc.pluginInfo("bifrostGraph", query=True, version=True)
+        match = re.search(r'^(\d+)\.(\d+)\.(\d+)', bf_version)
+        if match:
+            major = int(match.group(1))
+            minor = int(match.group(2))
+            if major < 2:
+                if major == 2 and minor < 1:
+                    raise mk.ModError('Bifrost version too old. Feedback Ports require at least version 2.1.')
+                elif major == 2 and minor == 1:
+                    log.warning('Bifrost 2.1 detected. Feedback Ports are supported, but version 2.2 or higher is recommended for better stability.')
 
         # args
         rig = mk.Nodes.get_id('::rig')
@@ -35,56 +53,31 @@ class Mod(mk.Mod):
         if not target:
             raise mk.ModArgumentError('no target defined')
 
-        if mk.Nodes.get_id('::jiggle') is None:
-            dyn = mx.create_node(mx.tTransform, parent=rig, name='jiggle')
-            mk.Nodes.set_id(dyn, '::jiggle')
-        else:
-            dyn = mk.Nodes.get_id('::jiggle')
-
         name = self.data.get('name')
-        sfx = self.get_template_id()
-        if '.' in sfx:
-            sfx = '_' + '_'.join(sfx.split('.')[1:])
-        else:
-            sfx = ''
+        tpl_id = self.get_template_id()
+        sfx = ''
+        if '.' in tpl_id:
+            sfx = '_' + '_'.join(tpl_id.split('.')[1:])
+
         if not name:
             name = ctrl.name(namespace=False)
+            if tpl_id in name:
+                name = tpl_id + name.split(tpl_id)[-1]
+
         name += sfx
         name = cleanup_str(name)
 
-        # particle
-        # mc.select(clear=True)
-        start_frame = self.data.get('start_frame', 1)
-        # mc.currentTime(start_frame)
+        # rig nodes
+        parent = driven_node.parent()
 
-        # solver = mel.eval('createNSystem;')
-        # solver = mx.encode(solver)
-        # solver['v'] = False
-        # mc.parent(str(solver), str(dyn))
-
-        # solver['gravity'] = 0
-        # solver['airDensity'] = 0
-        # solver['subSteps'] = 1
-        # solver['timeScale'] = 5
-
-        # pcl, pcl_shp = mc.nParticle(p=target.translation(mx.sWorld), n='pcl_' + name)
-        # mc.parent(pcl, str(dyn))
-        # pcl = mx.encode(pcl)
-        # pcl_shp = mx.encode(pcl_shp)
-
-        # pcl_shp['radius'] = 0
-        # pcl_shp['collide'] = 0
-
-        target_node = mx.create_node(mx.tTransform, parent=ctrl, name='tgt_' + name)
+        target_node = mx.create_node(mx.tTransform, parent=parent, name='tgt_' + name)
         copy_transform(target, target_node, t=True)
-        # mc.goal(str(pcl), g=str(target_node), w=1, utr=1)
 
-        # current_solver = pcl_shp['nextState'].input()
-        # if solver != current_solver:
-        #     mc.select(str(pcl))
-        #     mel.eval('assignNSolver("{}");'.format(solver))
+        body = mx.create_node(mx.tTransform, parent=parent, name='body_' + name)
+        copy_transform(target, body, t=True)
 
-        # params
+        # attributes
+        start_frame = self.data.get('start_frame', 1)
         weight = self.data.get('weight', 1)
         goal = self.data.get('goal', 0.5)
         damp = self.data.get('damp', 0.5)
@@ -116,34 +109,40 @@ class Mod(mk.Mod):
         if ctrl_dyn['damp'].editable:
             ctrl_dyn['damp'] = damp
 
-        # ctrl_main['start_frame'] >> solver['startFrame']
-        # ctrl_main['dynamic'] >> solver['enable']
+        # build solver
+        mc.currentTime(start_frame)
 
-        # ctrl_dyn['goal'] >> pcl_shp['goalWeight'][0]
-        # ctrl_dyn['damp'] >> pcl_shp['damp']
+        plugin_dir = os.path.dirname(__file__)
+        json_path = os.path.join(plugin_dir, 'bifrost_jiggle.json')
+        json_path = os.path.normpath(json_path)
 
-        # loc result
-        # name = pcl.name()
-        pos = mc.spaceLocator(n='pos_' + name)
-        mc.parent(pos, str(dyn))
-        pos = mx.encode(pos[0])
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                json_str = f.read()
+        except Exception as e:
+            mk.ModError(f"Erreur lors de la lecture du fichier : {e}")
 
-        cm = mx.create_node(mx.tComposeMatrix)
-        # pcl_shp['worldCentroid'] >> cm['inputTranslate']
+        bf = mx.create_node('bifrostGraphShape', parent=body, name='body_' + name + 'Shape')
+        bf['sc'] = json_str.replace('bifrostGraphShape1', str(bf))
 
-        mmx = mx.create_node(mx.tMultMatrix)
-        pos['pim'][0] >> mmx['i'][0]
-        cm['outputMatrix'] >> mmx['i'][1]
+        # connect solver
+        ctrl_main['start_frame'] >> bf['start_frame']
+        ctrl_main['dynamic'] >> bf['enable_in']
 
-        dm = mx.create_node(mx.tDecomposeMatrix)
-        mmx['o'] >> dm['inputMatrix']
-        dm['outputTranslate'] >> pos['translate']
+        ctrl_dyn['goal'] >> bf['stiffness_in']
+        ctrl_dyn['damp'] >> bf['damp_in']
 
-        _wm = pos['wm'][0].as_transform()
+        body['pim'][0] >> bf['parent_inverse_transform_in']
+        target_node['wm'][0] >> bf['target_in']
+
+        bf['position_out'] >> body['t']
+
+        # rig aim
+        _wm = body['wm'][0].as_transform()
         _wim = driven_node['wim'][0].as_transform()
         _aim = (_wm * _wim).translation().normalize()
 
-        _ac = mc.aimConstraint(str(pos), str(driven_node), mo=1, aim=_aim, u=[0, 0, 0], wut='none', wuo=str(ctrl), wu=[0, 0, 0], n='_ax#')
+        _ac = mc.aimConstraint(str(body), str(driven_node), mo=1, aim=_aim, u=[0, 0, 0], wut='none', wuo=str(ctrl), wu=[0, 0, 0], n='_ax#')
         _ac = mx.encode(_ac[0])
 
         _pb = mx.create_node(mx.tPairBlend, name='_pb#')
@@ -158,6 +157,14 @@ class Mod(mk.Mod):
 
         _pb['outRotate'] >> driven_node['rotate']
 
-        # hide
-        # pcl['lodVisibility'] = False
-        pos['v'] = False
+
+def check_bifrost_status():
+    plugin_name = "bifrostGraph"
+
+    if not mc.pluginInfo(plugin_name, query=True, loaded=True):
+        try:
+            mc.loadPlugin(plugin_name)
+        except:
+            return False
+
+    return True

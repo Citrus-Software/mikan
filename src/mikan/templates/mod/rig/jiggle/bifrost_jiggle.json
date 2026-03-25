@@ -1,0 +1,1346 @@
+{
+  "header": {
+    "metadata": [
+      {
+        "metaName": "adskFileFormatVersion",
+        "metaValue": "100L"
+      }
+    ]
+  },
+  "namespaces": [],
+  "types": [],
+  "compounds": [
+    {
+      "name": "bifrostGraphShape1",
+      "metadata": [
+        {
+          "metaName": "io_nodes",
+          "metadata": [
+            {
+              "metaName": "io_inodes",
+              "metadata": [
+                {
+                  "metaName": "input",
+                  "metadata": [
+                    {
+                      "metaName": "DisplayMode",
+                      "metaType": "string",
+                      "metaValue": "2"
+                    },
+                    {
+                      "metaName": "LayoutPos",
+                      "metaType": "string",
+                      "metaValue": "-1918.92 -217.695"
+                    },
+                    {
+                      "metaName": "io_ports",
+                      "metadata": [
+                        {
+                          "metaName": "target_in"
+                        },
+                        {
+                          "metaName": "world_transform_in"
+                        },
+                        {
+                          "metaName": "parent_inverse_transform_in"
+                        },
+                        {
+                          "metaName": "stiffness_in"
+                        },
+                        {
+                          "metaName": "damp_in"
+                        },
+                        {
+                          "metaName": "start_frame"
+                        },
+                        {
+                          "metaName": "enable_in"
+                        }
+                      ]
+                    },
+                    {
+                      "metaName": "zValue",
+                      "metaType": "string",
+                      "metaValue": "50.000000"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "metaName": "io_onodes",
+              "metadata": [
+                {
+                  "metaName": "output",
+                  "metadata": [
+                    {
+                      "metaName": "DisplayMode",
+                      "metaType": "string",
+                      "metaValue": "2"
+                    },
+                    {
+                      "metaName": "io_ports",
+                      "metadata": [
+                        {
+                          "metaName": "position_out"
+                        },
+                        {
+                          "metaName": "velocity_out"
+                        }
+                      ]
+                    },
+                    {
+                      "metaName": "zValue",
+                      "metaType": "string",
+                      "metaValue": "48.000000"
+                    },
+                    {
+                      "metaName": "LayoutPos",
+                      "metaType": "string",
+                      "metaValue": "547.979 -281"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "metaName": "_ImportedURI_",
+          "metaType": "string",
+          "metaValue": "stream:/bifrostGraphShape2"
+        },
+        {
+          "metaName": "_ImportedNodeName_",
+          "metaType": "string",
+          "metaValue": "bifrostGraphShape2"
+        },
+        {
+          "metaName": "internal",
+          "metaValue": "true"
+        },
+        {
+          "metaName": "_recentNode_",
+          "metaType": "string",
+          "metaValue": "BifrostGraph,Core::Logic,if"
+        },
+        {
+          "metaName": "_recentNode_",
+          "metaType": "string",
+          "metaValue": "BifrostGraph,Core::Math,matrix_multiply"
+        },
+        {
+          "metaName": "_recentNode_",
+          "metaType": "string",
+          "metaValue": "BifrostGraph,Core::Math,transform_vector"
+        },
+        {
+          "metaName": "_recentNode_",
+          "metaType": "string",
+          "metaValue": "BifrostGraph,Modeling::Points,transform_points"
+        },
+        {
+          "metaName": "_recentNode_",
+          "metaType": "string",
+          "metaValue": "BifrostGraph,Core::Math,inverse_matrix"
+        },
+        {
+          "metaName": "ViewportRect",
+          "metaType": "string",
+          "metaValue": "-1278.83 -735.093 2195.81 1503.93"
+        }
+      ],
+      "ports": [
+        {
+          "portName": "target_in",
+          "portDirection": "input",
+          "portType": "Math::float4x4"
+        },
+        {
+          "portName": "world_transform_in",
+          "portDirection": "input",
+          "portType": "Math::float4x4"
+        },
+        {
+          "portName": "position_out",
+          "portDirection": "output",
+          "portType": "Math::float3"
+        },
+        {
+          "portName": "velocity_out",
+          "portDirection": "output",
+          "portType": "Math::float3"
+        },
+        {
+          "portName": "parent_inverse_transform_in",
+          "portDirection": "input",
+          "portType": "Math::float4x4"
+        },
+        {
+          "portName": "stiffness_in",
+          "portDirection": "input",
+          "portType": "float"
+        },
+        {
+          "portName": "damp_in",
+          "portDirection": "input",
+          "portType": "float"
+        },
+        {
+          "portName": "start_frame",
+          "portDirection": "input",
+          "portType": "float"
+        },
+        {
+          "portName": "enable_in",
+          "portDirection": "input",
+          "portType": "bool"
+        }
+      ],
+      "compounds": [
+        {
+          "name": "jiggle",
+          "metadata": [
+            {
+              "metaName": "io_nodes",
+              "metadata": [
+                {
+                  "metaName": "io_inodes",
+                  "metadata": [
+                    {
+                      "metaName": "input",
+                      "metadata": [
+                        {
+                          "metaName": "DisplayMode",
+                          "metaType": "string",
+                          "metaValue": "2"
+                        },
+                        {
+                          "metaName": "io_ports",
+                          "metadata": [
+                            {
+                              "metaName": "target_in"
+                            },
+                            {
+                              "metaName": "previous_position"
+                            },
+                            {
+                              "metaName": "stiffness_in"
+                            },
+                            {
+                              "metaName": "initial_velocity_in"
+                            },
+                            {
+                              "metaName": "previous_velocity"
+                            },
+                            {
+                              "metaName": "damp_in"
+                            },
+                            {
+                              "metaName": "start_frame"
+                            }
+                          ]
+                        },
+                        {
+                          "metaName": "zValue",
+                          "metaType": "string",
+                          "metaValue": "58.000000"
+                        },
+                        {
+                          "metaName": "LayoutPos",
+                          "metaType": "string",
+                          "metaValue": "-1463.25 180.903"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "metaName": "io_onodes",
+                  "metadata": [
+                    {
+                      "metaName": "output",
+                      "metadata": [
+                        {
+                          "metaName": "DisplayMode",
+                          "metaType": "string",
+                          "metaValue": "2"
+                        },
+                        {
+                          "metaName": "io_ports",
+                          "metadata": [
+                            {
+                              "metaName": "position_out"
+                            },
+                            {
+                              "metaName": "velocity_out"
+                            },
+                            {
+                              "metaName": "acceleration_out"
+                            }
+                          ]
+                        },
+                        {
+                          "metaName": "LayoutPos",
+                          "metaType": "string",
+                          "metaValue": "1306.06 54.0857"
+                        },
+                        {
+                          "metaName": "zValue",
+                          "metaType": "string",
+                          "metaValue": "40.000000"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "metaName": "_recentNode_",
+              "metaType": "string",
+              "metaValue": "BifrostGraph,Core::Time,time"
+            },
+            {
+              "metaName": "_recentNode_",
+              "metaType": "string",
+              "metaValue": "BifrostGraph,Core::Constants,float"
+            },
+            {
+              "metaName": "_recentNode_",
+              "metaType": "string",
+              "metaValue": "BifrostGraph,Simulation::Common,vary_source_property"
+            },
+            {
+              "metaName": "_recentNode_",
+              "metaType": "string",
+              "metaValue": "BifrostGraph,Core::Math,clamp"
+            },
+            {
+              "metaName": "_recentNode_",
+              "metaType": "string",
+              "metaValue": "BifrostGraph,Core::Logic,if"
+            },
+            {
+              "metaName": "ViewportRect",
+              "metaType": "string",
+              "metaValue": "-1415.48 -301.561 2114.52 1453.51"
+            }
+          ],
+          "ports": [
+            {
+              "portName": "target_in",
+              "portDirection": "input",
+              "portType": "Math::float3"
+            },
+            {
+              "portName": "previous_position",
+              "portDirection": "input",
+              "portType": "Math::float3",
+              "linkedFeedbackPort": "position_out"
+            },
+            {
+              "portName": "position_out",
+              "portDirection": "output"
+            },
+            {
+              "portName": "stiffness_in",
+              "portDirection": "input",
+              "portType": "float"
+            },
+            {
+              "portName": "initial_velocity_in",
+              "portDirection": "input",
+              "portType": "Math::float3"
+            },
+            {
+              "portName": "previous_velocity",
+              "portDirection": "input",
+              "portType": "Math::float3",
+              "linkedFeedbackPort": "velocity_out"
+            },
+            {
+              "portName": "velocity_out",
+              "portDirection": "output"
+            },
+            {
+              "portName": "damp_in",
+              "portDirection": "input",
+              "portType": "float"
+            },
+            {
+              "portName": "start_frame",
+              "portDirection": "input",
+              "portType": "float"
+            },
+            {
+              "portName": "acceleration_out",
+              "portDirection": "output"
+            }
+          ],
+          "compoundNodes": [
+            {
+              "nodeName": "distance",
+              "nodeType": "Core::Math::subtract",
+              "multiInPortNames": [
+                "target_in",
+                "previous_position"
+              ],
+              "metadata": [
+                {
+                  "metaName": "DisplayMode",
+                  "metaType": "string",
+                  "metaValue": "2"
+                },
+                {
+                  "metaName": "zValue",
+                  "metaType": "string",
+                  "metaValue": "60.000000"
+                },
+                {
+                  "metaName": "LayoutPos",
+                  "metaType": "string",
+                  "metaValue": "-854.284 -280.684"
+                }
+              ]
+            },
+            {
+              "nodeName": "multiply",
+              "nodeType": "Core::Math::multiply",
+              "multiInPortNames": [
+                "output1",
+                "stiffness_in"
+              ],
+              "metadata": [
+                {
+                  "metaName": "DisplayMode",
+                  "metaType": "string",
+                  "metaValue": "2"
+                },
+                {
+                  "metaName": "zValue",
+                  "metaType": "string",
+                  "metaValue": "61.000000"
+                },
+                {
+                  "metaName": "LayoutPos",
+                  "metaType": "string",
+                  "metaValue": "-569.849 -162.185"
+                }
+              ]
+            },
+            {
+              "nodeName": "friction",
+              "nodeType": "Core::Math::multiply",
+              "multiInPortNames": [
+                "previous_velocity",
+                "damp_in"
+              ],
+              "metadata": [
+                {
+                  "metaName": "DisplayMode",
+                  "metaType": "string",
+                  "metaValue": "2"
+                },
+                {
+                  "metaName": "zValue",
+                  "metaType": "string",
+                  "metaValue": "44.000000"
+                },
+                {
+                  "metaName": "LayoutPos",
+                  "metaType": "string",
+                  "metaValue": "-845.072 109.348"
+                }
+              ]
+            },
+            {
+              "nodeName": "acceleration",
+              "nodeType": "Core::Math::subtract",
+              "multiInPortNames": [
+                "output1",
+                "output2"
+              ],
+              "metadata": [
+                {
+                  "metaName": "DisplayMode",
+                  "metaType": "string",
+                  "metaValue": "2"
+                },
+                {
+                  "metaName": "zValue",
+                  "metaType": "string",
+                  "metaValue": "46.000000"
+                },
+                {
+                  "metaName": "LayoutPos",
+                  "metaType": "string",
+                  "metaValue": "-201.015 -43.0423"
+                }
+              ]
+            },
+            {
+              "nodeName": "new_velocity",
+              "nodeType": "Core::Math::add",
+              "multiInPortNames": [
+                "output1",
+                "previous_velocity"
+              ],
+              "metadata": [
+                {
+                  "metaName": "DisplayMode",
+                  "metaType": "string",
+                  "metaValue": "2"
+                },
+                {
+                  "metaName": "zValue",
+                  "metaType": "string",
+                  "metaValue": "50.000000"
+                },
+                {
+                  "metaName": "LayoutPos",
+                  "metaType": "string",
+                  "metaValue": "125.138 149.597"
+                }
+              ]
+            },
+            {
+              "nodeName": "add",
+              "nodeType": "Core::Math::add",
+              "multiInPortNames": [
+                "previous_position",
+                "output1"
+              ],
+              "metadata": [
+                {
+                  "metaName": "DisplayMode",
+                  "metaType": "string",
+                  "metaValue": "2"
+                },
+                {
+                  "metaName": "zValue",
+                  "metaType": "string",
+                  "metaValue": "49.000000"
+                },
+                {
+                  "metaName": "LayoutPos",
+                  "metaType": "string",
+                  "metaValue": "495.12 99.5888"
+                }
+              ]
+            },
+            {
+              "nodeName": "less_or_equal",
+              "nodeType": "Core::Logic::less_or_equal",
+              "metadata": [
+                {
+                  "metaName": "DisplayMode",
+                  "metaType": "string",
+                  "metaValue": "2"
+                },
+                {
+                  "metaName": "zValue",
+                  "metaType": "string",
+                  "metaValue": "56.000000"
+                },
+                {
+                  "metaName": "LayoutPos",
+                  "metaType": "string",
+                  "metaValue": "-497.226 487.204"
+                }
+              ]
+            },
+            {
+              "nodeName": "if2",
+              "nodeType": "Core::Logic::if",
+              "metadata": [
+                {
+                  "metaName": "DisplayMode",
+                  "metaType": "string",
+                  "metaValue": "2"
+                },
+                {
+                  "metaName": "zValue",
+                  "metaType": "string",
+                  "metaValue": "52.000000"
+                },
+                {
+                  "metaName": "LayoutPos",
+                  "metaType": "string",
+                  "metaValue": "801.848 548.48"
+                }
+              ]
+            },
+            {
+              "nodeName": "if1",
+              "nodeType": "Core::Logic::if",
+              "metadata": [
+                {
+                  "metaName": "DisplayMode",
+                  "metaType": "string",
+                  "metaValue": "2"
+                },
+                {
+                  "metaName": "zValue",
+                  "metaType": "string",
+                  "metaValue": "53.000000"
+                },
+                {
+                  "metaName": "LayoutPos",
+                  "metaType": "string",
+                  "metaValue": "804.991 344.608"
+                }
+              ]
+            },
+            {
+              "nodeName": "time1",
+              "nodeType": "Core::Time::time",
+              "metadata": [
+                {
+                  "metaName": "DisplayMode",
+                  "metaType": "string",
+                  "metaValue": "2"
+                },
+                {
+                  "metaName": "LayoutPos",
+                  "metaType": "string",
+                  "metaValue": "-841.499 546.666"
+                },
+                {
+                  "metaName": "zValue",
+                  "metaType": "string",
+                  "metaValue": "62.000000"
+                }
+              ]
+            }
+          ],
+          "connections": [
+            {
+              "source": ".target_in",
+              "target": "distance.first.target_in"
+            },
+            {
+              "source": ".previous_position",
+              "target": "distance.first.previous_position"
+            },
+            {
+              "source": ".previous_velocity",
+              "target": "friction.first.previous_velocity"
+            },
+            {
+              "source": ".damp_in",
+              "target": "friction.first.damp_in"
+            },
+            {
+              "source": "multiply.output",
+              "target": "acceleration.first.output1"
+            },
+            {
+              "source": "friction.output",
+              "target": "acceleration.first.output2"
+            },
+            {
+              "source": ".previous_position",
+              "target": "add.first.previous_position"
+            },
+            {
+              "source": ".start_frame",
+              "target": "less_or_equal.second"
+            },
+            {
+              "source": "less_or_equal.output",
+              "target": "if2.condition"
+            },
+            {
+              "source": "less_or_equal.output",
+              "target": "if1.condition"
+            },
+            {
+              "source": ".target_in",
+              "target": "if1.true_case"
+            },
+            {
+              "source": ".initial_velocity_in",
+              "target": "if2.true_case"
+            },
+            {
+              "source": "add.output",
+              "target": "if1.false_case"
+            },
+            {
+              "source": "if1.output",
+              "target": ".position_out"
+            },
+            {
+              "source": "new_velocity.output",
+              "target": "add.first.output1"
+            },
+            {
+              "source": "distance.output",
+              "target": "multiply.first.stiffness_in"
+            },
+            {
+              "source": ".stiffness_in",
+              "target": "multiply.first.output1"
+            },
+            {
+              "source": "acceleration.output",
+              "target": ".acceleration_out"
+            },
+            {
+              "source": "acceleration.output",
+              "target": "new_velocity.first.output1"
+            },
+            {
+              "source": ".previous_velocity",
+              "target": "new_velocity.first.previous_velocity"
+            },
+            {
+              "source": "new_velocity.output",
+              "target": "if2.false_case"
+            },
+            {
+              "source": "if2.output",
+              "target": ".velocity_out"
+            },
+            {
+              "source": "time1.frame",
+              "target": "less_or_equal.first"
+            }
+          ],
+          "values": [],
+          "reservedNodeNames": [
+            {
+              "name": "input"
+            },
+            {
+              "name": "output"
+            }
+          ],
+          "libraryDependencies": {
+            "Amino": "2.15.0.11",
+            "bif": "2.15.0.11"
+          }
+        },
+        {
+          "name": "transform_point",
+          "metadata": [
+            {
+              "metaName": "io_nodes",
+              "metadata": [
+                {
+                  "metaName": "io_inodes",
+                  "metadata": [
+                    {
+                      "metaName": "input",
+                      "metadata": [
+                        {
+                          "metaName": "DisplayMode",
+                          "metaType": "string",
+                          "metaValue": "2"
+                        },
+                        {
+                          "metaName": "LayoutPos",
+                          "metaType": "string",
+                          "metaValue": "-714.068 -63.5706"
+                        },
+                        {
+                          "metaName": "io_ports",
+                          "metadata": [
+                            {
+                              "metaName": "vector_in"
+                            },
+                            {
+                              "metaName": "transform_in"
+                            }
+                          ]
+                        },
+                        {
+                          "metaName": "zValue",
+                          "metaType": "string",
+                          "metaValue": "33.000000"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "metaName": "io_onodes",
+                  "metadata": [
+                    {
+                      "metaName": "output",
+                      "metadata": [
+                        {
+                          "metaName": "DisplayMode",
+                          "metaType": "string",
+                          "metaValue": "2"
+                        },
+                        {
+                          "metaName": "io_ports",
+                          "metadata": [
+                            {
+                              "metaName": "vector_out"
+                            }
+                          ]
+                        },
+                        {
+                          "metaName": "zValue",
+                          "metaType": "string",
+                          "metaValue": "39.000000"
+                        },
+                        {
+                          "metaName": "LayoutPos",
+                          "metaType": "string",
+                          "metaValue": "483.324 -93.4775"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "metaName": "_recentNode_",
+              "metaType": "string",
+              "metaValue": "BifrostGraph,Core::Type_Conversion,to_float"
+            },
+            {
+              "metaName": "_recentNode_",
+              "metaType": "string",
+              "metaValue": "BifrostGraph,Core::Conversion,vector4_to_vector3"
+            },
+            {
+              "metaName": "_recentNode_",
+              "metaType": "string",
+              "metaValue": "BifrostGraph,Core::Constants,float"
+            },
+            {
+              "metaName": "_recentNode_",
+              "metaType": "string",
+              "metaValue": "BifrostGraph,Core::Math,matrix_multiply"
+            },
+            {
+              "metaName": "_recentNode_",
+              "metaType": "string",
+              "metaValue": "BifrostGraph,Core::Conversion,vector3_to_vector4"
+            },
+            {
+              "metaName": "ViewportRect",
+              "metaType": "string",
+              "metaValue": "-812.718 -539.819 1561 1073.03"
+            }
+          ],
+          "ports": [
+            {
+              "portName": "vector_in",
+              "portDirection": "input"
+            },
+            {
+              "portName": "transform_in",
+              "portDirection": "input",
+              "portType": "Math::float4x4"
+            },
+            {
+              "portName": "vector_out",
+              "portDirection": "output"
+            }
+          ],
+          "compoundNodes": [
+            {
+              "nodeName": "vector3_to_vector4",
+              "nodeType": "Core::Conversion::vector3_to_vector4",
+              "metadata": [
+                {
+                  "metaName": "DisplayMode",
+                  "metaType": "string",
+                  "metaValue": "2"
+                },
+                {
+                  "metaName": "LayoutPos",
+                  "metaType": "string",
+                  "metaValue": "-391.48 24.7964"
+                },
+                {
+                  "metaName": "zValue",
+                  "metaType": "string",
+                  "metaValue": "34.000000"
+                }
+              ]
+            },
+            {
+              "nodeName": "matrix_multiply",
+              "nodeType": "Core::Math::matrix_multiply",
+              "multiInPortNames": [
+                "value",
+                "vector4"
+              ],
+              "metadata": [
+                {
+                  "metaName": "DisplayMode",
+                  "metaType": "string",
+                  "metaValue": "2"
+                },
+                {
+                  "metaName": "LayoutPos",
+                  "metaType": "string",
+                  "metaValue": "-104.48 -103.128"
+                },
+                {
+                  "metaName": "zValue",
+                  "metaType": "string",
+                  "metaValue": "35.000000"
+                }
+              ]
+            },
+            {
+              "nodeName": "vector4_to_vector3",
+              "nodeType": "Core::Conversion::vector4_to_vector3",
+              "metadata": [
+                {
+                  "metaName": "DisplayMode",
+                  "metaType": "string",
+                  "metaValue": "2"
+                },
+                {
+                  "metaName": "LayoutPos",
+                  "metaType": "string",
+                  "metaValue": "159.592 -149.709"
+                },
+                {
+                  "metaName": "zValue",
+                  "metaType": "string",
+                  "metaValue": "36.000000"
+                }
+              ]
+            }
+          ],
+          "connections": [
+            {
+              "source": ".vector_in",
+              "target": "vector3_to_vector4.vector3"
+            },
+            {
+              "source": ".transform_in",
+              "target": "matrix_multiply.first.value"
+            },
+            {
+              "source": "vector3_to_vector4.vector4",
+              "target": "matrix_multiply.first.vector4"
+            },
+            {
+              "source": "matrix_multiply.matrix",
+              "target": "vector4_to_vector3.vector4"
+            },
+            {
+              "source": "vector4_to_vector3.vector3",
+              "target": ".vector_out"
+            }
+          ],
+          "values": [
+            {
+              "valueName": "vector3_to_vector4.w",
+              "valueType": "float",
+              "value": "1f"
+            }
+          ],
+          "reservedNodeNames": [
+            {
+              "name": "input"
+            },
+            {
+              "name": "output"
+            }
+          ],
+          "libraryDependencies": {
+            "Amino": "2.15.0.11"
+          }
+        }
+      ],
+      "compoundNodes": [
+        {
+          "nodeName": "jiggle",
+          "nodeType": "jiggle",
+          "metadata": [
+            {
+              "metaName": "DisplayMode",
+              "metaType": "string",
+              "metaValue": "2"
+            },
+            {
+              "metaName": "LayoutPos",
+              "metaType": "string",
+              "metaValue": "-395.891 -295.231"
+            },
+            {
+              "metaName": "zValue",
+              "metaType": "string",
+              "metaValue": "40.000000"
+            }
+          ]
+        },
+        {
+          "nodeName": "clamp",
+          "nodeType": "Core::Math::clamp",
+          "metadata": [
+            {
+              "metaName": "DisplayMode",
+              "metaType": "string",
+              "metaValue": "2"
+            },
+            {
+              "metaName": "LayoutPos",
+              "metaType": "string",
+              "metaValue": "-1031.62 201.584"
+            },
+            {
+              "metaName": "zValue",
+              "metaType": "string",
+              "metaValue": "33.000000"
+            }
+          ]
+        },
+        {
+          "nodeName": "matrix_to_SRT",
+          "nodeType": "Core::Math::matrix_to_SRT",
+          "metadata": [
+            {
+              "metaName": "DisplayMode",
+              "metaType": "string",
+              "metaValue": "2"
+            },
+            {
+              "metaName": "LayoutPos",
+              "metaType": "string",
+              "metaValue": "-889.383 -356.604"
+            },
+            {
+              "metaName": "zValue",
+              "metaType": "string",
+              "metaValue": "32.000000"
+            }
+          ]
+        },
+        {
+          "nodeName": "clamp1",
+          "nodeType": "Core::Math::clamp",
+          "metadata": [
+            {
+              "metaName": "DisplayMode",
+              "metaType": "string",
+              "metaValue": "2"
+            },
+            {
+              "metaName": "LayoutPos",
+              "metaType": "string",
+              "metaValue": "-1035.61 405.121"
+            },
+            {
+              "metaName": "zValue",
+              "metaType": "string",
+              "metaValue": "34.000000"
+            }
+          ]
+        },
+        {
+          "nodeName": "transform_point",
+          "nodeType": "transform_point",
+          "metadata": [
+            {
+              "metaName": "DisplayMode",
+              "metaType": "string",
+              "metaValue": "2"
+            },
+            {
+              "metaName": "zValue",
+              "metaType": "string",
+              "metaValue": "47.000000"
+            },
+            {
+              "metaName": "LayoutPos",
+              "metaType": "string",
+              "metaValue": "196.984 -85.9967"
+            }
+          ]
+        },
+        {
+          "nodeName": "inverse_matrix",
+          "nodeType": "Core::Math::inverse_matrix",
+          "metadata": [
+            {
+              "metaName": "DisplayMode",
+              "metaType": "string",
+              "metaValue": "2"
+            },
+            {
+              "metaName": "LayoutPos",
+              "metaType": "string",
+              "metaValue": "-1567.03 -342.072"
+            },
+            {
+              "metaName": "zValue",
+              "metaType": "string",
+              "metaValue": "31.000000"
+            }
+          ]
+        },
+        {
+          "nodeName": "matrix_multiply2",
+          "nodeType": "Core::Math::matrix_multiply",
+          "multiInPortNames": [
+            "inverted",
+            "target_in"
+          ],
+          "metadata": [
+            {
+              "metaName": "DisplayMode",
+              "metaType": "string",
+              "metaValue": "2"
+            },
+            {
+              "metaName": "LayoutPos",
+              "metaType": "string",
+              "metaValue": "-1235.09 -267.843"
+            },
+            {
+              "metaName": "zValue",
+              "metaType": "string",
+              "metaValue": "35.000000"
+            }
+          ]
+        },
+        {
+          "nodeName": "matrix_multiply1",
+          "nodeType": "Core::Math::matrix_multiply",
+          "multiInPortNames": [
+            "parent_inverse_transform_in",
+            "world_transform_in"
+          ],
+          "metadata": [
+            {
+              "metaName": "DisplayMode",
+              "metaType": "string",
+              "metaValue": "2"
+            },
+            {
+              "metaName": "LayoutPos",
+              "metaType": "string",
+              "metaValue": "-393.132 149.091"
+            },
+            {
+              "metaName": "zValue",
+              "metaType": "string",
+              "metaValue": "36.000000"
+            }
+          ]
+        },
+        {
+          "nodeName": "if",
+          "nodeType": "Core::Logic::if",
+          "metadata": [
+            {
+              "metaName": "DisplayMode",
+              "metaType": "string",
+              "metaValue": "2"
+            },
+            {
+              "metaName": "zValue",
+              "metaType": "string",
+              "metaValue": "49.000000"
+            },
+            {
+              "metaName": "LayoutPos",
+              "metaType": "string",
+              "metaValue": "-108.465 -478.325"
+            }
+          ]
+        }
+      ],
+      "connections": [
+        {
+          "source": ".start_frame",
+          "target": "jiggle.start_frame"
+        },
+        {
+          "source": ".stiffness_in",
+          "target": "clamp.value"
+        },
+        {
+          "source": "clamp.clamped",
+          "target": "jiggle.stiffness_in"
+        },
+        {
+          "source": "jiggle.velocity_out",
+          "target": ".velocity_out"
+        },
+        {
+          "source": "matrix_to_SRT.translation",
+          "target": "jiggle.target_in"
+        },
+        {
+          "source": ".damp_in",
+          "target": "clamp1.value"
+        },
+        {
+          "source": "clamp1.clamped",
+          "target": "jiggle.damp_in"
+        },
+        {
+          "source": ".world_transform_in",
+          "target": "inverse_matrix.matrix"
+        },
+        {
+          "source": "transform_point.vector_out",
+          "target": ".position_out"
+        },
+        {
+          "source": "inverse_matrix.inverted",
+          "target": "matrix_multiply2.first.inverted"
+        },
+        {
+          "source": ".target_in",
+          "target": "matrix_multiply2.first.target_in"
+        },
+        {
+          "source": "matrix_multiply2.matrix",
+          "target": "matrix_to_SRT.transform"
+        },
+        {
+          "source": ".parent_inverse_transform_in",
+          "target": "matrix_multiply1.first.parent_inverse_transform_in"
+        },
+        {
+          "source": ".world_transform_in",
+          "target": "matrix_multiply1.first.world_transform_in"
+        },
+        {
+          "source": "matrix_multiply1.matrix",
+          "target": "transform_point.transform_in"
+        },
+        {
+          "source": ".enable_in",
+          "target": "if.condition"
+        },
+        {
+          "source": "matrix_to_SRT.translation",
+          "target": "if.false_case"
+        },
+        {
+          "source": "jiggle.position_out",
+          "target": "if.true_case"
+        },
+        {
+          "source": "if.output",
+          "target": "transform_point.vector_in"
+        }
+      ],
+      "values": [
+        {
+          "valueName": "jiggle.target_in",
+          "valueType": "Math::float3",
+          "value": {
+            "x": "0f",
+            "y": "0f",
+            "z": "0f"
+          }
+        },
+        {
+          "valueName": "jiggle.previous_position",
+          "valueType": "Math::float3",
+          "value": {
+            "x": "0f",
+            "y": "0f",
+            "z": "0f"
+          }
+        },
+        {
+          "valueName": "jiggle.stiffness_in",
+          "valueType": "float",
+          "value": "0f"
+        },
+        {
+          "valueName": "jiggle.initial_velocity_in",
+          "valueType": "Math::float3",
+          "value": {
+            "x": "0f",
+            "y": "0f",
+            "z": "0f"
+          }
+        },
+        {
+          "valueName": "jiggle.previous_velocity",
+          "valueType": "Math::float3",
+          "value": {
+            "x": "0f",
+            "y": "0f",
+            "z": "0f"
+          }
+        },
+        {
+          "valueName": "jiggle.damp_in",
+          "valueType": "float",
+          "value": "0f"
+        },
+        {
+          "valueName": "jiggle.start_frame",
+          "valueType": "float",
+          "value": "0f"
+        },
+        {
+          "valueName": "clamp.max",
+          "valueType": "float",
+          "value": "1f"
+        },
+        {
+          "valueName": "clamp1.max",
+          "valueType": "float",
+          "value": "1f"
+        },
+        {
+          "valueName": "transform_point.transform_in",
+          "valueType": "Math::float4x4",
+          "value": {
+            "c0": {
+              "x": "0f",
+              "y": "0f",
+              "z": "0f",
+              "w": "0f"
+            },
+            "c1": {
+              "x": "0f",
+              "y": "0f",
+              "z": "0f",
+              "w": "0f"
+            },
+            "c2": {
+              "x": "0f",
+              "y": "0f",
+              "z": "0f",
+              "w": "0f"
+            },
+            "c3": {
+              "x": "0f",
+              "y": "0f",
+              "z": "0f",
+              "w": "0f"
+            }
+          }
+        }
+      ],
+      "reservedNodeNames": [
+        {
+          "name": "input"
+        },
+        {
+          "name": "output"
+        },
+        {
+          "name": "input1"
+        }
+      ],
+      "libraryDependencies": {
+        "Amino": "2.15.0.11",
+        "bif": "2.15.0.11"
+      }
+    }
+  ]
+}
