@@ -793,15 +793,22 @@ class TangerineMaterialData(object):
         input_node = plug.input()
         if input_node:
             input_fn = self.resolve_plug(plug, depth=depth)
+
             if isinstance(input_fn, dict) and 'switch' in input_fn:
+
                 data['color'] = {'plug': input_fn['plug'], 'switch': {}}
                 data['file'] = {'plug': input_fn['plug'], 'switch': {}}
+
                 for k in input_fn['switch']:
                     _k = input_fn['switch'][k]
-                    if 'color' in _k:
-                        data['color']['switch'][k] = _k['color']
-                    if 'file' in _k:
-                        data['file']['switch'][k] = _k['file']
+                    if isinstance(_k, string_types):
+                        data['file']['switch'][k] = _k
+                    elif isinstance(_k, dict):
+                        if 'color' in _k:
+                            data['color']['switch'][k] = _k['color']
+                        if 'file' in _k:
+                            data['file']['switch'][k] = _k['file']
+
             else:
                 data['file'] = input_fn
 
