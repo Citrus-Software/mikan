@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Added support of `mod.rig.jiggle` in Maya (with Bifrost)
 - Added support of user normals in Tangerine deformers
 
 ### Changed
