@@ -676,15 +676,12 @@ class TangerineMaterialData(object):
         for k in cfg:
             _k = k.replace('-', '_').strip()
 
-            if k == 'transparency':
-                material_node['transparency'] = cfg[k]
-                material_node['transparent'] = True
-            elif _k == 'double_sided':
-                material_node['backface_culling'] = not bool(cfg[k])
+            if _k == 'double_sided':
+                data['backface_culling'] = not bool(cfg[k])
             elif _k == 'backface_culling':
-                material_node['backface_culling'] = bool(cfg[k])
+                data['backface_culling'] = bool(cfg[k])
             elif _k == 'alpha_layer':
-                material_node['alpha_layer'] = int(cfg[k])
+                data['alpha_layer'] = int(cfg[k])
 
         return data
 
