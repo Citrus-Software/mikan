@@ -196,7 +196,6 @@ def _apply_color(shader, color_data, rig_node):
 
 
 def _apply_file(shader, file_data, rig_node):
-
     # flat value
     if isinstance(file_data, str):
         if file_data[-3:] not in ('jpg', 'png'):
@@ -206,7 +205,6 @@ def _apply_file(shader, file_data, rig_node):
     # switch or sequence
     elif isinstance(file_data, dict) and 'plug' in file_data:
         plug_name = file_data['plug']
-        plug = rig_node.get_dynamic_plug(plug_name)
 
         if 'switch' in file_data:
             switch_node = _build_switch_node(
@@ -220,6 +218,7 @@ def _apply_file(shader, file_data, rig_node):
                 str_to_path.input.connect(switch_node.output)
                 shader.diffuse_path.connect(str_to_path.output)
 
+                plug = rig_node.get_dynamic_plug(plug_name)
                 if plug is None:
                     plug = add_plug(rig_node, plug_name, int, keyable=True)
 
@@ -229,6 +228,8 @@ def _apply_file(shader, file_data, rig_node):
 
         else:
             plug_value = None
+
+            plug = rig_node.get_dynamic_plug(plug_name)
             if plug is not None:
                 plug_value = plug.get_value()
 
