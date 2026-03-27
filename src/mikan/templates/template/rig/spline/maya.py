@@ -590,8 +590,8 @@ class Template(mk.Template):
                 j['wm'][0] >> mmx['i'][0]
                 offset['wim'][0] >> mmx['i'][1]
 
-                root = mx.create_node(mx.tJoint, parent=parent, name='root_' + n_chain + '_tweaker' + str(i + 1))
-                c = mx.create_node(mx.tJoint, parent=root, name='c_' + n_chain + '_tweaker' + str(i + 1))
+                root = mx.create_node(mx.tJoint, parent=parent, name='root_' + n_chain + '_tweaker' + str(i + 1) + n_end)
+                c = mx.create_node(mx.tJoint, parent=root, name='c_' + n_chain + '_tweaker' + str(i + 1) + n_end)
                 root['drawStyle'] = 2
                 c['drawStyle'] = 2
 
@@ -599,9 +599,9 @@ class Template(mk.Template):
                 if chained:
                     parent = c
 
-                sk = mx.create_node(mx.tJoint, parent=c, name='sk_' + n_chain + str(i + 1))
+                sk = mx.create_node(mx.tJoint, parent=c, name='sk_' + n_chain + str(i + 1) + n_end)
                 if i < len(offsets) - 2:
-                    end = mx.create_node(mx.tJoint, parent=sk, name='end_' + n_chain + str(i + 1))
+                    end = mx.create_node(mx.tJoint, parent=sk, name='end_' + n_chain + str(i + 1) + n_end)
                     copy_transform(offsets[i + 2], end)
 
                 tweaker = {}

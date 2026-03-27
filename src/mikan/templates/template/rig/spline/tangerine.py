@@ -703,8 +703,8 @@ class Template(mk.Template):
                 if not chained:
                     offset = offsets[0]
 
-                root = kl.Joint(parent, 'root_' + n_chain + '_tweaker' + str(i + 1))
-                c = kl.Joint(root, 'c_' + n_chain + '_tweaker' + str(i + 1))
+                root = kl.Joint(parent, 'root_' + n_chain + '_tweaker' + str(i + 1) + n_end)
+                c = kl.Joint(root, 'c_' + n_chain + '_tweaker' + str(i + 1) + n_end)
                 create_srt_in(c, keyable=True)
 
                 mmx = kl.MultM44f(root, '_mmx')
@@ -717,9 +717,9 @@ class Template(mk.Template):
                 if chained:
                     parent = c
 
-                sk = kl.Joint(c, 'sk_' + n_chain + str(i + 1))
+                sk = kl.Joint(c, 'sk_' + n_chain + str(i + 1) + n_end)
                 if i < len(offsets) - 2:
-                    end = kl.Joint(sk, 'end_' + n_chain + str(i + 1))
+                    end = kl.Joint(sk, 'end_' + n_chain + str(i + 1) + n_end)
                     copy_transform(offsets[i + 2], end)
 
                 tweaker = {}
