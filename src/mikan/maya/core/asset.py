@@ -698,7 +698,7 @@ try:
   DagMenu.inject()
 except ImportError as e:
   import maya.cmds as mc
-  mc.warning(f'Failed to import Mikan: {e}')
+  mc.warning('Failed to import Mikan: {}'.format(e))
 '''
 
 
