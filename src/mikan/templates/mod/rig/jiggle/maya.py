@@ -2,6 +2,7 @@
 
 import re
 import os
+import io
 
 from mikan.maya import cmds as mc
 import mikan.maya.cmdx as mx
@@ -117,10 +118,10 @@ class Mod(mk.Mod):
         json_path = os.path.normpath(json_path)
 
         try:
-            with open(json_path, 'r', encoding='utf-8') as f:
+            with io.open(json_path, 'r', encoding='utf-8') as f:
                 json_str = f.read()
         except Exception as e:
-            mk.ModError(f"Erreur lors de la lecture du fichier : {e}")
+            mk.ModError('Failed to read bifrost json compund file: {}'.format(e))
 
         bf = mx.create_node('bifrostGraphShape', parent=body, name='body_' + name + 'Shape')
         bf['sc'] = json_str.replace('bifrostGraphShape1', str(bf))
