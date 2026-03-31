@@ -1,10 +1,13 @@
 # coding: utf-8
 
+import sys
 from fnmatch import fnmatch
+from functools import wraps
 from six import string_types
 
 import maya.api.OpenMaya as om
 import maya.api.OpenMayaAnim as oma
+import maya.OpenMaya as om1
 import maya.mel
 import maya.cmds as mc
 from mikan.maya import cmdx as mx
@@ -19,6 +22,8 @@ __all__ = [
     'cleanup_rig_ctrls', 'cleanup_rig_history', 'cleanup_rig_joints',
     'cleanup_rig_shapes', 'cleanup_shape_orig',
     'rename_skin_clusters', 'cleanup_skin_clusters', 'label_skin_joints',
+
+    'LogFilter',
 ]
 
 log = create_logger(name='mikan.cleanup')
@@ -456,3 +461,82 @@ def cleanup_shape_orig():
             continue
         if not node['io'].read():
             continue
+
+
+# cleanup maya log
+
+class LogFilter(object):
+    _callback_id = None
+    _depth = 0
+
+    def __init__(self):
+        pass
+
+    def __enter__(self):
+        LogFilter._depth += 1
+
+        if LogFilter._depth == 1 and LogFilter._callback_id is None:
+            LogFilter._callback_id = om1.MCommandMessage.addCommandOutputFilterCallback(LogFilter.filter)
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        LogFilter._depth -= 1
+
+        if LogFilter._depth == 0 and LogFilter._callback_id is not None:
+            om1.MMessage.removeCallback(LogFilter._callback_id)
+            LogFilter._callback_id = None
+
+        return False
+
+    def __call__(self, func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            with self:
+                return func(*args, **kwargs)
+
+        return wrapper
+
+    FILTERED_WARNINGS = (
+        'Specified weights required modification',
+        'Some weights could not be set to',
+    )
+
+    @staticmethod
+    def filter(msg, msgType, filterOutput, clientData):
+        shunt = False
+
+        try:
+            line = str(msg)
+        except UnicodeEncodeError:
+            line = msg.encode('utf-8')
+        except UnicodeDecodeError:
+            line = msg.decode('utf-8', 'replace')
+
+        if msgType == om1.MCommandMessage.kWarning:
+
+            # cleanup mikan logger warnings
+            if 'WARNING|' in line:
+                shunt = True
+                clean_line = line.replace('# Warning: ', '').strip()
+                sys.stdout.write('// ' + clean_line + '\n')
+
+            # remove skincluster setWeights warnings
+            else:
+                for s in LogFilter.FILTERED_WARNINGS:
+                    if s in line:
+                        shunt = True
+                        break
+
+        elif msgType == om1.MCommandMessage.kError:
+
+            # cleanup mikan logger errors
+            if 'ERROR|' in line or 'CRITICAL|' in line:
+                shunt = True
+                clean_line = line.replace('# Error: ', '').strip()
+                sys.stdout.write('// ' + clean_line + '\n')
+
+        elif msgType == om1.MCommandMessage.kResult:
+            shunt = True
+
+        om1.MScriptUtil.setBool(filterOutput, shunt)

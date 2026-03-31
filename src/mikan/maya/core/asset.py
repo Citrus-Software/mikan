@@ -1,12 +1,12 @@
 # encoding: utf-8
 
 import re
+import fnmatch
 import logging
 import __main__
 import traceback
 import itertools
 from six import string_types
-import fnmatch
 
 import maya.OpenMaya as om1
 import maya.api.OpenMaya as om
@@ -32,7 +32,8 @@ from ..lib.rig import reorder_vdag_set
 from ..lib.cleanup import (
     cleanup_shape_orig, cleanup_references, cleanup_layers,
     cleanup_rig_ctrls, cleanup_rig_joints, cleanup_rig_shapes,
-    label_skin_joints, cleanup_skin_clusters, cleanup_rig_history
+    label_skin_joints, cleanup_skin_clusters, cleanup_rig_history,
+    LogFilter,
 )
 
 __all__ = ['Asset', 'Helper']
@@ -524,6 +525,7 @@ class Asset(abstract.Asset):
                 break
             templates = delayed
 
+    @LogFilter()
     def make(self, modes=None, pipeline=False, roots=None, exclude=None):
         monitor = BuildMonitor()
         self.monitor = monitor
@@ -603,9 +605,6 @@ class Asset(abstract.Asset):
                 mc.refresh()
                 self.init_cleanup()
 
-            log_filter = LogFilter()
-            log_filter.start()
-
             # build all templates
             exception = None
             try:
@@ -661,11 +660,9 @@ class Asset(abstract.Asset):
             Nodes.current_asset = current_asset
 
             if exception is not None and ('debug' in modes or pipeline):
-                log_filter.end()
                 msg = u'make: aborted! 😱' + (' (halt from pipeline)' if pipeline else '')
                 raise RuntimeError(msg)
 
-            log_filter.end()
             mc.select(clear=True)
 
             # cleanup
@@ -1376,40 +1373,3 @@ class Helper(object):
             node = self.node
             tpl = Template.get_from_node(node)
             tpl.toggle_shapes_visibility()
-
-
-class LogFilter(object):
-
-    def __init__(self):
-        self.callback = None
-
-    def start(self):
-        if self.callback is not None:
-            self.end()
-        self.callback = om1.MCommandMessage.addCommandOutputFilterCallback(LogFilter.filter)
-
-    def end(self):
-        if self.callback is not None:
-            om1.MMessage.removeCallback(self.callback)
-        self.callback = None
-
-    @staticmethod
-    def filter(msg, msgType, filterOutput, clientData):
-
-        shunt = False
-
-        # line = str(msg)
-        if msgType == om1.MCommandMessage.kWarning:
-            # line = '# Warning: %s #\n' % line
-            # shunt = True
-            pass
-        # elif msgType == om1.MCommandMessage.kError:
-        #     # line = '// Error: %s //\n' % line
-        #     shunt = True
-        elif msgType == om1.MCommandMessage.kResult:
-            # line = '# Result: %s #\n' % line
-            shunt = True
-
-        # sys.__stdout__.write(line)
-        # sys.__stdout__.flush()
-        om1.MScriptUtil.setBool(filterOutput, shunt)
