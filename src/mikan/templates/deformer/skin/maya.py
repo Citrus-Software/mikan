@@ -1,9 +1,10 @@
 # coding: utf-8
 
+import copy
+import itertools
 from six import iteritems
 from six.moves import range
 from fnmatch import fnmatch
-import copy
 
 from mikan.maya import om, oma
 from mikan.maya import cmds as mc
@@ -13,6 +14,14 @@ import mikan.maya.core as mk
 from mikan.maya.core.deformer import WeightMap, WeightMapInterface
 from mikan.maya.lib.shaders import transfer_shading
 from mikan.core.logger import create_logger
+
+has_numpy = False
+try:
+    import numpy as np
+
+    has_numpy = True
+except ImportError:
+    pass
 
 log = create_logger()
 
@@ -34,16 +43,20 @@ class Deformer(mk.Deformer):
         # influence maps
         fn = oma.MFnSkinCluster(self.node.object())
         infs = [mx.Node(mdag.node()) for mdag in fn.influenceObjects()]
-        infid = self.node['matrix'].array_indices
+        inf_ids = self.node['matrix'].array_indices
 
         cps = self.get_components_mobject(self.geometry)
-        weights_all, num_inf = fn.getWeights(self.geometry.dag_path(), cps)
-        weights_all = list(weights_all)
-        weights = []
-        for i in range(num_inf):
-            weights.append(weights_all[i::num_inf])
+        weights_marray, num_inf = fn.getWeights(self.geometry.dag_path(), cps)
 
-        if len(infs) != len(weights) and len(infs) != len(infid):
+        if has_numpy:
+            weights = np.fromiter(weights_marray, dtype=np.float32)
+            num_verts = len(weights) // num_inf
+            weights = weights.reshape((num_verts, num_inf)).T
+        else:
+            weights_raw = tuple(weights_marray)
+            weights = [weights_raw[i::num_inf] for i in range(num_inf)]
+
+        if len(infs) != len(weights) and len(infs) != len(inf_ids):
             log.error('/!\\ failed! skin influences mismatch')
             return
 
@@ -56,8 +69,9 @@ class Deformer(mk.Deformer):
         bpms = self.data['bind_pose']
         bpm_roots = self.data['bind_pose_root']
 
-        for i, inf, wmap in zip(infid, infs, weights):
-            maps[i] = mk.WeightMap(list(wmap))
+        for i, inf, wmap in zip(inf_ids, infs, weights):
+            maps[i] = mk.WeightMap(wmap)
+
             self.data['infs'][i] = self.get_node_id(inf, '::skin.')
 
             bpm = self.node['bindPreMatrix'][i].input()
@@ -335,11 +349,18 @@ class Deformer(mk.Deformer):
             self.log_warning('cannot write {}, bad map length'.format(self.node))
             return
 
+        # fix normalization?
+        if self.data['normalize'] == 1:
+            self.normalize()
+
         # write maps
-        weights = []
-        for w in zip(*[m.weights for m in maps]):
-            weights.extend(w)
-        weights = om.MDoubleArray(weights)
+        if has_numpy:
+            w = np.array([m.weights for m in maps], dtype=np.float32)
+            flat_weights = w.T.ravel()
+            weights = om.MDoubleArray(flat_weights)
+        else:
+            flat_weights = itertools.chain.from_iterable(zip(*[m.weights for m in maps]))
+            weights = om.MDoubleArray(list(flat_weights))
 
         cps = self.get_components_mobject(self.geometry)
 
@@ -347,7 +368,14 @@ class Deformer(mk.Deformer):
         ids = om.MIntArray(ids)
 
         fn = oma.MFnSkinCluster(self.node.object())
-        weights_bak = fn.setWeights(self.geometry.dag_path(), cps, ids, weights, returnOldWeights=True)
+        weights_bak = fn.setWeights(
+            self.geometry.dag_path(),
+            cps,
+            ids,
+            weights,
+            returnOldWeights=True
+        )
+
         mx.commit(
             lambda: fn.setWeights(self.geometry.dag_path(), cps, ids, weights_bak),
             lambda: fn.setWeights(self.geometry.dag_path(), cps, ids, weights)
@@ -360,10 +388,6 @@ class Deformer(mk.Deformer):
 
             dq_map = om.MDoubleArray(dq.weights)
             fn.setBlendWeights(self.geometry.dag_path(), cps, dq_map)
-
-        # fix normalization
-        if self.data['normalize'] == 1:
-            mc.skinPercent(str(self.node), str(self.geometry), normalize=True)
 
     @staticmethod
     def hook(dfm, xfo, hook):

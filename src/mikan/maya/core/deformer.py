@@ -385,7 +385,6 @@ class Deformer(abstract.Deformer):
         """
         self.read_membership()
         self.read()
-        self.round()
 
     @staticmethod
     def create(geo, deformer, root=None, read=True):

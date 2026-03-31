@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Optimized global weight map serialization/restoration (~90% faster)
 - Improved error logging verbosity and traceback readability in core modules
 - Consolidated shader export pipeline between Maya and Tangerine
 - Consolidated build logic for `mod.rivet` and `mod.muscle`

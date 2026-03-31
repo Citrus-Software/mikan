@@ -40,15 +40,25 @@ import re
 import zlib
 import yaml
 import base64
+import struct
 import pkgutil
 import os.path
 import logging
 import traceback
+import itertools
 from six.moves import range
 from six import string_types
 from copy import copy, deepcopy
 
-from mikan.core.logger import create_logger
+has_numpy = False
+try:
+    import numpy as np
+
+    has_numpy = True
+except ImportError:
+    pass
+
+from mikan.core.logger import create_logger, timed_code
 from mikan.core import is_python_3
 from mikan.core.utils import YamlDumper, YamlLoader, ordered_load, ordered_dict
 
@@ -784,30 +794,43 @@ class Deformer(JobMonitor):
                         values[remap[k]] = self.data[key][k]
                 self.data[key] = values
 
-    def normalize(self, only_excess=False):
+    def normalize(self, only_excess=False, tolerance=1e-6):
         """Normalize weight maps so weights sum to 1.0 per vertex.
 
         Args:
-            only_excess (bool): If True, only normalize vertices where
-                weight sum exceeds 1.0. If False, normalize all vertices.
+            only_excess (bool): If True, only normalize vertices where weight sum exceeds 1.0.
+                If False, normalize all vertices.
+            tolerance (float): The acceptable margin of error for floating-point comparisons.
 
         Examples:
             >>> dfm.normalize()  # Normalize all
             >>> dfm.normalize(only_excess=True)  # Only fix over-weighted
         """
         ids, maps = self.get_indexed_maps()
-        weights = list(zip(*[x.weights for x in maps]))
 
-        for i, w in enumerate(weights):
-            s = sum(w)
-            if s == 0:
-                continue
-            if not only_excess or (only_excess and s > 1):
-                weights[i] = [x / s for x in w]
+        if has_numpy and isinstance(maps[0].weights, np.ndarray):
+            weight_matrix = np.array([m.weights for m in maps])
+            sums = np.sum(weight_matrix, axis=0)
+            divisors = np.where(sums == 0, 1.0, sums)
 
-        weights = zip(*weights)
-        for i, w in enumerate(weights):
-            maps[i].weights = list(w)
+            if only_excess:
+                divisors = np.where(sums > (1.0 + tolerance), divisors, 1.0)
+
+            weight_matrix = weight_matrix / divisors
+            for i, m in enumerate(maps):
+                m.weights = weight_matrix[i]
+
+        else:
+            weights = list(zip(*[x.weights for x in maps]))
+
+            for i, w in enumerate(weights):
+                s = sum(w)
+                if s == 0 or (only_excess and s <= (1.0 + tolerance)):
+                    continue
+                weights[i] = tuple(x / s for x in w)
+
+            for m, w_transposed in zip(maps, zip(*weights)):
+                m.weights = list(w_transposed)
 
     def round(self):
         """Round weight values to the configured decimal precision.
@@ -816,24 +839,59 @@ class Deformer(JobMonitor):
         distributing rounding error to the largest delta value.
         """
         ids, maps = self.get_indexed_maps()
-        weights = list(zip(*[x.weights for x in maps]))
+        if not maps:
+            return
 
-        for i, w in enumerate(weights):
-            s = round(sum(w), self.decimals)
-            r = list(map(lambda x: round(x, self.decimals), w))
-            d = list(map(lambda x, y: x - y, w, r))
+        if has_numpy and isinstance(maps[0].weights, np.ndarray):
+            w = np.array([m.weights for m in maps], dtype=np.float32)
+            r = np.round(w, self.decimals)
 
-            delta = round(s - sum(r), self.decimals)
-            if delta > 0:
-                r[d.index(max(d))] += delta
-            if delta < 0:
-                r[d.index(min(d))] += delta
+            s = np.round(np.sum(w, axis=0), self.decimals)
+            s_r = np.round(np.sum(r, axis=0), self.decimals)
 
-            weights[i] = r
+            delta = np.round(s - s_r, self.decimals)
+            diff = w - r
+            v_indices = np.arange(w.shape[1])
 
-        weights = zip(*weights)
-        for i, w in enumerate(weights):
-            maps[i].weights = list(w)
+            mask_pos = delta > 0
+            if np.any(mask_pos):
+                v_pos = v_indices[mask_pos]
+                idx_max = np.argmax(diff[:, v_pos], axis=0)
+                r[idx_max, v_pos] += delta[mask_pos]
+
+            mask_neg = delta < 0
+            if np.any(mask_neg):
+                v_neg = v_indices[mask_neg]
+                idx_min = np.argmin(diff[:, v_neg], axis=0)
+                r[idx_min, v_neg] += delta[mask_neg]
+
+            r = np.round(r, self.decimals)
+            for i, m in enumerate(maps):
+                m.weights = r[i]
+
+        else:
+            decimals = self.decimals
+            weights_per_vert = zip(*[m.weights for m in maps])
+            new_weights = []
+
+            for w in weights_per_vert:
+                s = round(sum(w), decimals)
+                r = [round(x, decimals) for x in w]
+
+                delta = round(s - sum(r), decimals)
+                if delta != 0:
+                    d = [orig - rnd for orig, rnd in zip(w, r)]
+                    if delta > 0:
+                        idx = d.index(max(d))
+                    else:
+                        idx = d.index(min(d))
+
+                    r[idx] = round(r[idx] + delta, decimals)
+
+                new_weights.append(r)
+
+            for i, col in enumerate(zip(*new_weights)):
+                maps[i].weights = list(col)
 
 
 class DeformerError(Exception):
@@ -848,6 +906,8 @@ class DeformerError(Exception):
 
 
 Deformer.get_all_modules()
+
+RLE_PATTERN = re.compile(r'([0-9.eE+-]+)(?:\*(\d+))?')
 
 
 class WeightMap(object):
@@ -889,7 +949,10 @@ class WeightMap(object):
             self.decode(weights)
         else:
             # always copy weights when new
-            self.weights = list(weights)
+            if has_numpy and isinstance(weights, np.ndarray):
+                self.weights = np.copy(weights)
+            else:
+                self.weights = list(weights)
 
         self.lock = lock
         self.partition = partition
@@ -922,7 +985,7 @@ class WeightMap(object):
         """
         return WeightMap(self.weights, lock=self.lock, partition=self.partition)
 
-    def encode(self, decimals=6, compress=True):
+    def encode(self, decimals=6, compress=True, max_rle_groups=16, mask=False):
         """Encode weight map to a string representation.
 
         Uses run-length encoding (RLE) with optional zlib compression
@@ -931,6 +994,7 @@ class WeightMap(object):
         Args:
             decimals (int): Number of decimal places for rounding.
             compress (bool): Whether to apply zlib compression for long strings.
+            max_rle_groups (int): Maximum packet values to serialize with rle encoding before compression.
 
         Returns:
             str: Encoded weight map string (RLE or base64-compressed).
@@ -940,42 +1004,65 @@ class WeightMap(object):
             >>> wm.encode()
             '1*3 0.5 0'
         """
-        rle = []
+        wm = self.weights
+        if not mask:
+            if has_numpy:
+                wm = np.round(wm, decimals)
+            else:
+                wm = list(map(lambda w: round(w, decimals), wm))
 
-        for v in self.weights:
-            if isinstance(v, float):
-                v = round(v, decimals)
-            if len(rle):
-                if v == rle[-1][0]:
-                    rle[-1][1] += 1
+        # check complexity
+        do_binary = False
+
+        groups = []
+        groups_append = groups.append
+        for val, group in itertools.groupby(wm):
+            groups_append((val, sum(1 for _ in group)))
+            if len(groups) > max_rle_groups:
+                do_binary = True
+                break
+
+        # serialize
+        if do_binary and compress:
+            if mask:
+                if has_numpy:
+                    raw_bin = b'msk:' + np.array(wm, dtype=np.uint8).tobytes()
                 else:
-                    rle.append([v, 1])
+                    wm_ints = [int(v) for v in wm]
+                    raw_bin = b'msk:' + struct.pack('<{}B'.format(len(wm)), *wm_ints)
             else:
-                rle.append([v, 1])
+                if has_numpy:
+                    raw_bin = b'f32:' + np.array(wm, dtype=np.float32).tobytes()
+                else:
+                    raw_bin = b'f32:' + struct.pack('<{}f'.format(len(wm)), *wm)
 
-        wmr = ''
-        for v in rle:
-            d = '{0:.{1}f}'.format(v[0], decimals).rstrip('0').rstrip('.')
-            if v[1] == 1:
-                wmr += d
+            return base64.b64encode(zlib.compress(raw_bin, 1)).decode('ascii')
+
+        # rle encoding
+        rle_data = [
+            (val, sum(1 for _ in group))
+            for val, group in itertools.groupby(wm)
+        ]
+
+        parts = []
+        for val, count in rle_data:
+            s_val = '{0:.{1}f}'.format(val, decimals).rstrip('0').rstrip('.')
+            if not s_val:
+                s_val = '0'
+            if count > 1:
+                parts.append('{0}*{1}'.format(s_val, count))
             else:
-                wmr += '{0}*{1}'.format(d, v[1])
-            wmr += ' '
-        wmr = wmr[:-1]
+                parts.append(s_val)
 
-        if compress and len(wmr) > 80:
-            wmz = base64.b64encode(zlib.compress(wmr.encode('utf-8'), 9)).decode('utf-8')
-            return wmz
-        else:
-            return wmr
+        return ' '.join(parts)
 
-    def decode(self, weights):
+    def decode(self, data):
         """Decode weight map from a string representation.
 
         Handles both RLE format and base64-compressed data.
 
         Args:
-            weights (str): Encoded weight map string.
+            data (str): Encoded weight map string.
 
         Examples:
             >>> wm = WeightMap.__new__(WeightMap)
@@ -984,27 +1071,51 @@ class WeightMap(object):
             [1, 1, 1, 0.5, 0]
         """
         self.weights = []
+        if not data:
+            return
 
-        isb64 = re.compile('^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$')
-        if isb64.match(weights):
-            weights = zlib.decompress(base64.b64decode(weights)).split()
-        else:
-            weights = weights.split()
-            if is_python_3:
-                weights = [str.encode(w, 'utf-8') for w in weights]
+        raw_data = None
+        if data[0] == 'e':
+            try:
+                raw_data = zlib.decompress(base64.b64decode(data))
+            except:
+                pass
 
-        for v in weights:
-            n = 1
-            if b'*' in v:
-                v, n = v.split(b'*')
-                n = int(n)
+        if raw_data:
+            # float32
+            if raw_data.startswith(b'f32:'):
+                payload = raw_data[4:]
+                count = len(payload) // 4
+                self.weights = list(struct.unpack('<{}f'.format(count), payload))
+                return
 
-            if b'.' in v:
-                v = float(v)
+            # mask
+            elif raw_data.startswith(b'msk:'):
+                payload = raw_data[4:]
+                count = len(payload)
+                unpacked = struct.unpack('<{}B'.format(count), payload)
+                self.weights = [int(v) for v in unpacked]
+                return
+
+            # legacy RLE
             else:
-                v = int(v)
+                raw_data = raw_data.decode('ascii')
+        else:
+            # RLE
+            raw_data = data
 
-            self.weights += [v] * n
+        # unpack RLE
+        weights_extend = self.weights.extend
+        weights_append = self.weights.append
+
+        for match in RLE_PATTERN.finditer(raw_data):
+            val_str, count_str = match.groups()
+            val = float(val_str)
+
+            if count_str:
+                weights_extend([val] * int(count_str))
+            else:
+                weights_append(val)
 
     def normalize(self):
         """Normalize weights to range [0, 1] based on maximum value.
