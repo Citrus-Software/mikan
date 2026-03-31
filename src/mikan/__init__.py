@@ -15,7 +15,7 @@ __credits__ = [
     'Matthieu Cantat',
     'Lisa Bouët',
 ]
-__version__ = '1.0.5'
+__version__ = '1.0.6'
 __maintainer__ = 'Thomas Guittonneau'
 __email__ = 'tg@teamto.com'
 __status__ = 'Production'
