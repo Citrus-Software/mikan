@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fixed glitches and stabilized maintain offset when using an up object in the Tangerine aim constraint
 - Fixed SRT manipulations when reparenting and blending channels in Tangerine
 - Fixed shape duplication with FFD backup in Maya
+- Fixed minor Python 2.7 issues to keep Maya 2018 compatibility
 
 ## [1.0.5] - 2026-02-18
 
