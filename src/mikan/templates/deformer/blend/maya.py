@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import itertools
 from six.moves import range
 from six import string_types, iteritems
 
@@ -10,6 +11,14 @@ import mikan.maya.cmdx as mx
 import mikan.maya.core as mk
 from mikan.core import re_is_int, create_logger
 from mikan.maya.core.deformer import WeightMap
+
+has_numpy = False
+try:
+    import numpy as np
+
+    has_numpy = True
+except ImportError:
+    pass
 
 log = create_logger()
 
@@ -456,6 +465,7 @@ class Deformer(mk.Deformer):
         if not isinstance(bs, mx.Node):
             bs = mx.encode(str(bs))
 
+        # get component dimension
         dim = 1
         fn = oma.MFnGeometryFilter(bs.object())
         shp = mx.Node(fn.getInputGeometry()[0])
@@ -465,6 +475,7 @@ class Deformer(mk.Deformer):
             dim_t = shp['tDivisions'].read()
             dim_s = shp['sDivisions'].read()
 
+        # get target plugs
         target_plug = bs['inputTarget'][0]['inputTargetGroup']
         if index not in target_plug.array_indices:
             log.error('{} has no target index {}'.format(bs, index))
@@ -479,32 +490,43 @@ class Deformer(mk.Deformer):
             if geo.input():
                 log.debug('{} has no delta at target index {}'.format(bs, index))
                 continue
+
+            ipt = target['inputPointsTarget']
+            raw_points = om.MFnPointArrayData(ipt._mplug.asMObject())
+
+            if has_numpy:
+                flat_stream = itertools.chain.from_iterable(raw_points.array())
+                points = np.fromiter(flat_stream, dtype=np.float64).reshape(-1, 4)[:, :3]
             else:
-                ipt = target['inputPointsTarget']
-                points = om.MFnPointArrayData(ipt._mplug.asMObject())
-                points = [tuple(pt)[:3] for pt in points.array()]
+                points = [tuple(pt)[:3] for pt in raw_points.array()]
 
-                ict = target['inputComponentsTarget']
-                cpts_data = om.MFnComponentListData(ict._mplug.asMObject())
-                cpts = []
+            ict = target['inputComponentsTarget']
+            raw_cpts = om.MFnComponentListData(ict._mplug.asMObject())
+            cpts = []
 
-                if dim == 1:
-                    for c in range(cpts_data.length()):
-                        _cpts = om.MFnSingleIndexedComponent(cpts_data.get(c))
-                        cpts += _cpts.getElements()
+            if dim == 1:
+                cpts_get = raw_cpts.get
+                fn_comp = om.MFnSingleIndexedComponent()
+                set_obj = fn_comp.setObject
+                get_elem = fn_comp.getElements
 
-                elif dim == 3:
-                    for c in range(cpts_data.length()):
-                        _cpts = om.MFnTripleIndexedComponent(cpts_data.get(c))
-                        for s, t, u in _cpts.getElements():
-                            i = ((t + dim_t * u) * dim_s) + s
-                            cpts.append(i)
+                for c in range(raw_cpts.length()):
+                    set_obj(cpts_get(c))
+                    cpts += get_elem()
 
-                else:
-                    raise RuntimeError('delta reader not supported yet')
+            elif dim == 3:
+                fn_comp = om.MFnTripleIndexedComponent()
+                for c in range(raw_cpts.length()):
+                    fn_comp.setObject(raw_cpts.get(c))
+                    for s, t, u in fn_comp.getElements():
+                        i = ((t + dim_t * u) * dim_s) + s
+                        cpts.append(i)
 
-                k = j / 1000. - 5
-                maps[k] = zip(cpts, points)
+            else:
+                raise RuntimeError('delta reader not supported yet')
+
+            k = j / 1000. - 5
+            maps[k] = (cpts, points)
 
         return maps
 
@@ -520,34 +542,65 @@ class Deformer(mk.Deformer):
         delta = Deformer.get_delta(bs, index)
 
         # compute absolute shape
-        if reference:
+        if reference and 1 in delta:
             fn = om.MFnMesh(shp.object())
             points = fn.getPoints(mx.sObject)
+            cpts, pts = delta[1]
 
-            wm = []
-            for pt in points:
-                wm += mx.Vector(pt)
+            if has_numpy:
+                flat_stream = itertools.chain.from_iterable(points)
+                wm_matrix = np.fromiter(flat_stream, dtype=np.float64).reshape(-1, 4)[:, :3]
+                wm_matrix[cpts] += pts
+                return {1.0: WeightMap(wm_matrix.flatten())}
 
-            d = delta.get(1, [])
-            if 1 in delta:
-                d = delta[1]
+            else:
+                wm_flat = []
+                for pt in points:
+                    wm_flat.extend((pt.x, pt.y, pt.z))
 
-            for cp, pt in d:
-                wm[cp * 3:cp * 3 + 3] = mx.Vector(pt) + mx.Vector(points[cp])
+                for cp, pt in zip(cpts, pts):
+                    idx = cp * 3
+                    dx, dy, dz = pt
 
-            return {1.0: WeightMap(wm)}
+                    wm_flat[idx] += dx
+                    wm_flat[idx + 1] += dy
+                    wm_flat[idx + 2] += dz
+
+                return {1.0: WeightMap(wm_flat)}
 
         # serialize point positions
         maps = {}
 
         for k, d in delta.items():
-            wm = [0.0] * count * 3
-            for cp, pt in d:
-                wm[cp * 3:cp * 3 + 3] = pt
+            if not d:
+                continue
 
-            maps[k] = WeightMap(wm)
-            if not any(wm):
-                del maps[k]
+            cpts, pts = d
+
+            if has_numpy:
+                wm_matrix = np.zeros((count, 3), dtype=float)
+                wm_matrix[cpts] = pts
+
+                if np.any(wm_matrix):
+                    maps[k] = WeightMap(wm_matrix.flatten())
+
+            else:
+                wm = [0.0] * count * 3
+                has_data = False
+
+                for cp, pt in zip(cpts, pts):
+                    idx = cp * 3
+                    x, y, z = pt
+
+                    wm[idx] = x
+                    wm[idx + 1] = y
+                    wm[idx + 2] = z
+
+                    if not has_data and (x or y or z):
+                        has_data = True
+
+                if has_data:
+                    maps[k] = WeightMap(wm)
 
         if maps:
             return maps
