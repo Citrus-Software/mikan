@@ -50,7 +50,7 @@ class Deformer(mk.Deformer):
         plug_out = Deformer.get_deformer_output(target_shp, target_xfo)
         plug_out >> self.node['targetGeom']
 
-        self.node['projection'] = 3
+        self.node['projection'] = self.data['mode']
         self.node['bidirectional'] = self.data.get('bidirectional', False)
         self.node['closestIfNoIntersection'] = self.data.get('closest_if_no_intersection', False)
         self.node['offset'] = self.data['offset']
