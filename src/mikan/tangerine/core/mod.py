@@ -87,10 +87,16 @@ class Mod(abstract.Mod):
         data['replace'] = Mod.parse_ini_replace(ini)
 
         # update node
-        if data['node'].get_dynamic_plug('gem_hook'):
-            data['node'] = Nodes.get_id(data['node'].gem_hook.get_value())
-            if not data['node']:
-                return
+        hook = data['node']
+        while hook:
+            _hook = hook.get_dynamic_plug('gem_hook')
+            if kl.is_plug(_hook):
+                result = Nodes.get_id(_hook.get_value())
+                if result:
+                    data['node'] = result
+                    break
+
+            hook = hook.get_parent()
 
         # sort commands
         parsed_commands = []

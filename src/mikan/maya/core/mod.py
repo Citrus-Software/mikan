@@ -75,8 +75,7 @@ class Mod(abstract.Mod):
     @staticmethod
     def parse(ini):
         commands = []
-        node = ini.parser.node
-        data = {'node': node}
+        data = {'node': ini.parser.node}
         data['source'] = data['node']
 
         for line in ini.get_lines():
@@ -95,10 +94,15 @@ class Mod(abstract.Mod):
         data['replace'] = Mod.parse_ini_replace(ini)
 
         # update node
-        if 'gem_hook' in node:
-            data['node'] = Nodes.get_id(node['gem_hook'].read())
-            if not data['node']:
-                return
+        hook = data['node']
+        while hook:
+            if 'gem_hook' in hook:
+                result = Nodes.get_id(hook['gem_hook'].read())
+                if result:
+                    data['node'] = result
+                    break
+
+            hook = hook.parent()
 
         # sort commands
         parsed_commands = []
