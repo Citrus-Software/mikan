@@ -95,7 +95,9 @@ class Mod(abstract.Mod):
                 if result:
                     data['node'] = result
                     break
-
+            _hook = hook.get_dynamic_plug('gem_id')
+            if kl.is_plug(_hook):
+                break
             hook = hook.get_parent()
 
         # sort commands

@@ -101,7 +101,8 @@ class Mod(abstract.Mod):
                 if result:
                     data['node'] = result
                     break
-
+            if 'gem_id' in hook:
+                break
             hook = hook.parent()
 
         # sort commands
