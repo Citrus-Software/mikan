@@ -354,13 +354,12 @@ class Deformer(mk.Deformer):
             self.normalize()
 
         # write maps
-        if has_numpy:
-            w = np.array([m.weights for m in maps], dtype=np.float32)
-            flat_weights = w.T.ravel()
-            weights = om.MDoubleArray(flat_weights)
+        if has_numpy and isinstance(maps[0].weights, np.ndarray):
+            w = np.stack([m.weights for m in maps], axis=1).astype(np.float64, copy=False)
+            weights = om.MDoubleArray(w.ravel())
         else:
             flat_weights = itertools.chain.from_iterable(zip(*[m.weights for m in maps]))
-            weights = om.MDoubleArray(list(flat_weights))
+            weights = om.MDoubleArray(flat_weights)
 
         cps = self.get_components_mobject(self.geometry)
 

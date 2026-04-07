@@ -808,15 +808,20 @@ class Deformer(JobMonitor):
         """
         ids, maps = self.get_indexed_maps()
 
-        if has_numpy and isinstance(maps[0].weights, np.ndarray):
-            weight_matrix = np.array([m.weights for m in maps])
+        if has_numpy:
+            if isinstance(maps[0].weights, np.ndarray):
+                weight_matrix = np.vstack([m.weights for m in maps]).astype(np.float64, copy=False)
+            else:
+                flat_stream = itertools.chain.from_iterable(m.weights for m in maps)
+                weight_matrix = np.fromiter(flat_stream, dtype=np.float64, count=len(maps) * len(maps[0].weights)).reshape(len(maps), -1)
+
             sums = np.sum(weight_matrix, axis=0)
             divisors = np.where(sums == 0, 1.0, sums)
 
             if only_excess:
                 divisors = np.where(sums > (1.0 + tolerance), divisors, 1.0)
 
-            weight_matrix = weight_matrix / divisors
+            weight_matrix /= divisors
             for i, m in enumerate(maps):
                 m.weights = weight_matrix[i]
 
