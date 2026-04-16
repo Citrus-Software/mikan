@@ -10,6 +10,14 @@ from mikan.maya.core.deformer import WeightMapInterface
 from mikan.maya.lib.connect import connect_expr
 from mikan.core.logger import create_logger, timed_code
 
+has_numpy = False
+try:
+    import numpy as np
+
+    has_numpy = True
+except ImportError:
+    pass
+
 log = create_logger()
 
 
@@ -261,6 +269,9 @@ class Deformer(mk.Deformer):
         wmap = self.data['maps'][0].weights
         if len(wmap) != n:
             mk.DeformerError('cannot write weightmap: bad length')
+
+        if has_numpy and isinstance(wmap, np.ndarray):
+            wmap = wmap.astype(float).tolist()
 
         io = self.geometry['io'].read()
         if io:

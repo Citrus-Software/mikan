@@ -359,7 +359,7 @@ class Deformer(mk.Deformer):
             weights = om.MDoubleArray(w.ravel())
         else:
             flat_weights = itertools.chain.from_iterable(zip(*[m.weights for m in maps]))
-            weights = om.MDoubleArray(flat_weights)
+            weights = om.MDoubleArray(tuple(flat_weights))
 
         cps = self.get_components_mobject(self.geometry)
 
