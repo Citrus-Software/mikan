@@ -1828,7 +1828,7 @@ class Template(abstract.Template):
 
         # check
         for self.branches, self.root in branches:
-            if not self.root:
+            if not self.root or not self.root.is_alive():
                 continue
 
             tpl_key = self.name + self.get_branch_id()
