@@ -226,19 +226,17 @@ class Mod(mk.Mod):
 
                 mp['worldUpVector'] = up_object_vector
 
-                if fwd_vector[0] != 0:
-                    mp['frontAxis'] = 0
-                elif fwd_vector[1] != 0:
-                    mp['frontAxis'] = 1
-                elif fwd_vector[2] != 0:
-                    mp['frontAxis'] = 2
+                for i in range(3):
+                    if fwd_vector[i] != 0:
+                        mp['frontAxis'] = i
+                        mp['inverseFront'] = fwd_vector[i] < 0
+                        break
 
-                if up_vector[0] != 0:
-                    mp['upAxis'] = 0
-                elif up_vector[1] != 0:
-                    mp['upAxis'] = 1
-                elif up_vector[2] != 0:
-                    mp['upAxis'] = 2
+                for i in range(3):
+                    if up_vector[i] != 0:
+                        mp['upAxis'] = i
+                        mp['inverseUp'] = up_vector[i] < 0
+                        break
 
             # connect node
             cm = mx.create_node(mx.tComposeMatrix, name='_cm#')
