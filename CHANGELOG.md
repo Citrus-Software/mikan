@@ -8,12 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## Unreleased
 
 ### Added
+
 - Added smart auto-indentation and space-based tab behavior in the Mod Editor
 
 ### Fixed
+
 - Fixed a regression in weightmaps optimization
 - Fixed UI crashes related to item deletion functions
 - Restored `Ctrl+Click` node selection compatibility for Maya 2026
+- Fixed negative axis resolution for `mod.rig.path` orientation in Maya
 
 ## [1.0.6] - 2026-03-31
 
