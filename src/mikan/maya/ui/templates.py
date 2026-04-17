@@ -1223,6 +1223,65 @@ class TemplateModEdit(QTextEdit):
 
         self.re_id = re.compile(r'[a-zA-Z0-9_*.<>|\/]*(::|:::|->)[a-zA-Z0-9_*.<>@]*')
 
+    def keyPressEvent(self, event):
+        # convert tab to double spaces
+        if event.key() == Qt.Key_Tab:
+            self.insertPlainText("  ")
+            return
+
+        # backtab
+        if event.key() == Qt.Key_Backtab:
+            cursor = self.textCursor()
+
+            cursor.beginEditBlock()
+            line_text = cursor.block().text()
+
+            spaces_to_remove = 0
+            if line_text.startswith("  "):
+                spaces_to_remove = 2
+            elif line_text.startswith(" "):
+                spaces_to_remove = 1
+
+            if spaces_to_remove > 0:
+                current_pos = cursor.position()
+                block_pos = cursor.block().position()
+                pos_in_block = current_pos - block_pos
+
+                cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
+                cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, spaces_to_remove)
+                cursor.removeSelectedText()
+
+                new_pos_in_block = max(0, pos_in_block - spaces_to_remove)
+                cursor.setPosition(block_pos + new_pos_in_block)
+                self.setTextCursor(cursor)
+
+            cursor.endEditBlock()
+            return
+
+        # auto-indentation and cleanup empty lines
+        if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+            cursor = self.textCursor()
+            line_text = cursor.block().text()
+
+            if line_text and line_text.isspace():
+                cursor.beginEditBlock()
+                cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
+                cursor.movePosition(QtGui.QTextCursor.EndOfBlock, QtGui.QTextCursor.KeepAnchor)
+                cursor.removeSelectedText()
+                cursor.endEditBlock()
+                return
+
+            indentation = line_text[:len(line_text) - len(line_text.lstrip(' '))]
+
+            QTextEdit.keyPressEvent(self, event)
+
+            if indentation:
+                self.insertPlainText(indentation)
+            return
+
+        # default
+        QTextEdit.keyPressEvent(self, event)
+
     def generate_context_menu(self, pos):
         menu = self.createStandardContextMenu()
         # add extra items to the menu
