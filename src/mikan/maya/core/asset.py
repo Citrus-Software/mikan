@@ -1118,6 +1118,11 @@ class Helper(object):
     def remove(self):
         mx.delete(self.node)
 
+    def remove_commands(self):
+        if self.has_mod() or self.has_deformer():
+            with mx.DGModifier() as md:
+                md.set_attr(self.node['notes'], '')
+
     def rename(self, name):
         if self.node.is_referenced():
             return

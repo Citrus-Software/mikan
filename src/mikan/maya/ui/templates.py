@@ -2175,6 +2175,8 @@ class TemplateTreeWidget(QTreeWidget):
                 elif isinstance(item, Helper):
                     if item.is_hidden():
                         remove_items.append(item)
+                    else:
+                        item.remove_commands()
 
                 self.delete_tree_item(tree_item)
 
