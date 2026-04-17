@@ -1224,44 +1224,90 @@ class TemplateModEdit(QTextEdit):
         self.re_id = re.compile(r'[a-zA-Z0-9_*.<>|\/]*(::|:::|->)[a-zA-Z0-9_*.<>@]*')
 
     def keyPressEvent(self, event):
-        # convert tab to double spaces
-        if event.key() == Qt.Key_Tab:
-            self.insertPlainText("  ")
-            return
+        cursor = self.textCursor()
 
-        # backtab
-        if event.key() == Qt.Key_Backtab:
-            cursor = self.textCursor()
+        # tab/backtab
+        if event.key() in (Qt.Key_Tab, Qt.Key_Backtab):
 
-            cursor.beginEditBlock()
-            line_text = cursor.block().text()
+            # with selection
+            if cursor.hasSelection():
+                cursor.beginEditBlock()
 
-            spaces_to_remove = 0
-            if line_text.startswith("  "):
-                spaces_to_remove = 2
-            elif line_text.startswith(" "):
-                spaces_to_remove = 1
+                start_pos = cursor.selectionStart()
+                end_pos = cursor.selectionEnd()
 
-            if spaces_to_remove > 0:
-                current_pos = cursor.position()
-                block_pos = cursor.block().position()
-                pos_in_block = current_pos - block_pos
+                doc = self.document()
+                start_block = doc.findBlock(start_pos)
+                end_block = doc.findBlock(end_pos)
 
-                cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
-                cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, spaces_to_remove)
-                cursor.removeSelectedText()
+                if end_pos == end_block.position() and start_block != end_block:
+                    end_block = end_block.previous()
 
-                new_pos_in_block = max(0, pos_in_block - spaces_to_remove)
-                cursor.setPosition(block_pos + new_pos_in_block)
-                self.setTextCursor(cursor)
+                block = start_block
+                while block.isValid():
+                    temp_cursor = QtGui.QTextCursor(block)
+                    temp_cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
 
-            cursor.endEditBlock()
-            return
+                    if event.key() == Qt.Key_Tab:
+                        temp_cursor.insertText("  ")
 
-        # auto-indentation and cleanup empty lines
+                    elif event.key() == Qt.Key_Backtab:
+                        line_text = block.text()
+                        if line_text.startswith("  "):
+                            temp_cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, 2)
+                            temp_cursor.removeSelectedText()
+                        elif line_text.startswith(" "):
+                            temp_cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, 1)
+                            temp_cursor.removeSelectedText()
+
+                    if block == end_block:
+                        break
+                    block = block.next()
+
+                cursor.endEditBlock()
+                return
+
+            # no selection
+            else:
+                if event.key() == Qt.Key_Tab:
+                    self.insertPlainText("  ")
+                    return
+
+                if event.key() == Qt.Key_Backtab:
+                    cursor.beginEditBlock()
+                    pos_in_block = cursor.positionInBlock()
+                    line_text = cursor.block().text()
+
+                    # compute indent
+                    leading_spaces = len(line_text) - len(line_text.lstrip(' '))
+
+                    if pos_in_block <= leading_spaces:
+                        # inside indent zone
+                        if line_text.startswith("  "):
+                            cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
+                            cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, 2)
+                            cursor.removeSelectedText()
+                        elif line_text.startswith(" "):
+                            cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
+                            cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, 1)
+                            cursor.removeSelectedText()
+                    else:
+                        # inside line
+                        text_before_cursor = line_text[:pos_in_block]
+                        if text_before_cursor.endswith("  "):
+                            cursor.movePosition(QtGui.QTextCursor.Left, QtGui.QTextCursor.KeepAnchor, 2)
+                            cursor.removeSelectedText()
+                        elif text_before_cursor.endswith(" "):
+                            cursor.movePosition(QtGui.QTextCursor.Left, QtGui.QTextCursor.KeepAnchor, 1)
+                            cursor.removeSelectedText()
+
+                    cursor.endEditBlock()
+                    return
+
+        # auto-indent
         if event.key() in (Qt.Key_Return, Qt.Key_Enter):
-            cursor = self.textCursor()
             line_text = cursor.block().text()
+            pos_in_block = cursor.positionInBlock()
 
             if line_text and line_text.isspace():
                 cursor.beginEditBlock()
@@ -1271,12 +1317,16 @@ class TemplateModEdit(QTextEdit):
                 cursor.endEditBlock()
                 return
 
-            indentation = line_text[:len(line_text) - len(line_text.lstrip(' '))]
+            text_before_cursor = line_text[:pos_in_block]
+            indentation = text_before_cursor[:len(text_before_cursor) - len(text_before_cursor.lstrip(' '))]
+            needs_extra_indent = text_before_cursor.rstrip().endswith(':')
 
             QTextEdit.keyPressEvent(self, event)
 
             if indentation:
                 self.insertPlainText(indentation)
+            if needs_extra_indent:
+                self.insertPlainText("  ")
             return
 
         # default
