@@ -5,6 +5,16 @@ All notable changes to this project will be documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Added
+- Added smart auto-indentation and space-based tab behavior in the Mod Editor
+
+### Fixed
+- Fixed a regression in weightmaps optimization
+- Fixed UI crashes related to item deletion functions
+- Restored `Ctrl+Click` node selection compatibility for Maya 2026
+
 ## [1.0.6] - 2026-03-31
 
 ### Added
