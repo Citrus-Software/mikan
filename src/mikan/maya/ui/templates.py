@@ -1221,7 +1221,7 @@ class TemplateModEdit(QTextEdit):
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.generate_context_menu)
 
-        self.re_id = QtCore.QRegExp(r'[a-zA-Z0-9_*.<>|\/]*(::|:::|->)[a-zA-Z0-9_*.<>@]*')
+        self.re_id = re.compile(r'[a-zA-Z0-9_*.<>|\/]*(::|:::|->)[a-zA-Z0-9_*.<>@]*')
 
     def generate_context_menu(self, pos):
         menu = self.createStandardContextMenu()
@@ -1265,33 +1265,33 @@ class TemplateModEdit(QTextEdit):
         menu.popup(self.mapToGlobal(pos))
 
     def mouseReleaseEvent(self, event):
-        key_mod = QApplication.keyboardModifiers()
+        QTextEdit.mouseReleaseEvent(self, event)
 
-        if key_mod == Qt.CTRL and event.button() == Qt.LeftButton:
+        key_mod = QApplication.keyboardModifiers()
+        if key_mod == Qt.ControlModifier and event.button() == Qt.LeftButton:
 
             # select ids
             select = []
             for find in self.find_current_ids():
                 nodes = parse_nodes(find)
-                if nodes:
-                    if isinstance(nodes, (list, tuple)):
-                        select += nodes
-                    else:
-                        select.append(nodes)
-                    log.info('{} selected ({})'.format(find, nodes))
+                if isinstance(nodes, (list, tuple)):
+                    select += nodes
+                elif isinstance(nodes, (mx.Node, mx.Plug)):
+                    select.append(nodes)
                 else:
                     log.error('{} is invalid'.format(find))
 
             if select:
+                log.info('{} selected'.format(find))
                 nodes = []
                 for node in select:
                     if isinstance(node, mx.Node):
                         nodes.append(node)
                     elif isinstance(node, mx.Plug):
                         nodes.append(node.node())
-                mx.cmd(mc.select, nodes)
 
-        QTextEdit.mouseReleaseEvent(self, event)
+                if nodes:
+                    mx.cmd(mc.select, nodes)
 
     def find_current_ids(self):
         cursor = self.textCursor()
@@ -1302,13 +1302,11 @@ class TemplateModEdit(QTextEdit):
 
         # regex mikan ids
         find = ''
-        index = self.re_id.indexIn(line, 0)
-        while index >= 0:
-            index = self.re_id.pos(0)
-            length = len(self.re_id.cap(0))
-            if index <= b < index + length:
-                find = line[index:index + length]
-            index = self.re_id.indexIn(line, index + length)
+        for match in self.re_id.finditer(line):
+            if match.start() <= b < match.end():
+                find = match.group()
+                break
+
         if not find:
             return []
 
@@ -1818,28 +1816,25 @@ class TemplateLoggerTextEdit(QPlainTextEdit):
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.setFont(TemplateLoggerTextEdit.FONT_LOGGER)
 
-        self.re_node = QtCore.QRegExp(r'[:|_a-zA-z0-9]+')
+        self.re_node = re.compile(r'[:_a-zA-Z0-9]+')
 
     def mouseReleaseEvent(self, event):
         key_mod = QApplication.keyboardModifiers()
-
-        if key_mod == Qt.CTRL and event.button() == Qt.LeftButton:
+        if key_mod == Qt.ControlModifier and event.button() == Qt.LeftButton:
             focus_widget = QApplication.focusWidget()
 
-            cursor = self.textCursor()
+            click_pos = event.position().toPoint() if hasattr(event, 'position') else event.pos()
+            cursor = self.cursorForPosition(click_pos)
 
             line = cursor.block().text()
             b = cursor.positionInBlock()
 
             # regex mikan ids
             find = ''
-            index = self.re_node.indexIn(line, 0)
-            while index >= 0:
-                index = self.re_node.pos(0)
-                length = len(self.re_node.cap(0))
-                if index <= b < index + length:
-                    find = line[index:index + length]
-                index = self.re_node.indexIn(line, index + length)
+            for match in self.re_node.finditer(line):
+                if match.start() <= b < match.end():
+                    find = match.group()
+                    break
 
             if find and mc.objExists(find):
                 mc.select(mc.ls(find))
@@ -1853,7 +1848,8 @@ class TemplateLoggerTextEdit(QPlainTextEdit):
                         tree_widget.setCurrentItem(tree_widget.tree_items[item])
                         self._manager.update_tabs()
                         self._manager.select_tab_edit()
-                        focus_widget.setFocus()
+                        if focus_widget:
+                            focus_widget.setFocus()
                         break
 
         QPlainTextEdit.mouseReleaseEvent(self, event)
