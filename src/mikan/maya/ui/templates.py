@@ -3194,14 +3194,16 @@ class TemplateModInspector(QTreeWidget):
                     parents.append(parent)
                     parent = parent.parent()
 
-                if parents and not any(['gem_id' in _node for _node in parents]):
+                first_parent = parents[0] if parents else None
+
+                if not any(['gem_id' in _node for _node in parents]):
                     node_item = QTreeWidgetItem()
                     node_item.setText(0, str(node))
                     self.addTopLevelItem(node_item)
                     self.expandItem(node_item)
 
-                    ids = Deformer.get_deformer_ids(node, parents[0])
-                    name = Deformer.get_unique_name(node, parents[0])
+                    ids = Deformer.get_deformer_ids(node, first_parent)
+                    name = Deformer.get_unique_name(node, first_parent)
                     for i in ids:
                         _name = name + '->' + i
                         id_item = QTreeWidgetItem(_name)
