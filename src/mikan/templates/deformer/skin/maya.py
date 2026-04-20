@@ -25,6 +25,8 @@ except ImportError:
 
 log = create_logger()
 
+can_use_multi_skin = mc.about(apiVersion=True) >= 20240000
+
 
 class Deformer(mk.Deformer):
     node_class = mx.tSkinCluster
@@ -142,52 +144,75 @@ class Deformer(mk.Deformer):
             else:
                 xfo_infs.append(inf)
 
-        # protect layered skin
-        shunt_skin = None
-        for skin_node in mc.ls(mc.listHistory(str(self.geometry)), et='skinCluster'):
-            skin_node = mx.encode(skin_node)
-            fn = oma.MFnGeometryFilter(skin_node.object())
-            _shp = fn.getOutputGeometry()
-            if _shp:
-                _shp = mx.Node(_shp[0])
-                if _shp == self.geometry:
-                    shunt_skin = skin_node
-                    break
-
+        # --- HACK: MULTI-LAYERED SKIN (Backwards Compatibility < 2024) ---
+        # Prior to Maya 2024, a mesh cannot have more than one skinCluster.
+        # This logic implements "Shape Chaining": we inject a new intermediate shape into the deformation stack
+        # to act as the target for the new skinCluster, keeping the previous skinCluster as an upstream calculation.
         replug = None
-        if shunt_skin:
-            ids = Deformer.get_deformer_ids(self.transform)
-            if 'source' not in ids:
-                mc.deformer(self.geometry, type='tweak')
 
-            shp_layer = self.geometry
-            shp_name = shp_layer.name(namespace=False)
+        if not can_use_multi_skin:
+            shunt_skin = None
 
-            dupe = mc.duplicate(str(self.transform), rr=1, rc=1)
-            dupe = mx.encode(dupe[0])
-            for shp in dupe.shapes():
-                if not shp['io'].read():
-                    self.geometry = shp
-                    mc.parent(str(self.geometry), str(self.transform), r=1, s=1)
-                    mx.delete(dupe)
-                    break
+            # check if a skinCluster is already deforming the current geometry
+            for skin_node in mc.ls(mc.listHistory(str(self.geometry)), et='skinCluster'):
+                skin_node = mx.encode(skin_node)
+                fn = oma.MFnGeometryFilter(skin_node.object())
+                _shp = fn.getOutputGeometry()
+                if _shp:
+                    _shp = mx.Node(_shp[0])
+                    if _shp == self.geometry:
+                        shunt_skin = skin_node
+                        break
 
-            if self.geometry.is_a(mx.tMesh):
-                transfer_shading(shp_layer, self.geometry)
+            replug = None
+            if shunt_skin:
+                # ensure the geometry has a shape orig
+                ids = Deformer.get_deformer_ids(self.transform)
+                if 'source' not in ids:
+                    mc.deformer(self.geometry, type='tweak')
 
-            isg = 'initialShadingGroup'
-            if mc.objExists(isg):
-                mc.sets(str(shp_layer), forceElement=isg)
+                shp_layer = self.geometry
+                shp_name = shp_layer.name(namespace=False)
 
-            shp_layer.rename(shp_name + 'Layer#')
-            shp_layer['io'] = True
-            self.set_geometry_id(shp_layer, 'layer')
-            replug = Deformer.get_deformer_output(shp_layer, self.transform)
+                # create a new shape to receive the new bind
+                # we duplicate the transform, then reparent the shape under the original transform
+                dupe = mc.duplicate(str(self.transform), rr=1, rc=1)
+                dupe = mx.encode(dupe[0])
+                for shp in dupe.shapes():
+                    if not shp['io'].read():  # find the visible (non-intermediate) shape
+                        self.geometry = shp
+                        mc.parent(str(self.geometry), str(self.transform), r=1, s=1)
+                        mx.delete(dupe)
+                        break
 
-            self.geometry.rename(shp_name)
+                # maintain shading: transfer materials to the new shape
+                if self.geometry.is_a(mx.tMesh):
+                    transfer_shading(shp_layer, self.geometry)
+
+                # ensure the old shape is assigned to the initial shading group if needed
+                isg = 'initialShadingGroup'
+                if mc.objExists(isg):
+                    mc.sets(str(shp_layer), forceElement=isg)
+
+                # convert the old shape into an intermediate object to hide it from skinCluster command
+                shp_layer.rename(shp_name + 'Layer#')
+                shp_layer['io'] = True
+                self.set_geometry_id(shp_layer, 'layer')
+                replug = Deformer.get_deformer_output(shp_layer, self.transform)
+
+                self.geometry.rename(shp_name)
 
         # inject deformer
-        node = mx.cmd(mc.skinCluster, joint_infs, self.geometry, mi=self.data['mi'], omi=self.data['mmi'], tsb=True, nw=self.data['normalize'])
+        kw = {
+            'mi': self.data['mi'],
+            'omi': self.data['mmi'],
+            'nw': self.data['normalize'],
+            'tsb': True,
+        }
+        if can_use_multi_skin:
+            kw['multi'] = True
+
+        node = mx.cmd(mc.skinCluster, joint_infs, self.geometry, **kw)
         self.node = mx.encode(node[0])
 
         if self.geometry.is_referenced():
@@ -280,12 +305,18 @@ class Deformer(mk.Deformer):
         if not vis:
             self.geometry['v'] = False
 
-        # replug layered skin
+        # --- HACK: MULTI-LAYERED SKIN (Backwards Compatibility < 2024) ---
+        # after the skinCluster command, we must manually bridge the gap between the previous skinning layer and this new one.
         if replug is not None:
+            # identify the 'orig' shape automatically created by the new skinCluster
             fn = oma.MFnSkinCluster(self.node.object())
             orig_new = mx.Node(fn.getInputGeometry()[0])
+
+            # find the input connection point of the new deformer
             output_new = Deformer.get_deformer_output(orig_new, self.transform)
             plug_in = output_new.output(plug=True)
+
+            # RE-ROUTE: Disconnect the default local input and plug in the output from our previous skinning layer (replug)
             mc.connectAttr(replug.path(), plug_in.path(), force=True)
             mx.delete(orig_new)
 
