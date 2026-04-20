@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Added smart auto-indentation and space-based tab behavior in the Mod Editor
 
+### Changed
+
+- Updated `deformer.skin` to support native multiple skinClusters for Maya 2024 and above
+
 ### Fixed
 
 - Fixed a regression in weightmaps optimization
