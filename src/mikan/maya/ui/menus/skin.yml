@@ -61,9 +61,11 @@
 - name: switch skin layer
   file: $snippets/deformers/switch_skin_layer.py
   help: Toggles the skin layer display of the selected geometries
+  max_version: 2023
 
 - name: bind skin layer
   file: $snippets/deformers/bind_skin_layers.py
+  max_version: 2023
 
 - name: copy skin layers
   file: $snippets/deformers/copy_skin_layers.py
@@ -71,10 +73,12 @@
 - name: add influences
   file: $snippets/deformers/add_influence_layer.py
   py: add_influence_layer()
+  max_version: 2023
 
 - name: remove unused influences
   file: $snippets/deformers/remove_unused_layers.py
   py: remove_unused_influence_layer()
+  max_version: 2023
 
 - name: mirror skin maya (L to R)
   file: $snippets/deformers/mirror_skin_layer.py
@@ -84,7 +88,7 @@
   file: $snippets/deformers/mirror_skin_layer.py
   py: mirror_skin_layer(True)
 
-- name: shape editor
+- name: intermediate layer shapes
   menu:
     - name: remove shape layers
       file: $snippets/deformers/edit_layers.py
@@ -92,6 +96,11 @@
     - name: inject shape layers
       file: $snippets/deformers/edit_layers.py
       py: _inject_layers()
+
+    - name: switch skin layer
+      file: $snippets/deformers/switch_skin_layer.py
+      help: Toggles the skin layer display of the selected geometries
+      version: 2024
 
 
 - separator: Weight maps

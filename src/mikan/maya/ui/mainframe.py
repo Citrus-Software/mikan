@@ -28,6 +28,11 @@ from .shapes import ShapesManager
 
 log = create_logger()
 
+try:
+    maya_version = float(mc.about(version=True).split()[0])
+except ValueError:
+    maya_version = 0.0
+
 __all__ = ['MikanUI']
 
 
@@ -113,8 +118,11 @@ class MikanUI(MayaDockMixin):
                 continue
 
             if 'version' in item:
-                maya_version = float(mc.about(version=True))
                 if maya_version < item['version']:
+                    continue
+
+            if 'max_version' in item:
+                if maya_version > item['max_version']:
                     continue
 
             name = item.get('name', '')
