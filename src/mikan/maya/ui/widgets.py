@@ -243,63 +243,56 @@ class MayaDockMixin(MayaQWidgetDockableMixin, QMainWindow, OptVarSettings):
 
     def __init__(self, parent=None, *args, **kw):
         self.delete_instances()
-        self._save_geometry = False
 
         parent = parent or get_maya_window()
         super(MayaDockMixin, self).__init__(parent=parent, *args, **kw)
 
         self.setWindowFlags(Qt.Tool)
         self.setObjectName(self.__class__.__name__)
-        self.setAttribute(Qt.WA_DeleteOnClose, True)
 
     @property
     def workspace_name(self):
         return self.__class__.__name__ + 'WorkspaceControl'
 
     def delete_instances(self):
-        for obj in get_maya_window().children():
-            if '.mayaMixin' in str(type(obj)):
-                if obj.widget().__class__.__name__ == self.__class__.__name__:
+        workspace_name = self.workspace_name
+
+        if mc.workspaceControl(workspace_name, q=True, exists=True):
+            mc.workspaceControl(workspace_name, e=True, close=True)
+            if mc.workspaceControl(workspace_name, q=True, exists=True):
+                try:
+                    mc.deleteUI(workspace_name, control=True)
+                except RuntimeError:
+                    pass
+
+        maya_win = get_maya_window()
+        if maya_win:
+            for obj in maya_win.children():
+                if obj.objectName() == self.__class__.__name__:
                     obj.setParent(None)
                     obj.deleteLater()
 
-        try:
-            delete_QWidget(self.__class__.__name__)
-        except:
-            pass
-
+    def save_state(self):
         workspace_name = self.workspace_name
-        if mc.workspaceControl(workspace_name, q=True, exists=True):
-            mc.workspaceControl(workspace_name, e=True, close=True)
-            mc.deleteUI(workspace_name, control=True)
+        if not mc.workspaceControl(workspace_name, q=True, exists=True):
+            return
 
-    def save_floating(self):
-        workspace_name = self.workspace_name
-        floating = bool(mc.workspaceControl(workspace_name, q=1, fl=1))
+        floating = bool(mc.workspaceControl(workspace_name, q=True, floating=True))
         self.set_optvar('floating', floating)
-        return floating
-
-    def save_geometry(self):
-        floating = self.save_floating()
-        if self._save_geometry and floating:
-            try:
-                parent = self.parent()
-            except:
-                return
-            self.set_optvar('geometry', parent.geometry())
-            self.set_optvar('position', parent.mapToGlobal(QtCore.QPoint(0, 0)))
-
-    def floatingChanged(self, floating):
-        if isinstance(floating, string_types):
-            floating = int(floating)
-        floating = bool(floating)
 
         if floating:
-            self.parent().setGeometry(self.get_optvar('geometry', self.parent().geometry()))
+            try:
+                parent = self.parent()
+                if parent and not QtCompat.isValid(parent):
+                    return
+                self.set_optvar('geometry', parent.geometry())
+                self.set_optvar('position', parent.mapToGlobal(QtCore.QPoint(0, 0)))
+            except RuntimeError:
+                pass
 
-        if self._save_geometry:
-            self.set_optvar('floating', floating)
-            self.set_optvar('area', self.dockArea())
+    def dockCloseEventTriggered(self):
+        self.save_state()
+        super(MayaDockMixin, self).dockCloseEventTriggered()
 
     def __del__(self):
         pass
@@ -319,35 +312,41 @@ class MayaDockMixin(MayaQWidgetDockableMixin, QMainWindow, OptVarSettings):
             widthHeight=[geo.width(), geo.height()]
         )
 
-        kw = {'dockable': True, 'area': area, 'allowedArea': 'left|right'}
-        kw['floating'] = floating
+        kw = {
+            'dockable': True,
+            'area': area,
+            'allowedArea': 'left|right',
+            'floating': floating,
+            'retain': False
+        }
         self.show(**kw)
 
-        # workspace control
-        kw = {'retain': False}
-        kw['floating'] = floating
+        # dock parameters
         if not floating:
-            kw['tabToControl'] = ('ChannelBoxLayerEditor', -1)
+            mc.workspaceControl(
+                workspace_name,
+                e=True,
+                tabToControl=('ChannelBoxLayerEditor', -1),
+                label=self.windowTitle()
+            )
+        else:
+            mc.workspaceControl(workspace_name, e=True, label=self.windowTitle())
 
-        kw['label'] = self.windowTitle()
+        try:
+            self.parent().setMinimumWidth(256)
+        except Exception:
+            pass
 
-        mc.workspaceControl(workspace_name, e=True, **kw)
-
-        # exec dock
-        self.parent().setMinimumWidth(256)
         self.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
-
         self.raise_()
 
         # hack events
         self.filter = EventFilter()
         self.parent().installEventFilter(self.filter)
 
-        self.filter.moved.connect(self.save_geometry)
-        self.filter.closed.connect(self.save_geometry)
+        self.filter.moved.connect(self.save_state)
+        self.filter.closed.connect(self.save_state)
         self.filter.closed.connect(self.delete_instances)
-
-        self._save_geometry = True
 
     @classmethod
     def start(cls):

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - Updated `deformer.skin` to support native multiple skinClusters for Maya 2024 and above
+- Refactored main UI docking management to properly handle Maya's `workspaceControl` lifecycle
 
 ### Fixed
 
