@@ -101,6 +101,7 @@ class TemplateManager(QMainWindow, OptVarSettings):
 
         # panels
         self.tree = TemplateTreeWidget()
+        self.tree._manager = self
         self.tab_add = TemplateAddWidget()
         self.tab_edit = TemplateEditWidget()
         self.tab_log = TemplateLogWidget()
@@ -2963,10 +2964,39 @@ class TemplateTreeWidget(QTreeWidget):
 
     def create_mod(self, mod):
         item = self.get_selected_item()
-        if isinstance(item, (Helper, Template, TemplateHook)):
+        if not isinstance(item, (Helper, Template, TemplateHook)):
+            return
+
+        # find next block line number
+        mod_edit = self._manager.tab_edit.mod_edit
+        cursor = mod_edit.textCursor()
+        index = cursor.position()
+
+        doc = mod_edit.document()
+        current_block = doc.findBlock(index)
+        line = -1
+
+        block = current_block.next()
+        while block.isValid():
+            text = block.text()
+
+            stripped = text.strip()
+            if not stripped:
+                block = block.next()
+                continue
+
+            if not text[0].isspace():
+                line = block.blockNumber()
+                break
+
+            block = block.next()
+
+        # update notes
+        if mod:
+            mod = mod.sample.strip('\n') + '\n'
+
+        if not isinstance(item, Helper) or line == -1 or index == 0 or not mod:
             cfg = ConfigParser(item.node)
-            if mod:
-                mod = mod.sample.strip('\n') + '\n'
             data = cfg['mod'].read() or ''
             data.strip('\n')
             if data:
@@ -2983,6 +3013,24 @@ class TemplateTreeWidget(QTreeWidget):
                 self.tree_items[item].update()
                 self.setCurrentItem(self.tree_items[item], 1)
             self.refresh_edit.emit()
+
+        else:
+            # inject mod at line
+            target_block = doc.findBlockByNumber(line)
+
+            if target_block.isValid():
+                cursor.beginEditBlock()
+                cursor.setPosition(target_block.position())
+
+                if not mod.endswith('\n'):
+                    mod += '\n'
+                mod += '\n'
+
+                cursor.insertText(mod)
+                cursor.endEditBlock()
+
+                mod_edit.setTextCursor(cursor)
+                mod_edit.setFocus()
 
     @staticmethod
     def scale_item(item):
