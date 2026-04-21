@@ -16,9 +16,8 @@ from ..core.node import Nodes
 from mikan.core.logger import create_logger, timed_code
 
 __all__ = [
-    'cleanup_references', 'get_references', 'import_references',
-    'cleanup_ref_edits', 'cleanup_layers',
-
+    'cleanup_references', 'get_references', 'import_references', 'cleanup_ref_edits',
+    'cleanup_layers', 'set_outliner_color',
     'cleanup_rig_ctrls', 'cleanup_rig_history', 'cleanup_rig_joints',
     'cleanup_rig_shapes', 'cleanup_shape_orig',
     'rename_skin_clusters', 'cleanup_skin_clusters', 'label_skin_joints',
@@ -179,6 +178,30 @@ def cleanup_layers():
     layer = mx.encode('defaultLayer')
     for c_out, c_in in layer.outputs(plugs=True, connections=True):
         c_out // c_in
+
+
+def set_outliner_color(node, color, ref=False):
+    if not isinstance(node, mx.Node):
+        try:
+            node = mx.encode(str(node))
+        except:
+            raise ValueError('invalid node')
+
+    if not isinstance(color, (list, tuple)) and len(color) != 3:
+        raise ValueError('invalid color')
+
+    if not ref and node.is_referenced():
+        if node['useOutlinerColor'].read():
+            return
+
+    try:
+        node['outlinerColor'] = color
+        node['useOutlinerColor'] = True
+    except:
+        try:
+            node['useOutlinerColor'] = False
+        except:
+            pass
 
 
 # rig --------------------------------------------------------------------------

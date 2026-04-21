@@ -20,6 +20,7 @@ from .shape import Shape
 from ..lib.configparser import ConfigParser
 from ..lib.rig import axis_to_vector, mirror_joints, copy_transform, duplicate_joint, find_closest_node, set_virtual_parent
 from ..lib.connect import connect_matrix, connect_reverse
+from ..lib.cleanup import set_outliner_color
 
 __all__ = ['Template']
 
@@ -46,12 +47,8 @@ class Template(abstract.Template):
 
         self.modes = set()
 
-        if not self.node.is_referenced():
-            try:
-                self.node['useOutlinerColor'] = 1
-                self.node['outlinerColor'] = (0.33, 0.73, 1)
-            except:
-                pass
+        # cosmetics
+        set_outliner_color(self.node, (0.33, 0.73, 1))
 
     def __repr__(self):
         return 'Template(\'{}\')'.format(self.node)

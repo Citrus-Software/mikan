@@ -33,7 +33,7 @@ from ..lib.cleanup import (
     cleanup_shape_orig, cleanup_references, cleanup_layers,
     cleanup_rig_ctrls, cleanup_rig_joints, cleanup_rig_shapes,
     label_skin_joints, cleanup_skin_clusters, cleanup_rig_history,
-    LogFilter,
+    LogFilter, set_outliner_color,
 )
 
 __all__ = ['Asset', 'Helper']
@@ -60,12 +60,7 @@ class Asset(abstract.Asset):
         self.monitor = None
 
         # cosmetics
-        if not self.node.is_referenced():
-            try:
-                self.node['useOutlinerColor'] = True
-                self.node['outlinerColor'] = (1, 0.73, 0.33)
-            except:
-                pass
+        set_outliner_color(self.node, (1, 0.73, 0.33))
 
     # nodes management -------------------------------------------------------------------------------------------------
 
@@ -1012,6 +1007,8 @@ class SchedulerError(Exception):
 
 
 class Helper(object):
+    COLOR_MOD = (0.73, 0.33, 1)
+    COLOR_DFM = (0.73, 1, 0.33)
 
     def __init__(self, node):
         if isinstance(node, (Asset, Template, DeformerGroup)):
@@ -1039,13 +1036,8 @@ class Helper(object):
         if 'notes' in self.node:
             cfg = ConfigParser(self.node)
             if 'mod' in cfg:
-                if not self.node.is_referenced() and 'gem_id' not in self.node:
-                    try:
-                        self.node['useOutlinerColor'] = 1
-                        self.node['outlinerColor'] = (0.73, 0.33, 1)
-                    except:
-                        pass
-
+                if 'gem_id' not in self.node:
+                    set_outliner_color(self.node, self.COLOR_MOD)
                 return True
         return False
 
@@ -1053,25 +1045,14 @@ class Helper(object):
         if 'notes' in self.node:
             cfg = ConfigParser(self.node)
             if 'deformer' in cfg:
-                if not self.node.is_referenced() and 'gem_id' not in self.node:
-                    try:
-                        self.node['useOutlinerColor'] = 1
-                        self.node['outlinerColor'] = (0.73, 1, 0.33)
-                    except:
-                        pass
-
+                if 'gem_id' not in self.node:
+                    set_outliner_color(self.node, self.COLOR_DFM)
                 return True
         return False
 
     def is_deformer_group(self):
         if 'gem_deformers' in self.node:
-            if not self.node.is_referenced():
-                try:
-                    self.node['useOutlinerColor'] = 1
-                    self.node['outlinerColor'] = (0.73, 1, 0.33)
-                except:
-                    pass
-
+            set_outliner_color(self.node, self.COLOR_DFM)
             return True
         return False
 
