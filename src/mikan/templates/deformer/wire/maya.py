@@ -8,6 +8,14 @@ from mikan.maya import cmdx as mx
 import mikan.maya.core as mk
 from mikan.core.logger import create_logger, timed_code
 
+has_numpy = False
+try:
+    import numpy as np
+
+    has_numpy = True
+except ImportError:
+    pass
+
 log = create_logger()
 
 
@@ -154,9 +162,12 @@ class Deformer(mk.Deformer):
         if 'maps' not in self.data or 0 not in self.data['maps']:
             return
 
-        n = self.get_size()
+        if has_numpy and isinstance(self.data['maps'][0].weights, np.ndarray):
+            wm = self.data['maps'][0].weights.tolist()
+        else:
+            wm = list(self.data['maps'][0].weights)
 
-        wm = self.data['maps'][0].weights[:]
+        n = self.get_size()
         if len(wm) != n:
             raise mk.DeformerError('cannot write weightmap: bad length')
 
