@@ -1684,10 +1684,8 @@ class WeightMapTree(QTreeWidget):
         # update deformer
         deformer = self.parent.deformer
         if deformer is None:
-            print('no deformer???')
             return
 
-        print('update dfm')
         deformer.set_weightmaps(self.get_all_weightmaps())
         deformer.ui_data['edited_maps'] = True
         self.parent.edited.emit()
