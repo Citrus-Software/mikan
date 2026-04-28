@@ -1233,39 +1233,39 @@ class TemplateModEdit(QTextEdit):
             # with selection
             if cursor.hasSelection():
                 cursor.beginEditBlock()
+                try:
+                    start_pos = cursor.selectionStart()
+                    end_pos = cursor.selectionEnd()
 
-                start_pos = cursor.selectionStart()
-                end_pos = cursor.selectionEnd()
+                    doc = self.document()
+                    start_block = doc.findBlock(start_pos)
+                    end_block = doc.findBlock(end_pos)
 
-                doc = self.document()
-                start_block = doc.findBlock(start_pos)
-                end_block = doc.findBlock(end_pos)
+                    if end_pos == end_block.position() and start_block != end_block:
+                        end_block = end_block.previous()
 
-                if end_pos == end_block.position() and start_block != end_block:
-                    end_block = end_block.previous()
+                    block = start_block
+                    while block.isValid():
+                        temp_cursor = QtGui.QTextCursor(block)
+                        temp_cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
 
-                block = start_block
-                while block.isValid():
-                    temp_cursor = QtGui.QTextCursor(block)
-                    temp_cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
+                        if event.key() == Qt.Key_Tab:
+                            temp_cursor.insertText("  ")
 
-                    if event.key() == Qt.Key_Tab:
-                        temp_cursor.insertText("  ")
+                        elif event.key() == Qt.Key_Backtab:
+                            line_text = block.text()
+                            if line_text.startswith("  "):
+                                temp_cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, 2)
+                                temp_cursor.removeSelectedText()
+                            elif line_text.startswith(" "):
+                                temp_cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, 1)
+                                temp_cursor.removeSelectedText()
 
-                    elif event.key() == Qt.Key_Backtab:
-                        line_text = block.text()
-                        if line_text.startswith("  "):
-                            temp_cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, 2)
-                            temp_cursor.removeSelectedText()
-                        elif line_text.startswith(" "):
-                            temp_cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, 1)
-                            temp_cursor.removeSelectedText()
-
-                    if block == end_block:
-                        break
-                    block = block.next()
-
-                cursor.endEditBlock()
+                        if block == end_block:
+                            break
+                        block = block.next()
+                finally:
+                    cursor.endEditBlock()
                 return
 
             # no selection
@@ -1276,33 +1276,34 @@ class TemplateModEdit(QTextEdit):
 
                 if event.key() == Qt.Key_Backtab:
                     cursor.beginEditBlock()
-                    pos_in_block = cursor.positionInBlock()
-                    line_text = cursor.block().text()
+                    try:
+                        pos_in_block = cursor.positionInBlock()
+                        line_text = cursor.block().text()
 
-                    # compute indent
-                    leading_spaces = len(line_text) - len(line_text.lstrip(' '))
+                        # compute indent
+                        leading_spaces = len(line_text) - len(line_text.lstrip(' '))
 
-                    if pos_in_block <= leading_spaces:
-                        # inside indent zone
-                        if line_text.startswith("  "):
-                            cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
-                            cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, 2)
-                            cursor.removeSelectedText()
-                        elif line_text.startswith(" "):
-                            cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
-                            cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, 1)
-                            cursor.removeSelectedText()
-                    else:
-                        # inside line
-                        text_before_cursor = line_text[:pos_in_block]
-                        if text_before_cursor.endswith("  "):
-                            cursor.movePosition(QtGui.QTextCursor.Left, QtGui.QTextCursor.KeepAnchor, 2)
-                            cursor.removeSelectedText()
-                        elif text_before_cursor.endswith(" "):
-                            cursor.movePosition(QtGui.QTextCursor.Left, QtGui.QTextCursor.KeepAnchor, 1)
-                            cursor.removeSelectedText()
-
-                    cursor.endEditBlock()
+                        if pos_in_block <= leading_spaces:
+                            # inside indent zone
+                            if line_text.startswith("  "):
+                                cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
+                                cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, 2)
+                                cursor.removeSelectedText()
+                            elif line_text.startswith(" "):
+                                cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
+                                cursor.movePosition(QtGui.QTextCursor.Right, QtGui.QTextCursor.KeepAnchor, 1)
+                                cursor.removeSelectedText()
+                        else:
+                            # inside line
+                            text_before_cursor = line_text[:pos_in_block]
+                            if text_before_cursor.endswith("  "):
+                                cursor.movePosition(QtGui.QTextCursor.Left, QtGui.QTextCursor.KeepAnchor, 2)
+                                cursor.removeSelectedText()
+                            elif text_before_cursor.endswith(" "):
+                                cursor.movePosition(QtGui.QTextCursor.Left, QtGui.QTextCursor.KeepAnchor, 1)
+                                cursor.removeSelectedText()
+                    finally:
+                        cursor.endEditBlock()
                     return
 
         # auto-indent
@@ -1312,10 +1313,12 @@ class TemplateModEdit(QTextEdit):
 
             if line_text and line_text.isspace():
                 cursor.beginEditBlock()
-                cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
-                cursor.movePosition(QtGui.QTextCursor.EndOfBlock, QtGui.QTextCursor.KeepAnchor)
-                cursor.removeSelectedText()
-                cursor.endEditBlock()
+                try:
+                    cursor.movePosition(QtGui.QTextCursor.StartOfBlock)
+                    cursor.movePosition(QtGui.QTextCursor.EndOfBlock, QtGui.QTextCursor.KeepAnchor)
+                    cursor.removeSelectedText()
+                finally:
+                    cursor.endEditBlock()
                 return
 
             text_before_cursor = line_text[:pos_in_block]
@@ -3020,14 +3023,16 @@ class TemplateTreeWidget(QTreeWidget):
 
             if target_block.isValid():
                 cursor.beginEditBlock()
-                cursor.setPosition(target_block.position())
+                try:
+                    cursor.setPosition(target_block.position())
 
-                if not mod.endswith('\n'):
+                    if not mod.endswith('\n'):
+                        mod += '\n'
                     mod += '\n'
-                mod += '\n'
 
-                cursor.insertText(mod)
-                cursor.endEditBlock()
+                    cursor.insertText(mod)
+                finally:
+                    cursor.endEditBlock()
 
                 mod_edit.setTextCursor(cursor)
                 mod_edit.setFocus()
