@@ -243,6 +243,7 @@ class MayaDockMixin(MayaQWidgetDockableMixin, QMainWindow, OptVarSettings):
 
     def __init__(self, parent=None, *args, **kw):
         self.delete_instances()
+        self.event_filter = None
 
         parent = parent or get_maya_window()
         super(MayaDockMixin, self).__init__(parent=parent, *args, **kw)
@@ -255,6 +256,13 @@ class MayaDockMixin(MayaQWidgetDockableMixin, QMainWindow, OptVarSettings):
         return self.__class__.__name__ + 'WorkspaceControl'
 
     def delete_instances(self):
+        # delete widget
+        try:
+            delete_QWidget(self.__class__.__name__)
+        except:
+            pass
+
+        # delete workspace
         workspace_name = self.workspace_name
 
         if mc.workspaceControl(workspace_name, q=True, exists=True):
@@ -265,12 +273,7 @@ class MayaDockMixin(MayaQWidgetDockableMixin, QMainWindow, OptVarSettings):
                 except RuntimeError:
                     pass
 
-        maya_win = get_maya_window()
-        if maya_win:
-            for obj in maya_win.children():
-                if obj.objectName() == self.__class__.__name__:
-                    obj.setParent(None)
-                    obj.deleteLater()
+        # QtWidgets.QApplication.processEvents()
 
     def save_state(self):
         workspace_name = self.workspace_name
@@ -282,11 +285,11 @@ class MayaDockMixin(MayaQWidgetDockableMixin, QMainWindow, OptVarSettings):
 
         if floating:
             try:
-                parent = self.parent()
-                if parent and not QtCompat.isValid(parent):
+                workspace_widget = self.parent()
+                if not workspace_widget or not QtCompat.isValid(workspace_widget):
                     return
-                self.set_optvar('geometry', parent.geometry())
-                self.set_optvar('position', parent.mapToGlobal(QtCore.QPoint(0, 0)))
+                self.set_optvar('geometry', workspace_widget.geometry())
+                self.set_optvar('position', workspace_widget.mapToGlobal(QtCore.QPoint(0, 0)))
             except RuntimeError:
                 pass
 
@@ -294,8 +297,9 @@ class MayaDockMixin(MayaQWidgetDockableMixin, QMainWindow, OptVarSettings):
         self.save_state()
         super(MayaDockMixin, self).dockCloseEventTriggered()
 
-    def __del__(self):
-        pass
+    def resizeEvent(self, e):
+        self.set_optvar('geometry', self.geometry())
+        return QMainWindow.resizeEvent(self, e)
 
     def run(self):
 
@@ -340,13 +344,14 @@ class MayaDockMixin(MayaQWidgetDockableMixin, QMainWindow, OptVarSettings):
         self.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
         self.raise_()
 
-        # hack events
-        self.filter = EventFilter()
-        self.parent().installEventFilter(self.filter)
+        # cleanup events
+        workspace_widget = self.parent()
+        if workspace_widget:
+            self.event_filter = EventFilter()
+            workspace_widget.installEventFilter(self.event_filter)
 
-        self.filter.moved.connect(self.save_state)
-        self.filter.closed.connect(self.save_state)
-        self.filter.closed.connect(self.delete_instances)
+            self.event_filter.closed.connect(self.save_state)
+            self.event_filter.closed.connect(self.delete_instances)
 
     @classmethod
     def start(cls):

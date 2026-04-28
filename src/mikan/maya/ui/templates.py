@@ -3302,8 +3302,9 @@ class TemplateModInspector(QTreeWidget):
                 om.MCommandMessage.removeCallback(cb)
             except:
                 pass
-        __main__._mikan_mod_inspector = om.MEventMessage.addEventCallback('SelectionChanged', self.maya_selection_changed)
 
+        cb = om.MEventMessage.addEventCallback('SelectionChanged', self.maya_selection_changed)
+        __main__._mikan_mod_inspector = cb
         _callbacks.append(cb)
 
     def maya_selection_changed(self, *args):

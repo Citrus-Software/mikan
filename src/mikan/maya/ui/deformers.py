@@ -27,16 +27,22 @@ from .widgets import OptVarSettings, Callback
 
 __all__ = ['DeformerManager']
 
+log = create_logger()
+
 # cleanup previously registered callbacks
 _callbacks = __main__.__dict__.setdefault(__name__ + '.registered_callbacks', [])
-for cb in _callbacks:
-    try:
-        om.MMessage.removeCallback(cb)
-    except:
-        pass
-del _callbacks[:]
 
-log = create_logger()
+
+def _clear_callbacks():
+    for cb in _callbacks:
+        try:
+            om.MMessage.removeCallback(cb)
+        except:
+            pass
+    del _callbacks[:]
+
+
+_clear_callbacks()
 
 
 class DeformerManager(QMainWindow, OptVarSettings):
@@ -81,6 +87,9 @@ class DeformerManager(QMainWindow, OptVarSettings):
 
         # load data
         self.tree_group.load(dry=not self.wd_load.isChecked())
+
+        # maya callbacks
+        self.destroyed.connect(_clear_callbacks)
 
     def build_toolbar(self):
         toolbar = self.addToolBar('Deformer manager')
