@@ -22,6 +22,7 @@ from mikan.core.utils.yamlutils import ordered_load
 from mikan.tangerine.lib.commands import ls, add_plug, find_root
 from mikan.tangerine.lib.connect import connect_sub, safe_connect
 from mikan.tangerine.lib.configparser import ConfigParser
+from mikan.tangerine.core import Deformer
 
 log = create_logger()
 
@@ -678,19 +679,63 @@ class SkiaTextureBuild(object):
             if isinstance(node, kl.SceneGraphNode):
                 self.node_names[node_name] = node
 
-    def walk(self, node, parent_id=None):
+    def walk(self, node, variant=None, parent=None):
 
         # get node data
         cfg = ConfigParser(node)
-        draw = ordered_load(cfg['skia'].read())
-        if not isinstance(draw, dict):
-            draw = {}
+
+        # filter skia variants
+        variants = {}
+
+        for ini in cfg['skia']:
+
+            v = None
+            for line in ini.get_lines():
+                if line.strip().startswith('#!'):
+                    v = line.strip()[2:].strip()
+                    break
+
+            if v not in variants:
+                variants[v] = []
+
+            draw_data = ini.read()
+            variants[v].append(draw_data)
+
+        # build nodes
+        node_ids = []
+
+        for draw_data in variants.get(variant, variants.get(None, [''])):
+
+            # load yml data
+            draw = ordered_load(draw_data)
+            if not isinstance(draw, dict):
+                draw = {}
+
+            skia_node = self.create_skia_node(node, draw)
+            skia_node['parent'] = parent
+
+            # register node
+            node_id = len(self.nodes)
+            node_ids.append(node_id)
+            self.nodes.append(skia_node)
+
+            # walk children
+            for ch in node.get_children():
+                if not isinstance(ch, kl.SceneGraphNode):
+                    continue
+                if ch.get_name().startswith('_'):
+                    continue
+
+                child_ids = self.walk(ch, variant=variant, parent=node_id)
+                skia_node['children'] = child_ids
+
+        return node_ids
+
+    def create_skia_node(self, node, draw):
 
         data = {
             'name': node.get_name(),
-            'parent': parent_id,
             'draw': draw,
-            'children': []
         }
 
         # link plugs from config
@@ -734,20 +779,8 @@ class SkiaTextureBuild(object):
             if not any(key.startswith(('stroke', 'fill')) for key in draw):
                 draw['stroke.0'] = {}  # default draw for curve
 
-        # register node
-        node_id = len(self.nodes)
-        self.nodes.append(data)
-
-        # parse children
-        for ch in node.get_children():
-            if not isinstance(ch, kl.SceneGraphNode):
-                continue
-            if ch.get_name().startswith('_'):
-                continue
-            child_id = self.walk(ch, node_id)
-            data['children'].append(child_id)
-
-        return node_id
+        # deliver
+        return data
 
     def link_values(self, v, node=None):
 
