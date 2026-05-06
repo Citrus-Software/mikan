@@ -1230,7 +1230,7 @@ class Template(mk.Template):
             if self.get_opt('effector_plane') == 'z':
                 pv.transform.set_value(M44f(V3f(0, 0, 1), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
             else:
-                pv.transform.set_value(M44f(V3f(0, 1, 0), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
+                pv.transform.set_value(M44f(V3f(1, 0, 0), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
         else:
             pv.transform.set_value(M44f(V3f(1, 0, 1), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
         pv_xfo = pv.world_transform.get_value()
@@ -1254,7 +1254,7 @@ class Template(mk.Template):
             if self.get_opt('effector_plane') == 'z':
                 pv.transform.set_value(M44f(V3f(0, 0, 1), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
             else:
-                pv.transform.set_value(M44f(V3f(0, 1, 0), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
+                pv.transform.set_value(M44f(V3f(1, 0, 0), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
         else:
             pv.transform.set_value(M44f(V3f(1, 0, 1), V3f(0, 0, 0), V3f(1, 1, 1), Euler.XYZ))
         pv_xfo = pv.world_transform.get_value()
