@@ -783,10 +783,10 @@ class Template(abstract.Template):
                         gem_ids = [gem_id for gem_id in plug.get_value().split(';') if gem_id]
                         if not gem_ids:
                             continue
-                        for i, e in enumerate(gem_ids):
-                            _e = self.update_branch_id(e, branch_ids0, branch_ids, all_ids)
-                            if _e:
-                                gem_ids[i] = _e
+                        gem_ids = [
+                            self.update_branch_id(e, branch_ids0, branch_ids, all_ids)
+                            for e in gem_ids
+                        ]
 
                         # check if edit already exists
                         skip_edit = False
@@ -827,13 +827,7 @@ class Template(abstract.Template):
                                 if line.startswith('#/') and 'solo' in line[2:].split():
                                     notes = '# deleted from branch'
                             if notes:
-                                elems = notes.split(' ')
-                                for i, e in enumerate(elems):
-                                    _e = self.update_branch_id(e, branch_ids0, branch_ids, all_ids)
-                                    if _e:
-                                        elems[i] = _e
-
-                                notes = ' '.join(elems)
+                                notes = self.update_branch_id(notes, branch_ids0, branch_ids, all_ids)
                                 node_mod.write(notes)
                         continue
 

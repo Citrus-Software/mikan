@@ -930,7 +930,7 @@ class Template(object):
         """
         pass
 
-    def update_branch_id(self, e, branch_ids0, branch_ids, all_ids, path=False):
+    def update_branch_id(self, e, branch_ids0, branch_ids, all_ids):
         """Update branch identifiers in a string element.
 
         Replaces branch ID patterns in node references or geometry paths
@@ -938,98 +938,89 @@ class Template(object):
 
         Args:
             e (str): Element string to update (node ID or geometry path).
-            branch_ids0 (list): Original branch IDs to replace.
-            branch_ids (list): New branch IDs to use.
+            branch_ids0 (list): Original branch IDs to replace (e.g., ['L', 'arm']).
+            branch_ids (list): New branch IDs to use (e.g., ['R', 'arm']).
             all_ids (list): All known branch IDs for validation.
-            path (bool): Whether element is a path component.
 
         Returns:
-            str: Updated element string, or None if no update needed.
+            str: Updated element string.
         """
-        _branch_ids0 = []
-        for i in range(len(branch_ids0)):
-            _branch_ids0.append(branch_ids0[:i + 1])
-        _branch_ids = []
-        for i in range(len(branch_ids)):
-            _branch_ids.append(branch_ids[:i + 1])
+        if e == '':
+            return e
 
-        mode = None
-        _ids = []
+        for char in (' ', '\n', ';', '\t'):
+            if char in e:
+                return char.join(
+                    self.update_branch_id(v, branch_ids0, branch_ids, all_ids)
+                    for v in e.split(char)
+                )
 
-        # id update
+        # plug
+        if '@' in e:
+            return '@'.join(
+                self.update_branch_id(v, branch_ids0, branch_ids, all_ids)
+                for v in e.split('@')
+            )
+
+        # geometry id
+        if '->' in e:
+            left, sep, right = e.partition('->')
+            return self.update_branch_id(left, branch_ids0, branch_ids, all_ids) + sep + right
+
+        # path
+        if '/' in e:
+            return '/'.join(
+                self.update_branch_id(v, branch_ids0, branch_ids, all_ids)
+                for v in e.split('/')
+            )
+
+        # dict key
+        if e.endswith(':'):
+            return self.update_branch_id(e[:-1], branch_ids0, branch_ids, all_ids) + ':'
+
+        # extract
+        id_tag = ''
+
         if '::' in e:
-            mode = '::'
-            _e = e.split('::')
-            _name, _sep, _keys = _e[0].partition('.')
-            if not _keys:
-                return
-            _ids = _keys.split('.')
+            id_name, _, id_tag = e.partition('::')
+            base_name, _, keys = id_name.partition('.')
+            if not keys:
+                return e
+            current_ids = keys.split('.')
 
-        # geometry id update
-        elif '->' in e:
-            mode = '->'
-            _e = e.split('->')
+        else:
+            parts = e.split('_')
 
-            # geometry path recursion
-            if '/' in _e[0]:
-                _path = _e[0].split('/')
-                for i, _p in enumerate(_path):
-                    _p = self.update_branch_id(_p, branch_ids0, branch_ids, all_ids, path=True)
-                    if _p:
-                        _path[i] = _p
-                _e[0] = '/'.join(_path)
-                return mode.join(_e)
-
-            _name = _e[0].split('_')
-            _ids = []
-            for _n in _name[::-1]:
-                if _n not in all_ids:
+            current_ids = []
+            for i, part in enumerate(parts):
+                if part in all_ids:
+                    current_ids = parts[i:]
                     break
-                _ids.append(_n)
-            if not _ids:
-                return
-            _ids.reverse()
-            _keys = '_'.join(_name[-len(_ids):])
-            _name = '_'.join(_name[:-len(_ids)])
-            _sep = '_'
 
-        # geometry path element update
-        elif path:
-            mode = ''
-            _e = [e]
+            if not current_ids:
+                return e
 
-            _name = _e[0].split('_')
-            _ids = []
-            for _n in _name[::-1]:
-                if _n not in all_ids:
-                    break
-                _ids.append(_n)
-            if not _ids:
-                return
-            _ids.reverse()
-            _keys = '_'.join(_name[-len(_ids):])
-            _name = '_'.join(_name[:-len(_ids)])
-            _sep = '_'
+            name_parts = parts[:-len(current_ids)]
 
-        pfx = None
-        sfx = None
-        for i, fid0 in enumerate(_branch_ids0):
-            if len(fid0) <= len(_ids) and _ids[:len(fid0)] == fid0:
-                pfx = i
-            if len(fid0) == len(_ids) and _ids[-len(fid0):] == fid0:
-                sfx = i
+        # key match
+        match_idx = -1
+        for i in range(min(len(current_ids), len(branch_ids0)), 0, -1):
+            if current_ids[:i] == branch_ids0[:i]:
+                match_idx = i
+                break
 
-        if pfx is not None:
-            branch_ids0_pfx = _sep.join(_branch_ids0[pfx])
-            branch_ids_pfx = _sep.join(_branch_ids[pfx])
-            _e[0] = _name + _sep + branch_ids_pfx + _keys[len(branch_ids0_pfx):]
-            return mode.join(_e)
+        # rebuild
+        if match_idx != -1:
+            new_ids = branch_ids[:match_idx] + current_ids[match_idx:]
 
-        if sfx is not None:
-            branch_ids0_sfx = _sep + _sep.join(_branch_ids0[sfx])
-            branch_ids_sfx = _sep + _sep.join(_branch_ids[sfx])
-            _e[0] = _e[0][:-len(branch_ids0_sfx)] + branch_ids_sfx
-            return mode.join(_e)
+            if id_tag:
+                id_name = base_name + '.' + '.'.join(new_ids)
+                return id_name + '::' + id_tag
+            else:
+                base_name = '_'.join(name_parts)
+                return base_name + '_' + '_'.join(new_ids) if base_name else '_'.join(new_ids)
+
+        return e
 
     def get_branches(self):
         """Get all branch combinations with their root nodes.
