@@ -987,3 +987,7 @@ class SkiaTextureBuild(object):
         plug = self.root.get_dynamic_plug(self.prefix + 'aa')
         if kl.is_plug(plug):
             self.node.antialiasing_in.connect(plug)
+
+        plug = self.root.get_dynamic_plug(self.prefix + 'swm')
+        if kl.is_plug(plug):
+            self.node.stroke_width_mult_in.connect(plug)
