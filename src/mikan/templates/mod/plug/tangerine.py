@@ -126,6 +126,7 @@ class Mod(mk.Mod):
             min_value = data.get('min')
             max_value = data.get('max')
             nice_name = data.get('nice_name')
+
             proxy = data.get('proxy')
             if proxy is not None and not kl.is_plug(proxy):
                 self.log_error('invalid proxy for {} ({})'.format(plug_name, proxy))
@@ -149,6 +150,9 @@ class Mod(mk.Mod):
                     self.log_error('invalid plug type ("{}")'.format(plug_type))
                     continue
                 plug_type = plug_types[plug_type]
+
+                if proxy is not None:
+                    plug_type = type(proxy.get_value())
 
                 enum = data.get('enum')
                 if isinstance(enum, dict):
