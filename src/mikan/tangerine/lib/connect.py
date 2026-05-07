@@ -1437,9 +1437,9 @@ class ExpressionParser(_ExpressionParser):
         d = kl.Distance(self.container, '_len')
         for i, v in enumerate((v1, v2)):
             if self.is_matrix_plug(v):
-                M44_to_t = kl.TransformToSRTNode(self.container, '_M44ToTranslate#')
-                M44_to_t.transform.connect(v)
-                v = M44_to_t.translate
+                node = kl.TransformToSRTNode(self.container, '_srt_out#')
+                node.transform.connect(v)
+                v = node.translate
 
             self.connect_vector(v, d.get_plug(f'input{i + 1}'))
 
@@ -1859,7 +1859,26 @@ class ExpressionParser(_ExpressionParser):
                     return node.r
 
         # transform
-        # TODO
+        if self.is_matrix(v):
+            if i not in 'xyzp':
+                raise ValueError('invalid component: it must be x, y, z or p')
+
+            if i == 'x':
+                return self.multiply(v, [1, 0, 0])
+            if i == 'y':
+                return self.multiply(v, [0, 1, 0])
+            if i == 'z':
+                return self.multiply(v, [0, 0, 1])
+
+            if i == 'p':
+                node = kl.TransformToSRTNode(self.container, '_srt_out#')
+
+                if kl.is_plug(v):
+                    node.transform.connect(v)
+                else:
+                    node.transform.set_value(v)
+
+                return node.translate
 
         # euler
         # TODO

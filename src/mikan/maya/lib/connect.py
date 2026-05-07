@@ -2502,7 +2502,28 @@ class ExpressionParser(_ExpressionParser):
                     return v[3]
 
         # transform
-        # TODO
+        if self.is_matrix(v):
+            if i not in 'xyzp':
+                raise ValueError('invalid component: it must be x, y, z or p')
+
+            if i == 'x':
+                return self.multiply(v, [1, 0, 0])
+            if i == 'y':
+                return self.multiply(v, [0, 1, 0])
+            if i == 'z':
+                return self.multiply(v, [0, 0, 1])
+
+            if i == 'p':
+                with mx.DGModifier() as md:
+                    node = md.create_node(mx.tDecomposeMatrix, name='_dmx#')
+
+                with mx.DGModifier() as md:
+                    if isinstance(v, mx.Plug):
+                        md.connect(v, node['imat'])
+                    else:
+                        node['imat'] = v
+
+                    return node['outputTranslate']
 
         # euler
         # TODO
