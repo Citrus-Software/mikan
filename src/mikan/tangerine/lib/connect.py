@@ -1454,8 +1454,7 @@ class ExpressionParser(_ExpressionParser):
 
         # connect
         dot = self.dot(self.norm(v1), self.norm(v2))
-        acos = self.acos(dot)
-        return connect_mult(acos, 180 / math.pi)
+        return self.acos(dot)
 
     def slerp(self, a, b, t, shortest=True, check=True):
 
