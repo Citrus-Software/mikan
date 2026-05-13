@@ -122,7 +122,8 @@ class Template(mk.Template):
         c_wheel_base.add_attr(mx.Double('oldY'))
         c_wheel_base.add_attr(mx.Double('oldZ'))
 
-        c_wheel_base.add_attr(mx.Long('start_frame', keyable=True, default=1))
+        start_frame = self.get_opt('start_frame')
+        c_wheel_base.add_attr(mx.Long('start_frame', keyable=True, default=start_frame))
         c_wheel_base.add_attr(mx.Double('friction', default=1, min=0, max=1))
         c_wheel_base.add_attr(mx.Double('drift_friction', keyable=True, min=0, max=1))
 

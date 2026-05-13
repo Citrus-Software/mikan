@@ -22,6 +22,10 @@ opts:
     help: Reference node ID used for calculating rotation in space.
     value: ""
 
+  start_frame:
+    value: 1
+    help: Starting frame for automatic wheel rotation calculation.
+
 shapes:
   ctrls.bank:
     shape: arrow_flat

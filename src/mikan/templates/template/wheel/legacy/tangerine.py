@@ -153,7 +153,8 @@ class Template(mk.Template):
         add_plug(c_wheel_base, 'oldY', float)
         add_plug(c_wheel_base, 'oldZ', float)
 
-        add_plug(c_wheel_base, 'start_frame', int, k=1, default_value=1)
+        start_frame = self.get_opt('start_frame')
+        add_plug(c_wheel_base, 'start_frame', int, k=1, default_value=start_frame)
         _pf = add_plug(c_wheel_base, 'friction', float, k=0, default_value=1, min_value=0, max_value=1)
         add_plug(c_wheel_base, 'drift_friction', float, k=1, default_value=0, min_value=0, max_value=1)
         add_plug(c_wheel_base, 'noise', float, k=1, min_value=0, max_value=1)
