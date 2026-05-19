@@ -1,5 +1,6 @@
 # encoding: utf-8
 
+import os
 import re
 import logging
 import traceback
@@ -11,6 +12,7 @@ from mikan.core.utils import re_is_int, ordered_load
 from mikan.core.abstract.monitor import BuildMonitor
 from mikan.core.logger import create_logger, timed_code, get_version
 import mikan.core.abstract.asset as abstract
+from mikan.core.prefs import Prefs
 
 from ..lib.cleanup import *
 from ..lib.commands import *
@@ -275,6 +277,47 @@ class Asset(abstract.Asset):
         if self.scheduler is not None:
             return self.scheduler.current_yaml
 
+    def run_custom_patch(self, name):
+        prefs = Prefs()
+        patch = 'build/tangerine/' + name
+        paths = prefs.get(patch)
+        if paths is None:
+            return
+
+        if not isinstance(paths, (list, tuple)):
+            paths = [paths]
+
+        for path in paths:
+            # validate path
+            if not os.path.isfile(path) or not path.endswith('.py'):
+                log.warning('invalid patch path ({}): {}'.format(patch, path))
+                continue
+
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    patch_source = f.read()
+
+                # compile for tracebacks (debug)
+                compiled_patch = compile(patch_source, path, 'exec')
+
+                patch_context = {
+                    "__builtins__": __builtins__,
+                    "__file__": path,
+                    "__name__": "__main__",
+                    "self": self,
+                    "SkipPatch": SkipPatch
+                }
+                exec(compiled_patch, patch_context)
+
+                log.info('patch: "{}" successfully applied ({})'.format(patch, path))
+
+            except SkipPatch as e:
+                log.info('patch: "{}" skipped intentionally: {} ({})'.format(patch, e, path))
+
+            except Exception as e:
+                log.error('patch: "{}" failed to execute ({})'.format(patch, path))
+                log.exception(e)
+
     def make(self, modes=None, pipeline=False):
         monitor = BuildMonitor()
         self.monitor = monitor
@@ -300,6 +343,9 @@ class Asset(abstract.Asset):
             log.info(f'make: build "{asset_id}"')
         if 'debug' in modes:
             log.setLevel(10)
+
+        # patch
+        self.run_custom_patch('init')
 
         # processor
         with timed_code('make'):
@@ -369,6 +415,8 @@ class Asset(abstract.Asset):
             for template in self.get_top_templates():
                 template.delete_template_branches()
             self.cleanup(modes=modes)
+
+            self.run_custom_patch('cleanup')
 
             # exit
             self.set_version()
@@ -795,3 +843,10 @@ class Helper(object):
         if not self.node.get_dynamic_plug('gem_enable_modes'):
             add_plug(self.node, 'gem_enable_modes', str, default_value='')
         self.node.gem_enable_modes.set_value(modes)
+
+
+class SkipPatch(Exception):
+    """Exception raised within a patch script to gracefully interrupt its execution
+    without blocking the remaining pipeline or build process.
+    """
+    pass

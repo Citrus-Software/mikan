@@ -1,5 +1,6 @@
 # encoding: utf-8
 
+import os
 import re
 import fnmatch
 import logging
@@ -18,6 +19,7 @@ from mikan.core.ascii import ascii_title
 from mikan.core.abstract.monitor import BuildMonitor
 from mikan.core.utils import re_is_int, flatten_list, ordered_load, unique
 from mikan.core.logger import create_logger, timed_code, get_version
+from mikan.core.prefs import Prefs
 
 from .node import Nodes, parse_node
 from .control import Group, get_bind_pose
@@ -520,6 +522,47 @@ class Asset(abstract.Asset):
                 break
             templates = delayed
 
+    def run_custom_patch(self, name):
+        prefs = Prefs()
+        patch = 'build/maya/' + name
+        paths = prefs.get(patch)
+        if paths is None:
+            return
+
+        if not isinstance(paths, (list, tuple)):
+            paths = [paths]
+
+        for path in paths:
+            # validate path
+            if not os.path.isfile(path) or not path.endswith('.py'):
+                log.warning('invalid patch path ({}): {}'.format(patch, path))
+                continue
+
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    patch_source = f.read()
+
+                # compile for tracebacks (debug)
+                compiled_patch = compile(patch_source, path, 'exec')
+
+                patch_context = {
+                    "__builtins__": __builtins__,
+                    "__file__": path,
+                    "__name__": "__main__",
+                    "self": self,
+                    "SkipPatch": SkipPatch
+                }
+                exec(compiled_patch, patch_context)
+
+                log.info('patch: "{}" successfully applied ({})'.format(patch, path))
+
+            except SkipPatch as e:
+                log.info('patch: "{}" skipped intentionally: {} ({})'.format(patch, e, path))
+
+            except Exception as e:
+                log.error('patch: "{}" failed to execute ({})'.format(patch, path))
+                log.exception(e)
+
     @LogFilter()
     def make(self, modes=None, pipeline=False, roots=None, exclude=None):
         monitor = BuildMonitor()
@@ -558,6 +601,8 @@ class Asset(abstract.Asset):
 
         # custom build?
         monitor.set_step(monitor.STEP_INIT_TEMPLATE)
+
+        self.run_custom_patch('init')
 
         if roots is None or not isinstance(roots, list):
             template_roots = list(self.get_top_templates())
@@ -672,6 +717,8 @@ class Asset(abstract.Asset):
 
                 Nodes.cleanup()
                 mx.clear_instances()
+
+                self.run_custom_patch('cleanup')
 
             # exit
             self.set_version()
@@ -1359,3 +1406,10 @@ class Helper(object):
             node = self.node
             tpl = Template.get_from_node(node)
             tpl.toggle_shapes_visibility()
+
+
+class SkipPatch(Exception):
+    """Exception raised within a patch script to gracefully interrupt its execution
+    without blocking the remaining pipeline or build process.
+    """
+    pass
