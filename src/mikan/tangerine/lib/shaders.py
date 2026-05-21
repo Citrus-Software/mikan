@@ -166,6 +166,9 @@ def _apply_color(shader, color_data, rig_node):
         plug = color_data['plug']
         if isinstance(plug, str):
             plug = rig_node.get_dynamic_plug(color_data['plug'])
+            if plug is None:
+                plug = add_plug(rig_node, color_data['plug'], V3f)
+                plug.set_value(V3f(0.5, 0.5, 0.5))
 
         # switch colors
         if 'switch' in color_data:
