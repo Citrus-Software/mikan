@@ -602,6 +602,13 @@ def apply_transform(node, xfo, t=False, r=False, s=False, sh=False):
 
         if s:
             scale = [round(_s, 5) for _s in xfo.scale()]
+
+            # inverse scale ?
+            if node.is_a(mx.tJoint) and node['ssc'].read():
+                inv_s = node['is'].read()
+                for i in range(3):
+                    scale[i] *= inv_s[i]
+
             md.set_attr(node['s'], scale)
 
         if sh:
