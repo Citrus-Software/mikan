@@ -134,11 +134,6 @@ def apply_materials(node):
 def _create_shader_plug(name, data, rig_node, root_node):
     shader = kl.PlugToShader(root_node, name)
 
-    from pprint import pprint
-    print('--')
-    print(name)
-    pprint(data)
-
     if 'color' in data:
         _apply_color(shader, data['color'], rig_node)
 
