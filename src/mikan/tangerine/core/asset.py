@@ -292,6 +292,7 @@ class Asset(abstract.Asset):
             if not os.path.isfile(path) or not path.endswith('.py'):
                 log.warning('invalid patch path ({}): {}'.format(patch, path))
                 continue
+            patch_name = os.path.basename(path)
 
             try:
                 with open(path, 'r', encoding='utf-8') as f:
@@ -309,13 +310,13 @@ class Asset(abstract.Asset):
                 }
                 exec(compiled_patch, patch_context)
 
-                log.info('patch: "{}" successfully applied ({})'.format(patch, path))
+                log.info(f'patch: {patch}/{patch_name} successfully applied')
 
             except SkipPatch as e:
-                log.info('patch: "{}" skipped intentionally: {} ({})'.format(patch, e, path))
+                log.info(f'patch: {patch}/{patch_name} exited: {e}')
 
             except Exception as e:
-                log.error('patch: "{}" failed to execute ({})'.format(patch, path))
+                log.error(f'patch: {patch}/{patch_name} failed to execute')
                 log.exception(e)
 
     def make(self, modes=None, pipeline=False):

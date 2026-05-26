@@ -537,6 +537,7 @@ class Asset(abstract.Asset):
             if not os.path.isfile(path) or not path.endswith('.py'):
                 log.warning('invalid patch path ({}): {}'.format(patch, path))
                 continue
+            patch_name = os.path.basename(path)
 
             try:
                 with open(path, 'r', encoding='utf-8') as f:
@@ -554,13 +555,13 @@ class Asset(abstract.Asset):
                 }
                 exec(compiled_patch, patch_context)
 
-                log.info('patch: "{}" successfully applied ({})'.format(patch, path))
+                log.info('patch: {}/{} successfully applied'.format(patch, patch_name))
 
             except SkipPatch as e:
-                log.info('patch: "{}" skipped intentionally: {} ({})'.format(patch, e, path))
+                log.info('patch: {}/{} exited: {}'.format(patch, patch_name, e))
 
             except Exception as e:
-                log.error('patch: "{}" failed to execute ({})'.format(patch, path))
+                log.error('patch: {}/{} failed to execute'.format(patch, patch_name))
                 log.exception(e)
 
     @LogFilter()
