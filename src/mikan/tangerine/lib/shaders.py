@@ -134,6 +134,11 @@ def apply_materials(node):
 def _create_shader_plug(name, data, rig_node, root_node):
     shader = kl.PlugToShader(root_node, name)
 
+    from pprint import pprint
+    print('--')
+    print(name)
+    pprint(data)
+
     if 'color' in data:
         _apply_color(shader, data['color'], rig_node)
 
@@ -163,15 +168,15 @@ def _apply_color(shader, color_data, rig_node):
     # switch
     elif isinstance(color_data, dict) and 'plug' in color_data:
 
-        plug = color_data['plug']
-        if isinstance(plug, str):
-            plug = rig_node.get_dynamic_plug(color_data['plug'])
-            if plug is None:
-                plug = add_plug(rig_node, color_data['plug'], V3f)
-                plug.set_value(V3f(0.5, 0.5, 0.5))
-
         # switch colors
         if 'switch' in color_data:
+
+            plug = color_data['plug']
+            if isinstance(plug, str):
+                plug = rig_node.get_dynamic_plug(color_data['plug'])
+                if plug is None:
+                    plug = add_plug(rig_node, color_data['plug'], int)
+
             switch_node = _build_switch_node(
                 rig_node,
                 color_data,
@@ -187,6 +192,13 @@ def _apply_color(shader, color_data, rig_node):
 
         # color plug
         else:
+            plug = color_data['plug']
+            if isinstance(plug, str):
+                plug = rig_node.get_dynamic_plug(color_data['plug'])
+                if plug is None:
+                    plug = add_plug(rig_node, color_data['plug'], V3f)
+                    plug.set_value(V3f(0.5, 0.5, 0.5))
+
             _col = kl.FloatToColor4f(shader, '_color_in')
             _v = kl.V3fToFloat(_col, '_rgb')
             _v.vector.connect(plug)
