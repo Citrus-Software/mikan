@@ -177,6 +177,7 @@ class Deformer(JobMonitor):
         self.data.update(data.get('data', {}))
 
         # conf
+        self.priority = data.get('priority', 0)
         self.decimals = data.get('decimals', self.default_decimals)
         self.protected = data.get('protected', False)
 
@@ -489,6 +490,7 @@ class Deformer(JobMonitor):
             self.build()
             self.set_id()
             self.set_protected()
+            self.set_priority()
             self.post_build()
 
             if not self.logs and not self.unresolved:
@@ -628,6 +630,15 @@ class Deformer(JobMonitor):
 
     def set_protected(self):
         """Mark this deformer as protected from modification.
+
+        Must be implemented by software-specific subclasses.
+
+        Note:
+            This is a placeholder. Override in subclasses.
+        """
+
+    def set_priority(self):
+        """Store priority information for this deformer on its node.
 
         Must be implemented by software-specific subclasses.
 

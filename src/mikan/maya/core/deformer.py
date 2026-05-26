@@ -218,10 +218,8 @@ class Deformer(abstract.Deformer):
 
         data += self.encode_deformer_data()
 
-        try:
+        if self.priority != 0:
             data = '#!{}\n{}'.format(self.priority, data)
-        except:
-            pass
 
         return data
 
@@ -383,6 +381,7 @@ class Deformer(abstract.Deformer):
             >>> dfm.read_deformer()
             >>> print(len(dfm.data['maps']))
         """
+        self.read_priority()
         self.read_membership()
         self.read()
 
@@ -1139,6 +1138,21 @@ class Deformer(abstract.Deformer):
             except:
                 self.node[attr] = protected
 
+    def set_priority(self):
+        """Store the deformer's priority value from build time.
+
+        It has no effect on the rig but is used to regenerate the template data.
+        """
+        if self.priority == 0:
+            return
+
+        if self.node and 'gem_priority' not in self.node:
+            with mx.DGModifier() as md:
+                md.add_attr(self.node, mx.Long('gem_priority'))
+
+        with mx.DGModifier() as md:
+            md.set_attr(self.node['gem_priority'], self.priority)
+
     def find_root(self):
         """Resolve the root node reference.
 
@@ -1458,6 +1472,15 @@ class Deformer(abstract.Deformer):
         return str(node)
 
     # deformer internal data -------------------------------------------------------------------------------------------
+
+    def read_priority(self):
+        if self.node is None:
+            return 0
+
+        if 'gem_priority' not in self.node:
+            return 0
+
+        self.priority = self.node['gem_priority'].read()
 
     @staticmethod
     def get_deformer_members(dfm, geo):

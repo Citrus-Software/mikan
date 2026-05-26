@@ -942,6 +942,9 @@ class Scheduler(object):
                             raise SchedulerError()
 
                 elif cls is Deformer:
+                    if job['priority'] != 0:
+                        data['priority'] = job['priority']
+
                     dfm = Deformer(**data)
                     if 'transform' not in data:
                         continue
