@@ -247,8 +247,6 @@ class Deformer(mk.Deformer):
         infid = self.node['matrix'].array_indices
 
         for i, bpm in iteritems(self.data.get('bind_pose_root', {})):
-            bpm = self.get_node(bpm)
-
             # remap index
             try:
                 _inf = self.get_node(self.data['infs'][i])
@@ -279,8 +277,6 @@ class Deformer(mk.Deformer):
             mmx['ihi'] = False
 
         for i, bpm in iteritems(self.data.get('bind_pose', {})):
-            bpm = self.get_node(bpm)
-
             # remap index
             try:
                 _inf = self.get_node(self.data['infs'][i])

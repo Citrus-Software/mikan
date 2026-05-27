@@ -26,10 +26,8 @@ data:
     parser: off
   bind_pose:
     value: { }
-    parser: off
   bind_pose_root:
     value: { }
-    parser: off
   maps:
     value: { }
 

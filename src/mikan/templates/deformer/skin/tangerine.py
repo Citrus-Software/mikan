@@ -81,13 +81,13 @@ class Deformer(mk.Deformer):
             bpid = nbp
 
             if 'bind_pose' in self.data and i in self.data['bind_pose']:
-                bpm = self.get_node(self.data['bind_pose'][i])
+                bpm = self.data['bind_pose'][i]
 
                 bp_plug.resize(nbp + 1)
                 bp_plug[nbp].connect(bpm.world_transform)
 
             elif 'bind_pose_root' in self.data and i in self.data['bind_pose_root']:
-                bpm_root = self.get_node(self.data['bind_pose_root'][i])
+                bpm_root = self.data['bind_pose_root'][i]
                 offset = kl.SceneGraphNode(bpm_root, 'bpm_' + joints[i].get_name())
                 offset.set_world_transform(joints[i].world_transform.get_value())
 
