@@ -1,2 +1,2 @@
-desc: build visual helper
+desc: Creates a curve by connecting nodes' transforms to curve CVs.
 help: https://citrus-software.github.io/mikan-docs/references/mod/curve

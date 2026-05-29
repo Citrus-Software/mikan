@@ -1,2 +1,2 @@
-desc: connect plugs
+desc: Establishes a connection between two plugs, optionally applying basic math operations.
 help: https://citrus-software.github.io/mikan-docs/references/mod/connect

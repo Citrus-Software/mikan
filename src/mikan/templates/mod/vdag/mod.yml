@@ -1,2 +1,2 @@
-desc: build virtual dag
+desc: Modifies the Virtual DAG (Directed Acyclic Graph) relationships between nodes in the rig.
 help: https://citrus-software.github.io/mikan-docs/references/mod/vdag

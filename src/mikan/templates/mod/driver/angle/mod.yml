@@ -1,2 +1,2 @@
-desc: angle probe driver
+desc: Calculates the angle difference between a rig's current pose and a defined target orientation to dynamically drive rig attributes.
 help: https://citrus-software.github.io/mikan-docs/references/mod/driver/angle

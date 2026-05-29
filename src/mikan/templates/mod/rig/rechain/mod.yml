@@ -1,4 +1,4 @@
-desc: rechain FK hack
+desc: Builds a virtual Forward Kinematics (FK) hierarchy over disconnected or constrained nodes.
 help: https://citrus-software.github.io/mikan-docs/references/mod/rig/rechain
 
 data:

@@ -1,2 +1,2 @@
-desc: bank controller along curve
+desc: Adds an automatic edge-banking (rocking) effect by dynamically shifting a node's rotation pivot along a custom profile curve.
 help: https://citrus-software.github.io/mikan-docs/references/mod/rig/bank

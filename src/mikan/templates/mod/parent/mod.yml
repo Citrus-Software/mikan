@@ -1,2 +1,2 @@
-desc: simple parent command
+desc: Reparents one or more nodes in the scene hierarchy.
 help: https://citrus-software.github.io/mikan-docs/references/mod/parent

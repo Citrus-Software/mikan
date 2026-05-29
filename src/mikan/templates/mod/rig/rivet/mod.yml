@@ -1,2 +1,2 @@
-desc: point on surface constraint
+desc: Constrains a node to a specific point on the surface of a mesh.
 help: https://citrus-software.github.io/mikan-docs/references/mod/rig/rivet

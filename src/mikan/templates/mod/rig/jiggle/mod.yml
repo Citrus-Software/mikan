@@ -1,2 +1,2 @@
-desc: convert default.joints/bones to dynamic
+desc: Adds spring dynamics to a joint chain.
 help: https://citrus-software.github.io/mikan-docs/references/mod/rig/jiggle

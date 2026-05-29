@@ -1,4 +1,4 @@
-desc: muscle hook
+desc: Builds a procedural muscle rig that automatically stretches, squashes, and shears between target points.
 help: https://citrus-software.github.io/mikan-docs/references/mod/rig/muscle
 
 data:

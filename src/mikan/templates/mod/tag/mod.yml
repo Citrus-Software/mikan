@@ -1,2 +1,2 @@
-desc: tag manip
+desc: Adds or removes internal ID tags (gem_id) from one or more existing nodes.
 help: https://citrus-software.github.io/mikan-docs/references/mod/tag

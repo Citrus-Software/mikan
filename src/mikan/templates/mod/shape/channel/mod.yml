@@ -1,2 +1,2 @@
-desc: channel sert à brancher et combiner ensemble une série de plugs sur un controller
+desc: Aggregates and routes multiple plugs through an intermediate buffer node to a main controller.
 help: https://citrus-software.github.io/mikan-docs/references/mod/shape/channel

@@ -1,2 +1,2 @@
-desc: create scene graph node
+desc: Duplicates one or more nodes to create new helper transforms matching their initial positions.
 help: https://citrus-software.github.io/mikan-docs/references/mod/locator

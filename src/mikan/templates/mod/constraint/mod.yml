@@ -1,4 +1,4 @@
-desc: all purpose constraint
+desc: Creates a constraint between a target and a constrained node.
 help: https://citrus-software.github.io/mikan-docs/references/mod/constraint
 
 data:

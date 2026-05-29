@@ -1,4 +1,4 @@
-desc: create/connect transform hook
+desc: Constrains one or more nodes to one or more target nodes using matrix connections.
 help: https://citrus-software.github.io/mikan-docs/references/mod/hook
 
 data:

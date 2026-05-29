@@ -1,2 +1,2 @@
-desc: controller space switch
+desc: Creates a constraint switch system on a controller's parent (or a specified root node).
 help: https://citrus-software.github.io/mikan-docs/references/mod/space
