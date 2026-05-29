@@ -73,3 +73,6 @@ class Deformer(mk.Deformer):
             return dfm['offset']
         elif hook == 'target_offset':
             return dfm['targetInflation']
+
+        elif hook == 'subdivision':
+            return dfm['targetSmoothLevel']

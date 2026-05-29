@@ -47,28 +47,23 @@ class Deformer(mk.Deformer):
         self.node.closest_if_no_intersection_in.set_value(self.data['closest_if_no_intersection'])
         self.node.offset_in.set_value(self.data['offset'] + self.data['target_offset'])
 
-        # target
+        # connect target
         target_output = self.get_deformer_output(target_shp, target_xfo)
-
-        if level == 0:
-            self.node.target_mesh_in.connect(target_output)
+        for o in target_output.get_outputs():
+            o = o.get_node()
+            if isinstance(o, kl.SubdivMesh):
+                if o.level.get_value() == level:
+                    subd = o
+                    break
         else:
-            # find subd
-            for o in target_output.get_outputs():
-                o = o.get_node()
-                if isinstance(o, kl.SubdivMesh):
-                    if o.level.get_value() == level:
-                        subd = o
-                        break
-            else:
-                subd = kl.SubdivMesh(target_xfo, 'subdiv')
-                subd.level.set_value(level)
-                subd.animated_mesh_in.connect(target_output)
+            subd = kl.SubdivMesh(target_xfo, 'subdiv')
+            subd.level.set_value(level)
+            subd.animated_mesh_in.connect(target_output)
 
-                reader_output = Deformer.get_deformer_output(ids['source'], target_xfo)
-                subd.static_mesh_in.connect(reader_output)
+            reader_output = Deformer.get_deformer_output(ids['source'], target_xfo)
+            subd.static_mesh_in.connect(reader_output)
 
-            self.node.target_mesh_in.connect(subd.mesh_out)
+        self.node.target_mesh_in.connect(subd.mesh_out)
 
         self.node.target_world_transform_in.connect(target_xfo.world_transform)
 
@@ -121,5 +116,14 @@ class Deformer(mk.Deformer):
         if hook == 'enable' or hook == 'envelope':
             return dfm.enable_in
 
-        if hook == 'offset':
+        elif hook == 'offset':
             return dfm.offset_in
+
+        elif hook == 'subdivision':
+            mesh_in = dfm.target_mesh_in.get_input()
+            if mesh_in is None:
+                raise ConnectionError('subdivision not found')
+            mesh = mesh_in.get_node()
+            if not isinstance(mesh, kl.SubdivMesh):
+                raise ConnectionError('subdivision not found')
+            return mesh.level
