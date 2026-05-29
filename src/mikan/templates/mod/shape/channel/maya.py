@@ -15,6 +15,11 @@ log = create_logger()
 
 
 class Mod(mk.Mod):
+    plug_types = {
+        mx.Boolean: 'bool',
+        mx.Long: 'int',
+        mx.Enum: 'enum',
+    }
 
     def run(self):
 
@@ -33,7 +38,7 @@ class Mod(mk.Mod):
             raise mk.ModArgumentError('no source defined')
 
         # get valid channel plugs
-        plug_names = []
+        plug_names = ordered_dict()
 
         for node in src_nodes:
             plugs = mc.listAttr(str(node), ud=1) or []
@@ -43,10 +48,24 @@ class Mod(mk.Mod):
                     continue
                 if not plug.output():
                     continue
-                if plug_name in plug_names:
-                    continue
 
-                plug_names.append(plug_name)
+                if plug_name not in plug_names:
+                    plug_names[plug_name] = {}
+
+                plug_type = self.plug_types.get(plug.type_class())
+                if plug_type:
+                    plug_names[plug_name]['type'] = plug_type
+
+                    if plug_type == 'enum':
+                        enum = []
+                        fn = om.MFnEnumAttribute(plug.attribute())
+                        for v in range(fn.getMin(), fn.getMax() + 1):
+                            try:
+                                name = fn.fieldName(v)
+                                enum.append((v, name))
+                            except:
+                                pass
+                        plug_names[plug_name]['enum'] = enum
 
         # check controller
         ctrl = self.data.get('target')
@@ -91,54 +110,40 @@ class Mod(mk.Mod):
 
             # get plug build data
             plug_default = shp_data.get('default', shp_data.get('dv'))
+
             plug_type = 'float'
             if isinstance(plug_default, bool):
                 plug_type = 'bool'
+            enum = None
+
+            if shp_name in plug_names:
+                plug_type = plug_names[shp_name].get('type', plug_type)
+                enum = plug_names[shp_name].get('enum')
             plug_type = shp_data.get('type', plug_type)
-            enum = shp_data.get('enum')
+            enum = shp_data.get('enum', enum)
 
             if plug_type == 'separator' or shp_data.get('sep') or shp_name.startswith('__'):
                 self.add_plug(ctrl, shp_name, type='separator')
                 continue
 
-            # update ctrl plug build data
-            _data = shp_data.get('driven', {})
-            if not isinstance(_data, dict):
+            # check data
+            _driven = shp_data.get('driven', {})
+            if not isinstance(_driven, dict):
                 self.log_warning('invalid data for driven shapes of "{}"'.format(shp_name))
-                shp_data['driven'] = _data = {}
-
-            shp_divs = self.get_divs(shp_data)
-
-            for shp_driven in _data:
-                for div in shp_divs:
-                    shp_driven_div = shp_driven + div
-                    plug = None
-                    if shp_driven_div in plug_names:
-                        for src in src_nodes:
-                            if shp_driven_div in src:
-                                plug = src[shp_driven_div]
-                                break
-                    if plug is None:
-                        continue
-                    _plug_type = plug.type_class()
-                    if _plug_type is mx.Boolean:
-                        plug_type = 'bool'
-                    elif _plug_type is mx.Long:
-                        plug_type = 'int'
-                    elif _plug_type is mx.Enum:
-                        plug_type = 'enum'
-                        enum = []
-                        fn = om.MFnEnumAttribute(plug.attribute())
-                        for v in range(fn.getMin(), fn.getMax() + 1):
-                            try:
-                                name = fn.fieldName(v)
-                                enum.append((v, name))
-                            except:
-                                pass
+                shp_data['driven'] = {}
 
             # add channels div loop
+            shp_divs = self.get_divs(shp_data)
+
             for div in shp_divs:
                 shp_name_div = shp_name + div
+
+                # update plug data
+                if shp_name_div in plug_names:
+                    plug_type = plug_names[shp_name_div].get('type', plug_type)
+                    enum = plug_names[shp_name].get('enum')
+                plug_type = shp_data.get('type', plug_type)
+                enum = shp_data.get('enum', enum)
 
                 # forced plugs
                 if shp_data.get('force'):
@@ -150,7 +155,7 @@ class Mod(mk.Mod):
                         continue
 
                     # add channel
-                    plug_chan = self.add_plug(channel, shp_name_div)
+                    plug_chan = self.add_plug(channel, shp_name_div, type=plug_type, default=plug_default, enum=enum)
                     plug_ctrl = self.add_plug(ctrl, shp_name_div, type=plug_type, default=plug_default, enum=enum)
                     connect_blend_weighted(plug_ctrl, plug_chan)
 
@@ -164,7 +169,7 @@ class Mod(mk.Mod):
                             continue
 
                         # add channel
-                        plug_chan = self.add_plug(channel, shp_name_div)
+                        plug_chan = self.add_plug(channel, shp_name_div, type=plug_type, default=plug_default, enum=enum)
                         plug_ctrl = self.add_plug(ctrl, shp_name_div, type=plug_type, default=plug_default, enum=enum)
                         connect_blend_weighted(plug_ctrl, plug_chan)
 
