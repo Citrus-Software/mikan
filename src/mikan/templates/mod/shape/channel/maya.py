@@ -141,7 +141,7 @@ class Mod(mk.Mod):
                 # update plug data
                 if shp_name_div in plug_names:
                     plug_type = plug_names[shp_name_div].get('type', plug_type)
-                    enum = plug_names[shp_name].get('enum')
+                    enum = plug_names[shp_name_div].get('enum')
                 plug_type = shp_data.get('type', plug_type)
                 enum = shp_data.get('enum', enum)
 
