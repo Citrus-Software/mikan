@@ -722,6 +722,7 @@ class TangerineMaterialData(object):
 
         depth += 1
         input_node = plug.input()
+        input_plug = plug.input(plug=True)
 
         # flat value
         if not input_node:
@@ -758,6 +759,9 @@ class TangerineMaterialData(object):
         elif nt == 'transform':
             input_plug = plug.input(plug=True)
             return {'plug': input_plug.name()}
+
+        elif nt == 'condition':
+            return self._get_condition_data(input_plug, depth=depth)
 
         # fallback
         input_plug = plug.input(plug=True)
@@ -854,27 +858,42 @@ class TangerineMaterialData(object):
 
             color = self.resolve_plug(layer_input['color'], depth=depth)
             alpha = self.resolve_plug(layer_input['alpha'], depth=depth)
+            visible = self.resolve_plug(layer_input['isVisible'], depth=depth)
+
+            # blend colors hack
             if isinstance(alpha, dict) and 'blends' in alpha:
                 alpha = alpha['blends'][0]
+            if isinstance(visible, dict) and 'blends' in visible:
+                visible = visible['blends'][0]
 
+            # recursivity check
             if 'layers' in color:
                 log.warning('invalid layer entry at {} ({})'.format(i, node))
                 continue
 
+            # layer data
+            data['blends'][i] = 1.0
+
             if 'file' in color or 'skia' in color:
+                # file layer
                 data['layers'][i] = color
-                data['blends'][i] = 1.0
+
                 if not isinstance(alpha, dict) or 'file' not in alpha and 'skia' not in alpha:
                     data['blends'][i] = alpha
+
             else:
+                # color layer
                 data['layers'][i] = {'color': color, 'alpha': 1.0}
-                data['blends'][i] = 1.0
-                if not isinstance(alpha, dict) or 'plug' in alpha:
+
+                if not isinstance(alpha, dict) or 'plug' in alpha or 'op' in alpha:
                     data['blends'][i] = alpha
 
                 if isinstance(alpha, dict) and 'file' in alpha:
                     log.warning('invalid alpha entry at index {} of {}: {}'.format(i, node, alpha))
                     remove_ids.append(i)
+
+            if isinstance(visible, dict) and ('op' in visible or 'plug' in visible):
+                data['blends'][i] = visible
 
             if alpha == 0:
                 remove_ids.append(i)
@@ -899,6 +918,41 @@ class TangerineMaterialData(object):
         data['blends'][0] = self.resolve_plug(node['blender'], depth=depth)
 
         # TODO: compiler les blend récursif sur un unique layer
+        return data
+
+    def _get_condition_data(self, plug, depth=0):
+        node = plug.node()
+        plug_name = plug.name()
+
+        cpt = plug_name[-1]
+        if cpt not in 'RGB':
+            cpt = ''
+
+        a = node['firstTerm'].input()
+        b = node['secondTerm'].input()
+
+        if isinstance(a, mx.Node) and a.is_a(mx.tTransform):
+            a = node['firstTerm'].input(plug=True)
+            a = a.name()
+        else:
+            a = node['firstTerm'].read()
+
+        if isinstance(b, mx.Node) and b.is_a(mx.tTransform):
+            b = node['secondTerm'].input(plug=True)
+            b = b.name()
+        else:
+            b = node['secondTerm'].read()
+
+        op = node['operation'].read()
+        op = {0: '==', 1: '!=', 2: '>', 3: '>=', 4: '<', 5: '<='}[op]
+
+        data = {
+            'op': 'v = a {} b ? v_true : v_false'.format(op),
+            'a': a,
+            'b': b,
+            'v_true': node['colorIfTrue' + cpt].read(),
+            'v_false': node['colorIfFalse' + cpt].read(),
+        }
         return data
 
     def _resolve_choice_node(self, node, depth=0):
