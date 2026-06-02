@@ -20,9 +20,8 @@ from mikan.core.utils import re_is_int
 from mikan.core.logger import create_logger
 from mikan.core.utils.yamlutils import ordered_load
 from mikan.tangerine.lib.commands import ls, add_plug, find_root
-from mikan.tangerine.lib.connect import connect_sub, safe_connect
+from mikan.tangerine.lib.connect import connect_sub, safe_connect, connect_expr
 from mikan.tangerine.lib.configparser import ConfigParser
-from mikan.tangerine.core import Deformer
 
 log = create_logger()
 
@@ -72,11 +71,28 @@ def apply_materials(node):
                 shader_plug = _create_shader_plug(layer_name, layer_content, node, root)
 
                 blend_val = shader_data['blends'].get(str(i), 1.0)
-                if isinstance(blend_val, dict) and 'plug' in blend_val:
-                    blend_plug = node.get_dynamic_plug(blend_val['plug'])
-                    if blend_plug is None:
-                        blend_plug = add_plug(node, blend_val['plug'], float, min_value=0, max_value=1)
-                    blend_val = blend_plug
+                if isinstance(blend_val, dict):
+                    if 'plug' in blend_val:
+                        blend_plug = node.get_dynamic_plug(blend_val['plug'])
+                        if blend_plug is None:
+                            blend_plug = add_plug(node, blend_val['plug'], float, min_value=0, max_value=1)
+                        blend_val = blend_plug
+
+                    elif 'op' in blend_val:
+                        op = blend_val.pop('op')
+
+                        if ' = ' in op:
+                            op = op.split(' = ')[-1]
+                            op = op.strip()
+
+                        for k in blend_val:
+                            if isinstance(blend_val[k], str):
+                                _plug = node.get_dynamic_plug(blend_val[k])
+                                if _plug is None:
+                                    _plug = add_plug(node, blend_val[k], float, min_value=0, max_value=1)
+                                blend_val[k] = _plug
+
+                        blend_val = connect_expr(op, **blend_val)
 
                 layer_plugs.append((shader_plug, blend_val))
 

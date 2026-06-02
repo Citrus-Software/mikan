@@ -947,7 +947,7 @@ class TangerineMaterialData(object):
         op = {0: '==', 1: '!=', 2: '>', 3: '>=', 4: '<', 5: '<='}[op]
 
         data = {
-            'op': 'v = a {} b ? v_true : v_false'.format(op),
+            'op': 'a {} b ? v_true : v_false'.format(op),
             'a': a,
             'b': b,
             'v_true': node['colorIfTrue' + cpt].read(),
