@@ -450,6 +450,8 @@ class Deformer(mk.Deformer):
         if alias is not None:
             Deformer.set_target_alias(bs, index, alias)
 
+        return index
+
     @staticmethod
     def set_target_alias(bs, index, alias):
         alias = str(alias)
