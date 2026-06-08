@@ -71,8 +71,8 @@ class MikanUI(MayaDockMixin):
 
         self.tabs.addTab(self.tab_templates, 'Templates')
         self.tabs.addTab(self.tab_deformers, 'Deformers')
-        self.tabs.addTab(self.tab_posing, 'Posing')
-        self.tabs.addTab(self.tab_shapes, 'Shapes')
+        self.tabs.addTab(self.tab_posing, 'Shapes')
+        self.tabs.addTab(self.tab_shapes, 'Controllers')
 
         # restore selected tab
         self.tabs.setCurrentIndex(self.get_optvar('selected_main_tab', 0))
