@@ -1219,8 +1219,8 @@ class ShapeAttributeEditor(QTreeWidget):
 
                 # check targets
                 skip = False
-                for t in blend['w'].array_indices:
-                    _alias = mc.aliasAttr(blend['w'][t].path(), q=1)
+                for t in blend['weight'].array_indices:
+                    _alias = mc.aliasAttr(blend['weight'][t].path(), q=1)
                     if _alias == pose_name:
                         log.warning('target of {} already exists for {}'.format(geo, pose_name))
                         skip = True
@@ -1234,15 +1234,15 @@ class ShapeAttributeEditor(QTreeWidget):
                 t = cls.add_target(blend, weight=0, alias=pose_name)
 
                 # group
-                cls.group_target(blend['w'][t], group_name)
+                cls.group_target(blend['weight'][t], group_name)
 
                 # create default driven key
                 if pose_name in self.manager.driver:
                     driver = self.manager.driver[pose_name]
-                    connect_driven_curve(driver, blend['w'][t], {0: 0, 1: 1})
+                    connect_driven_curve(driver, blend['weight'][t], {0: 0, 1: 1})
 
                 # add attribute item
-                self.add_attribute(blend['w'][t], parent=item)
+                self.add_attribute(blend['weight'][t], parent=item)
 
                 self.scheduleDelayedItemsLayout()
 
@@ -1667,7 +1667,7 @@ class PhonemesManager(StackWidget):
 
             for t in bs['parentDirectory'].array_indices:
                 if bs['parentDirectory'][t].read() in _groups:
-                    plug = bs['w'][t]
+                    plug = bs['weight'][t]
 
                     # i = plug.input()
                     # if i is not None:
