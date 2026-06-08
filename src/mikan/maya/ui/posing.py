@@ -317,33 +317,54 @@ class PosingManager(QMainWindow, OptVarSettings):
                 if tpl:
                     grp_id = '{}::group'.format(tpl.name)
                     grp = Nodes.get_id(grp_id, asset=asset)
-                    break
+                    if grp:
+                        break
+                    else:
+                        grp = Nodes.get_id(grp_id)
+                        break
 
         if not grp:
             return
         if not isinstance(grp, Group):
             grp = Group(grp)
 
-        if self.group == grp:
-            return
+        # check validity
+        grp_name = grp.node['gem_group'].read()
+
+        # has pose nodes?
         poses = get_group_pose(grp)
-        if not poses:
-            log.warning('{} has no controller with pose nodes'.format(grp))
+
+        # blend groups?
+        blend_groups = False
+        cls = Deformer.get_class('blend')
+        for node in mx.ls(et='blendShape'):
+            gid = cls.get_blend_group(node, grp_name)
+            if gid != -1:
+                blend_groups = True
+                break
+
+        # fallback
+        if not poses and not blend_groups:
+            if not poses:
+                log.warning('{} has no controller with pose nodes'.format(grp))
+            if not blend_groups:
+                log.warning('{} has no blend groups'.format(grp))
+
+            # check parent group
             grp_parents = list(grp.get_parents())
             if grp_parents:
                 self.set_group(grp=grp_parents[0])
                 return
 
+        # register
         self.group = grp
-        grps = self.group.get_all_parents()
-        if len(grps) > 1:
-            self.group = grps[-2]
 
-        tag = '{}::group'.format(grp.node['gem_group'])
-        if tag:
-            self.set_optvar('group', tag)
+        # save pref
+        grp_id = '{}::group'.format(grp_name)
+        if grp_id:
+            self.set_optvar('group', grp_id)
 
-        self.group_field.setText(tag)
+        self.group_field.setText(grp_id)
         self.attach_group(nodes=poses)
 
         self.shapes.reload()
