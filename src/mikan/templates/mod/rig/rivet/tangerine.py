@@ -117,6 +117,8 @@ class Mod(mk.Mod):
         _cp.legacy.set_value(2)
         _cp.spline_mesh_in.connect(shp_output)
         _cp.geom_world_transform_in.connect(xfo.world_transform)
+        _cp.forward_vector_in.set_value(V3f(1, 0, 0))
+        _cp.up_vector_in.set_value(V3f(0, 1, 0))
 
         if 'raycast' in self.data:
             _t = self.data['raycast']
@@ -125,6 +127,11 @@ class Mod(mk.Mod):
             _cp.transform_in.connect(closest_node.world_transform)
 
         uv = _cp.coords_out.get_value()
+
+        if uv[1:3] == [0, 0]:
+            uv[2] = 1
+        if uv[3:] == [0, 0]:
+            uv[4] = 1
 
         if not uv:
             rvt.remove_from_parent()
@@ -141,7 +148,8 @@ class Mod(mk.Mod):
 
         uv_xfo.spline_mesh_in.connect(shp_output)
         uv_xfo.geom_world_transform_in.connect(xfo.world_transform)
-        uv_xfo.forward_vector_in.set_value(V3f(0, 1, 0))
+        uv_xfo.forward_vector_in.set_value(V3f(1, 0, 0))
+        uv_xfo.up_vector_in.set_value(V3f(0, 1, 0))
 
         _imx = kl.InverseM44f(rvt, '_imx')
         _imx.input.connect(rvt.parent_world_transform)
