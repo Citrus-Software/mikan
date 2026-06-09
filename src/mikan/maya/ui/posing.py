@@ -19,7 +19,7 @@ from mikan.maya import cmdx as mx
 from mikan.core.utils.yamlutils import ordered_load, ordered_dump
 from mikan.core.utils.typeutils import filter_str
 from mikan.core.logger import create_logger
-from mikan.maya.lib.connect import connect_driven_curve
+from mikan.maya.lib.connect import connect_driven_curve, find_anim_curve
 
 from mikan.vendor.Qt import QtWidgets, QtCore, QtGui
 from mikan.vendor.Qt.QtCore import Qt, QSize
@@ -914,6 +914,26 @@ class ShapeAttributeEditor(QTreeWidget):
             if plug_name in shapes_data:
                 for plug_bs in shapes_data[plug_name]:
                     self.add_attribute(plug_bs, parent=item)
+
+        # add missing blend target to driver
+        for plug_name in shapes_data:
+            if plug_name in plug_names:
+                continue
+
+            with mx.DGModifier() as md:
+                md.add_attr(driver, mx.Float(plug_name, keyable=True))
+
+            item = self.add_attribute(driver[plug_name])
+            for plug_bs in shapes_data[plug_name]:
+                self.add_attribute(plug_bs, parent=item)
+
+        # add missing driven key to driven blend target
+        for plug_name in shapes_data:
+            plug = driver[plug_name]
+            for plug_bs in shapes_data[plug_name]:
+                cvs = find_anim_curve(plug)
+                if not cvs and plug_name in driver:  # link auto
+                    connect_driven_curve(plug, plug_bs, {0.0: 0.0, 1.0: 1.0})
 
     def add_attribute(self, plug, parent=None):
         item = ShapeAttributeItem(plug)
