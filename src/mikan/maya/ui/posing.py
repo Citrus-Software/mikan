@@ -522,19 +522,15 @@ class PosingManager(QMainWindow, OptVarSettings):
 
     def attach_group(self, nodes=None):
         if self.group:
-
-            if nodes is None:
-                nodes = get_group_pose(self.group)
-            if not nodes:
-                return
-
-            node = nodes[0].object()
+            node = self.group.node.object()
             om.MNodeMessage.addNodeAboutToDeleteCallback(node, self.on_delete_group)
 
     def on_delete_group(self, node, mod, cli):
         try:
             self.group = None
             self.group_field.setText('')
+
+            self.shapes.clear()
         except:
             pass
 
@@ -898,10 +894,7 @@ class ShapeAttributeEditor(QTreeWidget):
     def reload(self):
 
         self.clear_items()
-        if not self.manager:
-            return
-
-        if not self.manager.group:
+        if not self.manager or not self.manager.group or not self.manager.driver:
             return
 
         driver = self.manager.driver
@@ -936,11 +929,7 @@ class ShapeAttributeEditor(QTreeWidget):
 
     def get_shape_plugs(self):
         data = {}
-
-        if not self.manager:
-            return data
-        group = self.manager.group
-        if group is None:
+        if not self.manager or not self.manager.group:
             return data
 
         group_name = self.manager.group.name
