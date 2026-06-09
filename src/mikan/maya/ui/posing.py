@@ -1299,6 +1299,11 @@ class ShapeAttributeEditor(QTreeWidget):
             if item.blend:
                 mc.sculptTarget(str(item.node), edit=True, target=item.target_index)
 
+            if item.plug.read() == 0:
+                parent_item = item.parent()
+                with mx.DGModifier() as md:
+                    md.set_attr(parent_item.plug, 1)
+
         for item in self.get_all_items():
             if not item.blend:
                 continue
