@@ -939,9 +939,11 @@ class ShapeAttributeEditor(QTreeWidget):
         item = ShapeAttributeItem(plug)
 
         if parent is None:
+            item.setExpanded(False)
             self.addTopLevelItem(item)
-            item.setExpanded(True)
         else:
+            expand = parent.childCount() <= 2
+            parent.setExpanded(expand)
             parent.addChild(item)
 
         self.setItemWidget(item, 1, item.editor)
