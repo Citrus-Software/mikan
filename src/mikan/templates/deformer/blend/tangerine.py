@@ -116,6 +116,8 @@ class Deformer(mk.Deformer):
 
             # weight plug
             plug_weight = self.node.get_dynamic_plug(f'_w{t}')
+            if plug_weight is None:
+                plug_weight = add_plug(self.node, f'_w{t}', float)
             if kl.is_plug(w_in):
                 plug_weight.connect(w_in)
 
@@ -291,36 +293,34 @@ class Deformer(mk.Deformer):
             return bs.enable_in
 
         elif hook.startswith('target.'):
+            hook = hook.split('.')[1]
 
-            hook = hook.split('.')
-
-            if re_is_int.match(hook[1]):
-                return bs.shapes_in[int(hook[1])]
+            if re_is_int.match(hook):
+                return bs.shapes_in[int(hook)]
             else:
                 pass
 
         elif hook.startswith('weight.'):
-            hook = hook.split('.')
+            hook = hook.split('.')[1]
 
-            if re_is_int.match(hook[1]):
-                return bs.get_dynamic_plug('_w{}'.format(int(hook[1])))
+            if re_is_int.match(hook):
+                return bs.get_dynamic_plug('_w{}'.format(int(hook)))
 
             else:
                 for t in range(bs._names.get_size()):
-                    name = bs._names[t].get_value()
-                    if hook[1] == name:
-                        return bs.get_dynamic_plug('_w{}'.format(t))
+                    if hook == bs._names[t].get_value():
+                        plug = bs.get_dynamic_plug('_w{}'.format(t))
+                        return plug
 
         elif hook.startswith('group.'):
-            hook = hook.split('.')
+            hook = hook.split('.')[1]
 
-            if re_is_int.match(hook[1]):
-                return bs.get_dynamic_plug('_g{}'.format(int(hook[1])))
+            if re_is_int.match(hook):
+                return bs.get_dynamic_plug('_g{}'.format(int(hook)))
 
             else:
                 for t in range(bs._group_names.get_size()):
-                    name = bs._group_names[t].get_value()
-                    if hook[1] == name:
+                    if hook == bs._group_names[t].get_value():
                         return bs.get_dynamic_plug('_g{}'.format(t))
 
     @staticmethod

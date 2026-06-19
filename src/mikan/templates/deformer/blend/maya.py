@@ -430,9 +430,11 @@ class Deformer(mk.Deformer):
         # add empty target
         with mx.DGModifier() as md:
             md.set_attr(bs['weight'][index], weight)
-        mel.eval('setAttr "{}" -type "pointArray" 0;'.format(bs['it'][0]['itg'][index]['iti'][item]['ipt'].path()))
-        mel.eval('setAttr "{}" -type "componentList";'.format(bs['it'][0]['itg'][index]['iti'][item]['ict'].path()))
-        # mc.blendShape(str(bs), edit=True, resetTargetDelta=(0, index))
+
+        if target is None:
+            mel.eval('setAttr "{}" -type "pointArray" 0;'.format(bs['it'][0]['itg'][index]['iti'][item]['ipt'].path()))
+            mel.eval('setAttr "{}" -type "componentList";'.format(bs['it'][0]['itg'][index]['iti'][item]['ict'].path()))
+            # mc.blendShape(str(bs), edit=True, resetTargetDelta=(0, index))
 
         # connect target
         if target is not None:
