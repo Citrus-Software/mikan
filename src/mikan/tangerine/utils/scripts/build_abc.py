@@ -42,6 +42,7 @@ with mk.Scene('doc', root_node=mk.find_root()) as root:
     # display
     if 'geo' in nodes:
         mk.apply_shaders(nodes['geo'])
+        mk.apply_materials(nodes['geo'])
 
     _nodes = mk.ls(as_dict=True, root=nodes.get('geo'))
     for name, node in _nodes.items():
