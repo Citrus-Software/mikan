@@ -436,7 +436,8 @@ class Deformer(mk.Deformer):
 
         # connect target
         if target is not None:
-            if not isinstance(target, (tuple, list)) and len(target) != 2:
+            is_valid_tuple = isinstance(target, (tuple, list)) and len(target) == 2
+            if not is_valid_tuple:
                 if not isinstance(target, mx.Node):
                     target = mx.encode(str(target))
                 _ids = Deformer.get_deformer_ids(target)
@@ -455,6 +456,14 @@ class Deformer(mk.Deformer):
     @staticmethod
     def set_target_alias(bs, index, alias):
         alias = str(alias)
+        attr_path = bs['weight'][index].path()
+
+        existing_alias = mc.aliasAttr(attr_path, query=True)
+        if existing_alias:
+            if existing_alias == alias:
+                return
+            mc.aliasAttr(str(bs) + '.' + existing_alias, remove=True)
+
         mc.aliasAttr(alias, bs['weight'][index].path())
 
     @staticmethod
