@@ -1477,7 +1477,7 @@ class Template(abstract.Template):
                 for i in ch_plug.array_indices:
                     ch = j['gem_dag_children'][i].input()
                     if ch in _joints and ch != j:
-                        mc.parent(str(ch), str(j))
+                        mc.parent(str(ch), str(j), r=1)
                         if ch.is_a(mx.tJoint):
                             ch['jo'] = (0, 0, 0)
 
