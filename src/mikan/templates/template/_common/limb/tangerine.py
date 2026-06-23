@@ -1580,10 +1580,12 @@ class Template(mk.Template):
                     div.input1.connect(db.output)
                     div.input2.set_value(db.output.get_value())
 
-                    mxs[_c][i - 1].find('j').y.connect(div.output)
-
                     add_plug(sks[_c][i - 1], 'stretch', float)
                     sks[_c][i - 1].stretch.connect(div.output)
+
+                    if tw == 'up' and i == 1:
+                        continue
+                    mxs[_c][i - 1].find('j').y.connect(div.output)
 
             if i <= nj:
                 for _c in range(nc):

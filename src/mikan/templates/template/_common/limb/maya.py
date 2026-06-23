@@ -1408,10 +1408,12 @@ class Template(mk.Template):
                     db['d'] >> div['i1x']
                     div['i2x'] = db['d']
 
-                    div['ox'] >> mxs[_c][i - 1]['in11']
-
                     sks[_c][i - 1].add_attr(mx.Double('stretch'))
                     div['ox'] >> sks[_c][i - 1]['stretch']
+
+                    if tw == 'up' and i == 1:
+                        continue
+                    div['ox'] >> mxs[_c][i - 1]['in11']
 
             if i <= nj:
                 for _c in range(nc):
