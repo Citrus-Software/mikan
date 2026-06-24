@@ -227,6 +227,7 @@ def _apply_file(shader, file_data, rig_node):
     if isinstance(file_data, str):
         if file_data[-3:] not in ('jpg', 'png'):
             file_data = convert_map_to_jpg(file_data)
+        file_data = fix_udim_path(file_data)
         shader.diffuse_path.set_value(file_data)
 
     # switch or sequence
@@ -325,6 +326,7 @@ def _build_switch_node(rig_node, data, mode='color'):
             if isinstance(val, str):
                 if val[-3:] not in ('jpg', 'png'):
                     val = convert_map_to_jpg(val)
+                val = fix_udim_path(val)
 
         switch_node.input[k].set_value(val)
 
@@ -577,6 +579,13 @@ def convert_map_to_jpg(path):
             pass
 
     return ''
+
+
+def fix_udim_path(path):
+    if not isinstance(path, str):
+        raise TypeError('file path is not a str')
+
+    return re.sub(r'\.1[0-9]{3}\.', '.<udim>.', path)
 
 
 def get_color_from_file(path):
