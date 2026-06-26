@@ -120,6 +120,9 @@ class Template(mk.Template):
 
                 if i == 0 and self.get_opt('parent_scale'):
                     n['root'].scale_compensate.set_value(False)
+                if i != 0:
+                    add_plug(n['root'], 'local_scale', bool, default_value=True)
+                    n['root'].scale_compensate.connect(n['root'].local_scale)
 
                 n['c'] = kl.SceneGraphNode(n['root'], 'c_' + n_chain + n_end)
                 for chain_id in chain:

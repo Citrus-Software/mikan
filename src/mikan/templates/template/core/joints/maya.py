@@ -137,6 +137,9 @@ class Template(mk.Template):
                 if i == 0 and self.get_opt('parent_scale'):
                     n['root']['ssc'] = False
                     n['root']['ssc'].lock()
+                if i != 0:
+                    n['root'].add_attr(mx.Boolean('local_scale', keyable=True, default=True))
+                    n['root']['local_scale'] >> n['root']['ssc']
 
                 n['c'] = mx.create_node(mx.tTransform, parent=n['root'], name='c_' + n_chain + n_end)
 
