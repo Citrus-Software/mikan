@@ -514,7 +514,11 @@ class Deformer(mk.Deformer):
                 points = [tuple(pt)[:3] for pt in raw_points.array()]
 
             ict = target['inputComponentsTarget']
-            raw_cpts = om.MFnComponentListData(ict._mplug.asMObject())
+            try:
+                raw_cpts = om.MFnComponentListData(ict._mplug.asMObject())
+            except RuntimeError:
+                # invalid delta, removed manually
+                continue
             cpts = []
 
             if dim == 1:
