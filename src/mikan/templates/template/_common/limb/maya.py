@@ -122,6 +122,8 @@ class Template(mk.Template):
 
             if plane == 'auto':
                 up_auto = 1
+
+                # conform hand axes to arm plane
                 p1 = tpl_limb1.translation(mx.sWorld)
                 p2 = tpl_limb2.translation(mx.sWorld)
                 p3 = tpl_limb3.translation(mx.sWorld)
@@ -130,16 +132,23 @@ class Template(mk.Template):
                 v1 = ((p2 - p1) ^ (p3 - p2)).normal()
                 v2 = ((pe - p3) ^ (pt - pe)).normal()
                 p = v1 * v2
-                if p > 0.707:
+
+                if abs(p) > 0.707:
                     _up = up_axis
-                elif p < -0.707:
-                    _up = up_axis
-                    if not _up.startswith('-'):
-                        _up = '-' + _up
-                    else:
-                        _up = _up.replace('-', '')
 
             orient_joint((n['c_e'], n['c_dg'], n['end_dg']), aim=aim_axis, up=_up, up_dir=up_dir, up_auto=up_auto)
+
+            # fix alignment
+            _dir = axis_to_vector(_up)
+            v1 = _dir * n['c_2']['wm'][0].as_matrix()
+            v2 = _dir * n['c_e']['wm'][0].as_matrix()
+            p = v1 * v2
+
+            if p < 0:
+                _up = '-' + _up if not _up.startswith('-') else _up.replace('-', '')
+
+                orient_joint((n['c_e'], n['c_dg'], n['end_dg']), aim=aim_axis, up=_up, up_dir=up_dir, up_auto=up_auto)
+
 
         # rig skeleton
         n['root_1'] = duplicate_joint(n['c_1'], p=hook, n='root_' + n_limb1 + n_end)
