@@ -5,6 +5,33 @@ All notable changes to this project will be documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.8] - 2026-07-02
+
+### Added
+
+- Added transform component support to `mod.expression`
+- Added custom patch execution
+
+### Changed
+
+- Improved modifier text UI
+- Included priority value in deformer data backups
+- Improved attribute type handling for controllers in `mod.shape.channel`
+- Improved blendshape connection management in Shapes UI
+
+### Fixed
+
+- Fixed `deformer.blend` regressions in Maya 2026
+- Fixed hand auto-orientation axis alignment in template module `arm.legacy`
+- Fixed regression crash when restoring wire deformer weight maps
+- Fixed `mod.plug` proxy attribute creation in Tangerine
+- Fixed copy transform behavior on joint hierarchies with inverse scale
+- Removed redundant radian conversion in `mod.expression` angle function (Tangerine)
+- Improved stability when editing template branches
+- Improved stability of UI callbacks
+- Fixed UDIM texture loading in Tangerine
+- Improved `rig.rivet` stability in Tangerine
+
 ## [1.0.7] - 2026-04-20
 
 ### Added
