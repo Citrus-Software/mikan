@@ -1065,6 +1065,8 @@ class ShapeAttributeEditor(QTreeWidget):
         if not ok:
             return
 
+        plug_name = cleanup_str(plug_name)
+
         if plug_name not in self.manager.driver:
             with mx.DGModifier() as md:
                 md.add_attr(self.manager.driver, mx.Double(plug_name, keyable=True))
