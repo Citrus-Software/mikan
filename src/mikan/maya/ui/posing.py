@@ -17,7 +17,7 @@ import maya.api.OpenMayaAnim as oma
 from mikan.maya import cmdx as mx
 
 from mikan.core.utils.yamlutils import ordered_load, ordered_dump
-from mikan.core.utils.typeutils import filter_str
+from mikan.core.utils.typeutils import filter_str, cleanup_str
 from mikan.core.logger import create_logger
 from mikan.maya.lib.connect import connect_driven_curve, find_anim_curve
 
@@ -305,7 +305,7 @@ class PosingManager(QMainWindow, OptVarSettings):
             if nodes:
                 self.set_driver(nodes[0])
 
-    def set_group(self, grp=None):
+    def set_group(self, grp=None, force=False):
         Nodes.check_nodes()
         self.group = None
         self.group_field.setText('')
@@ -344,7 +344,7 @@ class PosingManager(QMainWindow, OptVarSettings):
                 break
 
         # fallback
-        if not poses and not blend_groups:
+        if not force and not poses and not blend_groups:
             if not poses:
                 log.warning('{} has no controller with pose nodes'.format(grp))
             if not blend_groups:
@@ -370,7 +370,6 @@ class PosingManager(QMainWindow, OptVarSettings):
         self.shapes.reload()
 
     def context_menu_group(self):
-
         menu = QMenu(self)
 
         grps = []
@@ -386,7 +385,7 @@ class PosingManager(QMainWindow, OptVarSettings):
 
         for grp in grps:
             _act = menu.addAction(grp.get_name())
-            _act.triggered.connect(Callback(self.set_group, grp))
+            _act.triggered.connect(Callback(self.set_group, grp, force=True))
 
         menu.exec_(QtGui.QCursor.pos())
 
