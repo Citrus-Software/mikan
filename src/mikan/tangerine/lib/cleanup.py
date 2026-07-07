@@ -8,8 +8,12 @@ from ast import literal_eval
 
 from ..core.node import Nodes
 from ..lib.commands import *
+from ..lib.dynamic import (
+    set_plug_temporal_cache_override_value, unset_plug_temporal_cache_override_value,
+    get_plug_temporal_cache_override_value_if_any
+)
 
-from mikan.core.logger import log
+from mikan.core.logger import log, timed_code
 
 __all__ = ['cleanup_rig_ctrls', 'cleanup_rig_shapes', 'cleanup_linear_anim_curves']
 
@@ -55,9 +59,8 @@ def cleanup_rig_ctrls():
         else:
             log.error(f.get_full_name() + ' is already connected')
 
+    # check SRT rig
     for ctrl in ctrls:
-
-        # check SRT rig
         if ctrl.transform.is_connected():
             srt = ctrl.transform.get_input().get_node()
             while True:
@@ -121,7 +124,8 @@ def cleanup_rig_ctrls():
                     log.error(ctrl.get_name() + '.transform is not commonly rigged')
                 break
 
-        # check plugs
+    # check plugs
+    for ctrl in ctrls:
         for plug in ctrl.get_dynamic_plugs():
             _input = plug.get_input()
             if _input:
@@ -140,29 +144,8 @@ def cleanup_rig_ctrls():
                 if is_exportable(plug):
                     set_exportable(plug, False)
 
-        # move temporal_cache_override infos and tag to upper controller
-        from mikan.tangerine.lib.dynamic import set_plug_temporal_cache_override_value, \
-            unset_plug_temporal_cache_override_value, get_plug_temporal_cache_override_value_if_any
-        doc = get_document()
-        temporal_cache_override_nodes = [node for node in doc._tagger.nodes_from_tag("temporal_cache_override")]
-        for controller in temporal_cache_override_nodes:
-            for plug in controller.get_dynamic_plugs():
-                value = get_plug_temporal_cache_override_value_if_any(plug)
-                if value:
-                    if plug.is_connected():
-                        input_plug = plug.get_plug_input()  # recurse get_input calls
-                        if input_plug.is_eval():
-                            node = input_plug.get_node()
-                            input_plug = node.converted_input
-                            value = input_plug.get_type()(literal_eval(value))
-                            if input_plug.is_connected():
-                                input_plug = input_plug.get_plug_input()  # recurse get_input calls
-                        if is_exportable(input_plug) and \
-                                get_plug_temporal_cache_override_value_if_any(input_plug) is None:
-                            set_plug_temporal_cache_override_value(doc, input_plug, value)
-                        unset_plug_temporal_cache_override_value(doc, plug)
-
-        # inverse gizmo
+    # inverse gizmo
+    for ctrl in ctrls:
         w = ctrl.world_transform.get_value()
         p = ctrl.parent_world_transform.get_value()
 
@@ -185,29 +168,49 @@ def cleanup_rig_ctrls():
                 desc["axis_inv"] = "yes"
                 plug.set_all_user_infos(desc)
 
-        # SplineCurve optim to share topology among all spline meshes:
-        for iterator in doc.root().node_iterator():
-            node = iterator.node
-            if isinstance(node, kl.SplineCurve):
-                if node.legacy.get_stored_value() < 2:
-                    node.legacy.set_value(2)
-                    p = node.spline_in
-                    while True:
-                        s = p.get_stored_value()
-                        if s is not None:
-                            node.wrap_in.set_value(s.get_wrap())
-                            break
-                        if p.is_connected():
-                            p = p.get_plug_input()
-                            continue
-                        n = p.get_node()
-                        if isinstance(n, kl.Deformer):
-                            p = n.spline_in
-                            continue
-                        if isinstance(n, kl.SplineCurveReader):
-                            node.wrap_in.connect(n.wrap_out)
-                            break
-                        raise NotImplementedError
+    # move temporal_cache_override infos and tag to upper controller
+    doc = get_document()
+    temporal_cache_override_nodes = [node for node in doc._tagger.nodes_from_tag("temporal_cache_override")]
+    for controller in temporal_cache_override_nodes:
+        for plug in controller.get_dynamic_plugs():
+            value = get_plug_temporal_cache_override_value_if_any(plug)
+            if value:
+                if plug.is_connected():
+                    input_plug = plug.get_plug_input()  # recurse get_input calls
+                    if input_plug.is_eval():
+                        node = input_plug.get_node()
+                        input_plug = node.converted_input
+                        value = input_plug.get_type()(literal_eval(value))
+                        if input_plug.is_connected():
+                            input_plug = input_plug.get_plug_input()  # recurse get_input calls
+                    if is_exportable(input_plug) and \
+                            get_plug_temporal_cache_override_value_if_any(input_plug) is None:
+                        set_plug_temporal_cache_override_value(doc, input_plug, value)
+                    unset_plug_temporal_cache_override_value(doc, plug)
+
+    # SplineCurve optim to share topology among all spline meshes:
+    for iterator in doc.root().node_iterator():
+        node = iterator.node
+        if isinstance(node, kl.SplineCurve):
+            if node.legacy.get_stored_value() < 2:
+                node.legacy.set_value(2)
+                p = node.spline_in
+                while True:
+                    s = p.get_stored_value()
+                    if s is not None:
+                        node.wrap_in.set_value(s.get_wrap())
+                        break
+                    if p.is_connected():
+                        p = p.get_plug_input()
+                        continue
+                    n = p.get_node()
+                    if isinstance(n, kl.Deformer):
+                        p = n.spline_in
+                        continue
+                    if isinstance(n, kl.SplineCurveReader):
+                        node.wrap_in.connect(n.wrap_out)
+                        break
+                    raise NotImplementedError
 
 
 def get_linear_anim_curves(filter=None, check_infinity=True):
