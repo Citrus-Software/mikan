@@ -18,7 +18,7 @@ from mikan.maya import cmdx as mx
 
 from mikan.core.utils.yamlutils import ordered_load, ordered_dump
 from mikan.core.utils.typeutils import filter_str, cleanup_str
-from mikan.core.logger import create_logger
+from mikan.core.logger import create_logger, timed_code
 from mikan.maya.lib.connect import connect_driven_curve, find_anim_curve
 
 from mikan.vendor.Qt import QtWidgets, QtCore, QtGui
@@ -31,7 +31,7 @@ from mikan.vendor.Qt.QtWidgets import (
 from mikan.vendor.Qt.QtGui import QPalette, QColor, QBrush
 
 from mikan.core.ui.widgets import StackWidget, Icon, BusyCursor, get_palette_role
-from mikan.maya.ui.widgets import Callback, OptVarSettings, find_widget
+from mikan.maya.ui.widgets import Callback, OptVarSettings, get_qt_widget
 
 from ..core import Group, Control, Template, Mod, Nodes, Deformer
 from ..lib.pose import *
@@ -251,7 +251,7 @@ class PosingManager(QMainWindow, OptVarSettings):
             'QToolButton:pressed {padding-top: 1px; padding-left: 1px; padding-bottom: -1px}'
         )
         _tb.setAutoRaise(True)
-        _tb.clicked.connect(self.shapes.reload)
+        _tb.clicked.connect(self._on_reload_clicked)
         _row.addWidget(_tb)
 
         _row = self.stack.add_row(layout_right, height=20, spacing=2, margins=0)
@@ -367,7 +367,8 @@ class PosingManager(QMainWindow, OptVarSettings):
         self.group_field.setText(grp_id)
         self.attach_group(nodes=poses)
 
-        self.shapes.reload()
+        with BusyCursor():
+            self.shapes.reload()
 
     def context_menu_group(self):
         menu = QMenu(self)
@@ -417,9 +418,14 @@ class PosingManager(QMainWindow, OptVarSettings):
         self.driver = node
         self.attach_driver()
 
-        self.shapes.reload()
+        with BusyCursor():
+            self.shapes.reload()
 
         self.set_optvar('driver', tag)
+
+    def _on_reload_clicked(self):
+        with BusyCursor():
+            self.shapes.reload()
 
     def get_decimals(self):
         # return self.decimal_field.getValue()
@@ -1396,7 +1402,7 @@ class ShapeAttributeItem(QTreeWidgetItem):
             max_value = math.ceil(value)
 
         maya_widget = mc.attrFieldSliderGrp(at=plug.path(), precision=2, min=min_value, max=max_value, label='')
-        widget = find_widget(maya_widget.split('|')[-1])
+        widget = get_qt_widget(maya_widget)
 
         slider = widget.findChildren(QtWidgets.QSlider)[0]
         if self.blend:

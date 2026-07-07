@@ -20,6 +20,7 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin, MayaQDockWidget
 from mikan.core.logger import create_logger
 
 __all__ = [
+    'find_widget', 'get_qt_widget',
     'MayaWindow', 'MayaDockMixin', 'MayaDockWidget', 'OptVarSettings',
     'SafeUndoInfo', 'safe_undo_info',
     'Callback', 'UndoChunk', 'undo_chunk',
@@ -43,7 +44,14 @@ def get_maya_window():
     return QtCompat.wrapInstance(long(main_window_ptr), QMainWindow)
 
 
-def delete_QWidget(name):
+def get_qt_widget(maya_name):
+    ptr = MQtUtil.findControl(maya_name)
+    if ptr:
+        return QtCompat.wrapInstance(int(ptr), QtWidgets.QWidget)
+    return None
+
+
+def delete_qt_widget(name):
     maya_ui = MQtUtil.findControl(name)
     if maya_ui:
         ptr = QtCompat.wrapInstance(long(maya_ui), QWidget)
@@ -193,7 +201,7 @@ class OptVarSettings(object):
 class MayaWindow(QMainWindow, OptVarSettings, SafeWidget):
 
     def __init__(self, parent=None, **kw):
-        delete_QWidget(self.__class__.__name__)
+        delete_qt_widget(self.__class__.__name__)
 
         parent = parent or get_maya_window()
         QMainWindow.__init__(self, parent)
@@ -220,7 +228,7 @@ class MayaWindow(QMainWindow, OptVarSettings, SafeWidget):
 class MayaDialog(QDialog, OptVarSettings, SafeWidget):
 
     def __init__(self, parent=None, *args, **kw):
-        delete_QWidget(self.__class__.__name__)
+        delete_qt_widget(self.__class__.__name__)
 
         parent = parent or get_maya_window()
         QDialog.__init__(self, parent=parent, *args, **kw)
@@ -258,7 +266,7 @@ class MayaDockMixin(MayaQWidgetDockableMixin, QMainWindow, OptVarSettings):
     def delete_instances(self):
         # delete widget
         try:
-            delete_QWidget(self.__class__.__name__)
+            delete_qt_widget(self.__class__.__name__)
         except:
             pass
 
