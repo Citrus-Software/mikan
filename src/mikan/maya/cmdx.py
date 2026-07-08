@@ -206,6 +206,24 @@ def ls(*args, **kwargs):
     return [encode(x) for x in cmds.ls(*args, **kwargs)]
 
 
+def list_history(node, type=None):
+    dg_iter = om.MItDependencyGraph(
+        node.object(),
+        direction=om.MItDependencyGraph.kUpstream,
+        level=om.MItDependencyGraph.kNodeLevel
+    )
+
+    history_nodes = []
+
+    while not dg_iter.isDone():
+        node = Node(dg_iter.currentNode())
+        if type is None or node.is_a(type):
+            history_nodes.append(node)
+        dg_iter.next()
+
+    return history_nodes
+
+
 # Add a wider range of node type constants to improve API completeness.
 # This extends the available constants with additional Maya node types.
 
