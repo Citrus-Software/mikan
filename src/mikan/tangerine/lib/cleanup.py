@@ -8,10 +8,6 @@ from ast import literal_eval
 
 from ..core.node import Nodes
 from ..lib.commands import *
-from ..lib.dynamic import (
-    set_plug_temporal_cache_override_value, unset_plug_temporal_cache_override_value,
-    get_plug_temporal_cache_override_value_if_any
-)
 
 from mikan.core.logger import log, timed_code
 
@@ -169,6 +165,11 @@ def cleanup_rig_ctrls():
                 plug.set_all_user_infos(desc)
 
     # move temporal_cache_override infos and tag to upper controller
+    from ..lib.dynamic import (
+        set_plug_temporal_cache_override_value, unset_plug_temporal_cache_override_value,
+        get_plug_temporal_cache_override_value_if_any
+    )
+
     doc = get_document()
     temporal_cache_override_nodes = [node for node in doc._tagger.nodes_from_tag("temporal_cache_override")]
     for controller in temporal_cache_override_nodes:
