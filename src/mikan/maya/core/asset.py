@@ -155,9 +155,12 @@ class Asset(abstract.Asset):
                     if _asset_id != Nodes.current_asset:
                         continue
 
-                    if 'layer.' in node['gem_deformer'].read():
+                    _deformer = node['gem_deformer'].read()
+                    if 'layer.' in _deformer:
                         Deformer.toggle_layers(node.parent(), top=True)
-                    if 'data.' in node['gem_deformer'].read():
+                    if 'data.' in _deformer:
+                        continue
+                    if 'proxy.' in _deformer:
                         continue
                     _nodes.append(node)
 

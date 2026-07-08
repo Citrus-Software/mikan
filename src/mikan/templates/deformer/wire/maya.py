@@ -146,6 +146,7 @@ class Deformer(mk.Deformer):
             prx['io'] = True
             shp['worldSpace'][0] >> prx['create']
             prx['worldSpace'][0] >> self.node['baseWire'][0]
+            self.set_geometry_id(prx, 'proxy.basewire')
             break
 
         # intermediate check
