@@ -520,7 +520,7 @@ class PosingManager(QMainWindow, OptVarSettings):
             self.driver = None
             self.driver_field.setText('')
 
-            self.shapes.clear()
+            self.shapes.clear_items()
 
         except:
             pass
@@ -535,7 +535,7 @@ class PosingManager(QMainWindow, OptVarSettings):
             self.group = None
             self.group_field.setText('')
 
-            self.shapes.clear()
+            self.shapes.clear_items()
         except:
             pass
 
