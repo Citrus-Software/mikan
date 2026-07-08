@@ -937,6 +937,12 @@ class Deformer(abstract.Deformer):
                 if node.is_a(Deformer.shape_types):
                     if node['io'].read():
                         if list(node.outputs()):
+
+                            if 'shape' in ids:
+                                history_nodes = mx.list_history(node, type=Deformer.shape_types)
+                                if ids['shape'] in history_nodes:
+                                    continue
+
                             ids['source'] = node
                             break
 
