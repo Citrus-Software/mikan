@@ -206,10 +206,14 @@ def ls(*args, **kwargs):
     return [encode(x) for x in cmds.ls(*args, **kwargs)]
 
 
-def list_history(node, type=None):
+def list_history(node, type=None, future=False):
+    direction = om.MItDependencyGraph.kUpstream
+    if future:
+        direction = om.MItDependencyGraph.kDownstream
+
     dg_iter = om.MItDependencyGraph(
         node.object(),
-        direction=om.MItDependencyGraph.kUpstream,
+        direction=direction,
         level=om.MItDependencyGraph.kNodeLevel
     )
 
@@ -317,3 +321,4 @@ kConstraint = om.MFn.kConstraint
 kIkHandle = om.MFn.kIkHandle
 kGeometryFilter = om.MFn.kGeometryFilt
 kPolyModifier = om.MFn.kMidModifier
+kDeformableShape = om.MFn.kGeometric
