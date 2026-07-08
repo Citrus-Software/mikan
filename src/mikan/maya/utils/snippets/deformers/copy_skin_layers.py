@@ -13,7 +13,7 @@ sl = mx.ls(sl=True, et='transform')
 src = sl[0]
 dst = sl[1:]
 
-skin = mx.ls(mc.listHistory(str(src)), type='skinCluster')
+skin = mx.list_history(src, type=mx.tSkinCluster)
 if not skin:
     raise RuntimeError('no valid skin source')
 

@@ -1249,7 +1249,7 @@ class ShapeAttributeEditor(QTreeWidget):
             for geo in geometries:
 
                 # find blend
-                _blends = mx.ls(mc.listHistory(str(geo)), et='blendShape')
+                _blends = mx.list_history(geo, type=mx.tBlendShape)
                 if _blends:
                     blend = _blends[0]
                 else:

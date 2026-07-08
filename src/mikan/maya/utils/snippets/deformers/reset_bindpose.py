@@ -4,7 +4,7 @@ import maya.cmds as mc
 import mikan.maya.cmdx as mx
 
 for geo in mc.ls(sl=1, et='transform'):
-    for skin in mx.ls(mc.listHistory(geo), et='skinCluster'):
+    for skin in mx.list_history(geo, type=mx.tSkinCluster):
         infs = mc.skinCluster(str(skin), q=1, inf=1)
         shapes = mc.skinCluster(str(skin), q=1, g=1)
 
@@ -22,12 +22,11 @@ for geo in mc.ls(sl=1, et='transform'):
 
 def reset_bindpose():
     # old method
-    sel = mc.ls(sl=True)
-    history = mc.listHistory(sel)
-    skins = mc.ls(history, et='skinCluster')
-    skins = list(set(skins))
+    skins = set()
+    for node in mx.ls(sl=1):
+        skins.update(mx.list_history(node, type=mx.tSkinCluster))
 
-    for skin in skins:
+    for skin in list(skins):
         shapes = mc.skinCluster(skin, q=1, g=1)
         infs = mc.skinCluster(skin, q=1, inf=1)
         bp = mc.listConnections(infs, d=1, s=0, t='dagPose')

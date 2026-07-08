@@ -432,8 +432,8 @@ class Deformer(abstract.Deformer):
             if not deformer.is_a((mx.kGeometryFilter, mx.kPolyModifier)):
                 raise RuntimeError('"{0}" is not a valid deformer'.format(deformer))
 
-            history = mc.listHistory(str(shp)) or []
-            if str(deformer) not in history:
+            history = mx.list_history(shp)
+            if deformer not in history:
                 raise RuntimeError('"{0}" is not a deformer of "{1}"'.format(deformer, shp))
 
             data = {
@@ -537,9 +537,7 @@ class Deformer(abstract.Deformer):
                 break
 
         if shp:
-            history = mc.listHistory(str(shp)) or []
-            history = mc.ls(history, type=('geometryFilter', 'polyModifier'))[::-1]
-            history = [mx.encode(x) for x in history]
+            history = mx.list_history(shp, type=(mx.kGeometryFilter, mx.kPolyModifier))[::-1]
 
             for deformer in history:
 
@@ -554,8 +552,8 @@ class Deformer(abstract.Deformer):
                         continue
 
                 else:
-                    orig = mc.ls(mc.listHistory(str(deformer)), type='deformableShape')
-                    orig_geos = [mx.encode(_shp).parent() for _shp in orig]
+                    orig = mx.list_history(deformer, type=mx.kDeformableShape)
+                    orig_geos = [_shp.parent() for _shp in orig]
                     if geo not in orig_geos:
                         continue
 
@@ -1213,8 +1211,7 @@ class Deformer(abstract.Deformer):
                         self.geometry = shape
                         return shape
             elif self.node.is_a(mx.kPolyModifier):
-                for shape in mc.listHistory(str(self.node), future=True) or []:
-                    shape = mx.encode(shape)
+                for shape in mx.list_history(self.node, future=True):
                     if shape.is_a(Deformer.shape_types) and shape.parent() == self.transform:
                         self.geometry = shape
                         return shape
@@ -2130,8 +2127,7 @@ class Deformer(abstract.Deformer):
         # find top layer
         layer_shapes = layers.values()
         if ids['shape'] in layer_shapes:
-            shapes = mc.listHistory(str(ids['shape']), future=True) or []
-            shapes = mx.ls(shapes, type='deformableShape')
+            shapes = mx.list_history(ids['shape'], type=mx.kDeformableShape, future=True)
             for shape in shapes:
                 if shape in layer_shapes:
                     continue

@@ -21,7 +21,7 @@ def remove_unused_influence_layer():
                 if shp['io'].read():
                     continue
 
-                dfms = mx.ls(mc.listHistory(str(shp)), type='skinCluster')
+                dfms = mx.list_history(shp, type=mx.tSkinCluster)
                 if dfms:
                     skin = dfms[0]
 

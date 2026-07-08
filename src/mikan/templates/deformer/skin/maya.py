@@ -154,8 +154,7 @@ class Deformer(mk.Deformer):
             shunt_skin = None
 
             # check if a skinCluster is already deforming the current geometry
-            for skin_node in mc.ls(mc.listHistory(str(self.geometry)), et='skinCluster'):
-                skin_node = mx.encode(skin_node)
+            for skin_node in mx.list_history(self.geometry, type=mx.tSkinCluster):
                 fn = oma.MFnGeometryFilter(skin_node.object())
                 _shp = fn.getOutputGeometry()
                 if _shp:

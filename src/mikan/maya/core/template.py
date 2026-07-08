@@ -1320,8 +1320,7 @@ class Template(abstract.Template):
 
         drivers = []
         for input in inputs:
-            for driver in mc.ls(mc.listHistory(str(input)), type='transform'):
-                driver = mx.encode(driver)
+            for driver in mx.list_history(input, type=mx.kTransform):
                 if driver.is_a(mx.kConstraint):
                     continue
                 if driver not in drivers:

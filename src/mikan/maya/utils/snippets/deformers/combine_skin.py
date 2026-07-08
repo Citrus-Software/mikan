@@ -17,7 +17,7 @@ for node in sl:
     if not node.is_a(mx.kTransform):
         continue
     for shp in node.shapes(type=mx.tMesh):
-        skin = mx.ls(mc.listHistory(str(shp)), type='skinCluster')
+        skin = mx.list_history(shp, type=mx.tSkinCluster)
         if skin:
             meshes.append(node)
             break

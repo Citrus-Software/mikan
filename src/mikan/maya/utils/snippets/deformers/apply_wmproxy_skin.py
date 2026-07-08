@@ -35,8 +35,7 @@ with timed_code('apply wmproxy:'):
             _dfm = prx.convert(geo)
             log.info('wm proxy converted to {}'.format(_dfm))
 
-            nodes = mc.listHistory(str(geo)) or []
-            nodes = mx.ls(nodes, et='skinCluster')
+            nodes = mx.list_history(geo, type=mx.tSkinCluster)
             if nodes:
                 skin = nodes[0]
 
