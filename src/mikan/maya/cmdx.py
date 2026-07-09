@@ -207,23 +207,32 @@ def ls(*args, **kwargs):
 
 
 def list_history(node, type=None, future=False):
+    history_nodes = []
+    visited_nodes = set()
+
     direction = om.MItDependencyGraph.kUpstream
     if future:
         direction = om.MItDependencyGraph.kDownstream
 
-    dg_iter = om.MItDependencyGraph(
-        node.object(),
-        direction=direction,
-        level=om.MItDependencyGraph.kNodeLevel
-    )
+    nodes = [node]
+    if node.is_a(kTransform):
+        shapes = list(node.shapes())
+        nodes = shapes + nodes
 
-    history_nodes = []
+    for node in nodes:
+        dg_iter = om.MItDependencyGraph(
+            node.object(),
+            direction=direction,
+            level=om.MItDependencyGraph.kNodeLevel
+        )
 
-    while not dg_iter.isDone():
-        node = Node(dg_iter.currentNode())
-        if type is None or node.is_a(type):
-            history_nodes.append(node)
-        dg_iter.next()
+        while not dg_iter.isDone():
+            current = Node(dg_iter.currentNode())
+            if current not in visited_nodes:
+                visited_nodes.add(current)
+                if type is None or current.is_a(type):
+                    history_nodes.append(current)
+            dg_iter.next()
 
     return history_nodes
 
