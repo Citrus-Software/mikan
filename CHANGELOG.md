@@ -5,6 +5,22 @@ All notable changes to this project will be documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.9] - 2026-07-12
+
+### Added
+
+- Added `list_history` command to `cmdx` for cleaner history queries.
+
+### Changed
+
+- Optimized the Shapes Editor initialization and loading times for a faster UI experience.
+- Improved Tangerine build performance by removing redundant loop computations during the rig build process.
+
+### Fixed
+
+- Fixed a critical Maya crash occurring during rig cleanup in the Shapes Editor.
+- Ensured that the wire deformer is correctly and completely cleaned up upon rebuilding.
+
 ## [1.0.8] - 2026-07-02
 
 ### Added
