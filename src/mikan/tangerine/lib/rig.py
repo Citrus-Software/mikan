@@ -553,6 +553,8 @@ def merge_transform(node,
                     r0_in = _r0_in.transform
                 blend.transform1_in.connect(r0_in)
                 blend.transform2_in.connect(r_in)
+                blend.slerp_in.set_value(True)
+                blend.shortest_in.set_value(True)
                 _blend = add_plug(node, 'blend_rotate', float, min_value=0, max_value=1, default_value=1)
                 blend.blend_in.connect(_blend)
                 r_in = blend.transform_out
