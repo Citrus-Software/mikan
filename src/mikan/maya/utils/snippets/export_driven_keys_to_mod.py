@@ -57,7 +57,7 @@ for node in mx.ls(sl=True):
             elif num_keys == 1 and do_scale:
                 continue
 
-            keys = mk.get_anim_curve_data(anm)
+            keys = mk.get_anim_curve_data(anm, decimals=3)
 
             if do_scale:
                 for k in keys:

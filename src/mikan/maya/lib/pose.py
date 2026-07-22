@@ -561,7 +561,7 @@ def find_mod_node_by_data(mod_type, find_data):
         return node
 
 
-def get_anim_curve_data(anm, do_scale=0):
+def get_anim_curve_data(anm, do_scale=0, decimals=5):
     if not isinstance(anm, mx.Node):
         anm = mx.encode(str(anm))
     fn = oma.MFnAnimCurve(anm.object())
@@ -608,7 +608,7 @@ def get_anim_curve_data(anm, do_scale=0):
     for i, f in enumerate(fc):
         _a = dict()
         a[f] = _a
-        _a['v'] = round(vc[i] + do_scale, 5)
+        _a['v'] = round(vc[i] + do_scale, decimals)
 
         if itm[i] == otm[i]:
             if itm[i] not in ('spline', 'fixed'):
@@ -620,11 +620,11 @@ def get_anim_curve_data(anm, do_scale=0):
                 _a['otan'] = str(otm[i])
 
         if itm[i] == 'fixed':
-            _a['ix'] = round(ix[i] / 3, 6) * -1
-            _a['iy'] = round(iy[i] / 3, 6) * -1
+            _a['ix'] = round(ix[i] / 3, decimals) * -1
+            _a['iy'] = round(iy[i] / 3, decimals) * -1
         if otm[i] == 'fixed':
-            _a['ox'] = round(ox[i] / 3, 6)
-            _a['oy'] = round(oy[i] / 3, 6)
+            _a['ox'] = round(ox[i] / 3, decimals)
+            _a['oy'] = round(oy[i] / 3, decimals)
 
         if len(_a) == 1:
             a[f] = _a['v']
