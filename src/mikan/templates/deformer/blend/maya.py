@@ -9,7 +9,7 @@ from mikan.maya import cmds as mc
 import mikan.maya.cmdx as mx
 
 import mikan.maya.core as mk
-from mikan.core import re_is_int, create_logger
+from mikan.core import re_is_int, create_logger, timed_code
 from mikan.maya.core.deformer import WeightMap
 
 has_numpy = False
@@ -417,6 +417,11 @@ class Deformer(mk.Deformer):
 
     @staticmethod
     def add_target(bs, index=None, weight=0, target=None, alias=None, item=6000):
+
+        # clean UI
+        for p in mc.lsUI(panels=True) or []:
+            if mc.objectTypeUI(p) == 'TshapeEditor':
+                mc.shapeEditor(p, e=1, cs=1)
 
         # get next index
         if index is None:
