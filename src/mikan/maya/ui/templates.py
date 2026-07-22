@@ -1477,7 +1477,7 @@ class TemplateModEdit(QTextEdit):
         i = cursor.position()
 
         limits = []
-        for it in re.finditer(r'^[a-z]+:$', mods, flags=re.MULTILINE):
+        for it in re.finditer(r'^[a-z.]+:$', mods, flags=re.MULTILINE):
             limits.append(it.start())
         if not limits:
             return
