@@ -74,8 +74,8 @@ class PosingManager(QMainWindow, OptVarSettings):
         QMainWindow.__init__(self, parent)
         self.setWindowFlags(Qt.Widget)
 
-        self.group = None
         self.driver = None
+        self.group = None
 
         # build ui
         self.stack = StackWidget(parent=self)
@@ -86,6 +86,18 @@ class PosingManager(QMainWindow, OptVarSettings):
         # LEFT column
 
         # -- driver
+        _row = self.stack.add_row(layout_left, height=20, spacing=2, margins=0)
+
+        _b = QPushButton('Driver')
+        _b.clicked.connect(self.set_driver)
+        self.driver_field = QLineEdit()
+        self.driver_field.setStyleSheet(self.STYLE_LINEEDIT)
+        self.driver_field.setReadOnly(True)
+
+        _row.addWidget(_b, 2)
+        _row.addWidget(self.driver_field, 3)
+
+        # -- group
         _row = self.stack.add_row(layout_left, height=20, spacing=2, margins=0)
 
         _b = QPushButton('Group')
@@ -99,17 +111,7 @@ class PosingManager(QMainWindow, OptVarSettings):
         _row.addWidget(_b, 2)
         _row.addWidget(self.group_field, 3)
 
-        _row = self.stack.add_row(layout_left, height=20, spacing=2, margins=0)
-
-        _b = QPushButton('Driver')
-        _b.clicked.connect(self.set_driver)
-        self.driver_field = QLineEdit()
-        self.driver_field.setStyleSheet(self.STYLE_LINEEDIT)
-        self.driver_field.setReadOnly(True)
-
-        _row.addWidget(_b, 2)
-        _row.addWidget(self.driver_field, 3)
-
+        # -- modifiers
         _row = self.stack.add_row(layout_left, height=20, spacing=2, margins=0)
 
         _b = QPushButton('Save mods', icon=self.ICON_SAVE_MODS)
@@ -129,7 +131,6 @@ class PosingManager(QMainWindow, OptVarSettings):
         _row.addWidget(self.chk_clean, 3)
 
         # -- controllers
-
         _row = self.stack.add_row(layout_left, height=16, spacing=2, margins=0)
         _lbl = QLabel('Controllers')
         _lbl.setStyleSheet(self.STYLE_HEADER)
