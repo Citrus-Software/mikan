@@ -702,12 +702,11 @@ class TangerineMaterialData(object):
         # get alpha
         alpha = 1.0
 
-        if alpha_plug:
-            alpha_data = self.resolve_plug(alpha_plug, depth=depth)
-
-            if isinstance(alpha_data, dict) and 'choice' in alpha_data:
-                alpha = alpha_data
-
+        if alpha_plug is not None:
+            alpha_data = self.resolve_plug(alpha_plug, depth=depth, alpha=True)
+            if isinstance(alpha_data, dict):
+                if 'choice' in alpha_data or 'op' in alpha_data:
+                    alpha = alpha_data
             elif isinstance(alpha_data, (int, float)):
                 alpha = alpha_data
             elif isinstance(alpha_data, (list, tuple)):
@@ -716,7 +715,7 @@ class TangerineMaterialData(object):
         data['alpha'] = alpha
         return data
 
-    def resolve_plug(self, plug, depth=0):
+    def resolve_plug(self, plug, depth=0, alpha=False, bake=False):
         if not isinstance(plug, mx.Plug):
             return
 
@@ -734,40 +733,42 @@ class TangerineMaterialData(object):
         # upward connection
         nt = input_node.type_name
 
-        if nt in {'file', 'pxrTexture'}:
-            return self._get_file_data(input_node, depth=depth)
+        if not bake:
+            if nt in {'file', 'pxrTexture'} and not alpha:
+                return self._get_file_data(input_node, depth=depth)
 
-        elif nt == 'layeredTexture':
-            if depth <= 2:
-                return self._get_layered_data(input_node, depth=depth)
-            else:
-                log.warning('cannot resolve layered texture at depth {}'.format(depth))
+            elif nt == 'layeredTexture' and not alpha:
+                if depth <= 2:
+                    return self._get_layered_data(input_node, depth=depth)
+                else:
+                    log.warning('cannot resolve layered texture at depth {}'.format(depth))
 
-        elif nt == 'blendColors':
-            return self._get_blend_data(input_node, depth=depth)
+            elif nt == 'blendColors':
+                return self._get_blend_data(input_node, depth=depth, alpha=alpha)
 
-        elif nt == 'choice':
-            return self._resolve_choice_node(input_node, depth=depth)
+            elif nt == 'choice':
+                return self._resolve_choice_node(input_node, depth=depth)
 
-        elif nt == 'skiaTexture':
-            return self._get_skia_data(input_node)
+            elif nt == 'skiaTexture' and not alpha:
+                return self._get_skia_data(input_node)
 
-        elif nt == 'projection':
-            # TODO: projection
-            return {}
+            elif nt == 'projection' and not alpha:
+                # TODO: projection
+                return {}
 
-        elif nt == 'transform':
+            elif nt == 'condition':
+                return self._get_condition_data(input_plug, depth=depth)
+
+        if nt == 'transform':
             input_plug = plug.input(plug=True)
             return {'plug': input_plug.name()}
-
-        elif nt == 'condition':
-            return self._get_condition_data(input_plug, depth=depth)
 
         # fallback
         input_plug = plug.input(plug=True)
         value = input_plug.read()
         if isinstance(value, (list, tuple)) and len(value) == 3:
-            return round_list(linear_to_srgb(value), 3)
+            value = round_list(linear_to_srgb(value), 3)
+
         return value
 
     def _get_file_data(self, node, depth=0):
@@ -904,7 +905,24 @@ class TangerineMaterialData(object):
 
         return data
 
-    def _get_blend_data(self, node, depth=0):
+    def _get_blend_data(self, node, depth=0, alpha=False):
+
+        # alpha
+        if alpha:
+            data = {
+                'op': 'lerp(a, b, w)',
+                'w': node['blender'].read(),
+                'a': node['color2'].read(),
+                'b': node['color1'].read(),
+            }
+
+            w = self.resolve_plug(node['blender'], depth=depth, bake=True)
+            if isinstance(w, dict) and 'plug' in w:
+                data['w'] = w['plug']
+
+            return data
+
+        # color
         depth += 1
         data = {'layers': {}, 'blends': {}}
 

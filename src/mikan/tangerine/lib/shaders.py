@@ -271,11 +271,42 @@ def _apply_alpha(shader, alpha_data, rig_node):
     # flat value
     if isinstance(alpha_data, (float, int)):
         shader.opacity.set_value(float(alpha_data))
+    elif isinstance(alpha_data, (list, tuple)):
+        shader.opacity.set_value(1 - float(alpha_data[0]))
 
-    # switch
-    elif isinstance(alpha_data, dict) and 'plug' in alpha_data:
-        # TODO: kl.VectorFloatToFloat
-        pass
+    # rig
+    plug = None
+
+    if isinstance(alpha_data, dict):
+        if 'plug' in alpha_data:
+            plug = rig_node.get_dynamic_plug(alpha_data['plug'])
+            if plug is None:
+                plug = add_plug(rig_node, alpha_data['plug'], float, min_value=0, max_value=1)
+
+        elif 'op' in alpha_data:
+            print(alpha_data)
+            op = alpha_data.pop('op')
+
+            if ' = ' in op:
+                op = op.split(' = ')[-1]
+                op = op.strip()
+
+            for k in alpha_data:
+                if isinstance(alpha_data[k], str):
+                    _plug = rig_node.get_dynamic_plug(alpha_data[k])
+                    if _plug is None:
+                        _plug = add_plug(rig_node, alpha_data[k], float, min_value=0, max_value=1)
+                    alpha_data[k] = _plug
+
+            plug = connect_expr(op, **alpha_data)
+
+    # connect
+    if plug is not None:
+        plug_value = plug.get_value()
+        if isinstance(plug_value, (int, float, bool)):
+            safe_connect(plug, shader.opacity)
+        elif isinstance(plug_value, V3f):
+            connect_expr('o = 1 - v.x', o=shader.opacity, v=plug)
 
 
 def _apply_skia(shader, skia_root):
