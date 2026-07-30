@@ -528,11 +528,12 @@ class AssetMenu:
 
         # Bake Dynamics
         dynamic_controllers = dynamic.filter_dynamic_controllers(self.selection)
-        if dynamic_controllers:
-            _action = menu.addAction('Bake Dynamics')
-            _action.triggered.connect(partial(dynamic.bake_dynamic_controllers, dynamic_controllers, doc))
-
         baked_dynamic_controllers = dynamic.filter_baked_dynamic_controllers(self.selection)
+        not_baked_dynamic_controllers = [c for c in dynamic_controllers if c not in baked_dynamic_controllers]
+        if not_baked_dynamic_controllers:
+            _action = menu.addAction('Bake Dynamics')
+            _action.triggered.connect(partial(dynamic.bake_dynamic_controllers, not_baked_dynamic_controllers, doc))
+
         if baked_dynamic_controllers:
             _action = menu.addAction('Restore Dynamics')
             _action.triggered.connect(partial(dynamic.restore_dynamic_controllers, baked_dynamic_controllers, doc))
