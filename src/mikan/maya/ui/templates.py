@@ -2189,6 +2189,8 @@ class TemplateTreeWidget(QTreeWidget):
             do_parent = True
 
         elif isinstance(item, Template):
+            item.set_outliner_color()
+
             helper_nodes = []
             for node in item.get_template_nodes():
                 helper = Helper(node)

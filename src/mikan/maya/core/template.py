@@ -2367,3 +2367,35 @@ class Template(abstract.Template):
                     nodes = sorted(nodes, key=lambda node: len(node.path()))
                     for n in range(len(nodes) - 1):
                         set_virtual_parent(nodes[n + 1], nodes[n])
+
+    def set_outliner_color(self):
+        # template node: (0.378, 0.516, 0.608)
+        # shape container: (0.632, 0.549, 0.414)
+        current_asset = Nodes.current_asset
+        Nodes.current_asset = Nodes.get_asset_id(self.node)
+
+        # root
+        set_outliner_color(self.node, (0.33, 0.73, 1))
+
+        # template nodes
+        nodes = set()
+        for k in self.template_data.get('structure', {}):
+            for node in self.get_structure(k):
+                nodes.add(node)
+
+        for node in nodes:
+            if node == self.node:
+                continue
+            set_outliner_color(node, (0.38, 0.52, 0.61))
+
+        # shape containers
+        shapes_tree = Nodes.shapes[Nodes.current_asset]
+
+        nodes = shapes_tree.get('{}::*'.format(self.name), [], as_list=True)
+        for node in nodes:
+            if node == self.node:
+                continue
+            set_outliner_color(node, (0.63, 0.55, 0.41))
+
+        # exit
+        Nodes.current_asset = current_asset
