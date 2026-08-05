@@ -246,14 +246,6 @@ def _apply_file(shader, file_data, rig_node):
                 str_to_path.input.connect(switch_node.output)
                 shader.diffuse_path.connect(str_to_path.output)
 
-                plug = rig_node.get_dynamic_plug(plug_name)
-                if plug is None:
-                    plug = add_plug(rig_node, plug_name, int, keyable=True)
-
-                plug_value = plug.get_value()
-                if isinstance(plug_value, int):
-                    safe_connect(plug, switch_node.index)
-
         else:
             plug_value = None
 
@@ -330,7 +322,9 @@ def _build_switch_node(rig_node, data, mode='color'):
         return None
 
     max_index = max(keys)
-    switch_plug_name = data['plug']
+    switch_plug_name = None
+    if not isinstance(data['plug'], str):
+        switch_plug_name = f'switch_{data["plug"]}'
 
     if mode == 'color':
         node_type = kl.VectorColor4fToColor4f
@@ -341,7 +335,7 @@ def _build_switch_node(rig_node, data, mode='color'):
     else:
         raise RuntimeError()
 
-    switch_node = node_type(max_index + 1, rig_node, switch_plug_name)
+    switch_node = node_type(max_index + 1, rig_node, f'switch_{mode}')
 
     # fill values
     for k in keys:
@@ -362,11 +356,15 @@ def _build_switch_node(rig_node, data, mode='color'):
         switch_node.input[k].set_value(val)
 
     # connect index
-    rig_plug = rig_node.get_dynamic_plug(switch_plug_name)
-    if not rig_plug:
-        rig_plug = add_plug(rig_node, switch_plug_name, int, min_value=0, max_value=max_index)
+    if switch_plug_name:
+        rig_plug = rig_node.get_dynamic_plug(switch_plug_name)
+        if not rig_plug:
+            rig_plug = add_plug(rig_node, switch_plug_name, int, min_value=0, max_value=max_index)
 
-    safe_connect(rig_plug, switch_node.index)
+        safe_connect(rig_plug, switch_node.index)
+
+    if isinstance(data['plug'], int):
+        switch_node.index.set_value(data['plug'])
 
     return switch_node
 
