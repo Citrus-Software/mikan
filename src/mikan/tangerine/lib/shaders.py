@@ -4,6 +4,7 @@ import os
 import re
 import zlib
 import json
+import glob
 import base64
 import itertools
 import subprocess
@@ -58,6 +59,9 @@ def apply_materials(node):
 
     for mat_name, mat_data in materials_db.items():
         shader_data = mat_data.get('shader', {})
+
+        print(f'>> {mat_name}')
+        print(shader_data)
 
         # layered shader
         if 'layers' in shader_data:
@@ -225,9 +229,14 @@ def _apply_color(shader, color_data, rig_node):
 def _apply_file(shader, file_data, rig_node):
     # flat value
     if isinstance(file_data, str):
+        print(f'--- apply file: {file_data}')
+
         if file_data[-3:] not in ('jpg', 'png'):
             file_data = convert_map_to_jpg(file_data)
+            print(f' >convert? {file_data}')
+
         file_data = fix_udim_path(file_data)
+        print(f' >udim? {file_data}')
         shader.diffuse_path.set_value(file_data)
 
     # switch or sequence
@@ -579,6 +588,25 @@ def _create_plug_to_shader(shader_name, shader_data, node, root):
 
 
 def convert_map_to_jpg(path):
+    if re.search(r'\.<udim>\.', path, flags=re.IGNORECASE):
+        search_pattern = re.sub(r'\.<udim>\.', '.*.', path, flags=re.IGNORECASE)
+        matching_files = glob.glob(search_pattern)
+
+        if not matching_files:
+            return ''
+
+        converted_paths = []
+        for file_path in matching_files:
+            res = convert_map_to_jpg(file_path)
+            if res:
+                converted_paths.append(res)
+
+        if converted_paths:
+            base_jpg = re.sub(r'\.1[0-9]{3}\.jpg$', '.<udim>.jpg', converted_paths[0], flags=re.IGNORECASE)
+            return base_jpg
+
+        return ''
+
     if not os.path.isfile(path):
         return ''
 
