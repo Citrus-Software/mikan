@@ -852,6 +852,24 @@ class Icon(QIcon):
 
         self.addPixmap(self.pixmap, mode=QIcon.Normal, state=QIcon.On)
 
+        if 'inactive_color' in kw:
+            inactive_color = kw.get('inactive_color')
+
+            if isinstance(inactive_color, string_types):
+                inactive_color = QColor(inactive_color)
+            else:
+                inactive_color = QColor(*inactive_color)
+
+            inactive_image = QIcon(path).pixmap(QSize(width, width)).toImage()
+            painter = QPainter(inactive_image)
+            painter.setCompositionMode(get_composition_mode('SourceIn'))
+            painter.fillRect(self.pixmap.rect(), inactive_color)
+            painter.end()
+
+            inactive_pixmap = QPixmap.fromImage(inactive_image)
+
+            self.addPixmap(inactive_pixmap, mode=QIcon.Normal, state=QIcon.Off)
+
         if kw.get('toggle'):
             image = self.pixmap.toImage()
 

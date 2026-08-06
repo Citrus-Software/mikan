@@ -76,6 +76,8 @@ class TemplateManager(QMainWindow, OptVarSettings):
     COLOR_TPL_LOW = '#89A'
     COLOR_DFM_LOW = '#9A8'
     COLOR_TOOL_LOW = '#666'
+    COLOR_ASSET = '#fb5'
+    COLOR_TPL = '#5bf'
 
     ICON_RELOAD = Icon('reload', color=COLOR_ASSET_LOW, size=ICON_SIZE, tool=True)
     ICON_BUILD = Icon('rocket', color=COLOR_ASSET_LOW, size=ICON_SIZE, tool=True)
@@ -89,8 +91,8 @@ class TemplateManager(QMainWindow, OptVarSettings):
 
     ICON_UPDATE_DFG = Icon('write', color=COLOR_DFM_LOW, size=ICON_SIZE, tool=True)
 
-    ICON_ADD = Icon('cross', color=COLOR_TOOL_LOW, size=12)
-    ICON_EDIT = Icon('fix', color=COLOR_TOOL_LOW)
+    ICON_ADD = Icon('cross', color=COLOR_TPL, inactive_color=COLOR_TOOL_LOW, size=11)
+    ICON_EDIT = Icon('fix', color=COLOR_ASSET, inactive_color=COLOR_TOOL_LOW)
 
     BUILD_MODES = Prefs.get('pipeline/steps', ['anim', 'layout', 'render'])
 
@@ -1593,8 +1595,8 @@ class TemplateModEdit(QTextEdit):
 
 
 class TemplateAddWidget(TemplateOpts, OptVarSettings):
-    ICON_ADD_ASSET = Icon('cross', color='#fb5', tool=True)
-    ICON_ADD = Icon('cross', color='#5bf', tool=True)
+    ICON_ADD_ASSET = Icon('cross', color='#888', tool=True)
+    ICON_ADD = Icon('cross', color='#888', tool=True)
 
     def __init__(self, parent=None):
         TemplateOpts.__init__(self, parent)
@@ -1610,30 +1612,26 @@ class TemplateAddWidget(TemplateOpts, OptVarSettings):
             self.template_types[tpl].append(sub)
 
         # build ui
-        self.wd_add = QToolButton()
+
+        self.wd_add = QPushButton('Add Module')
         self.wd_add.setIcon(self.ICON_ADD)
-        self.wd_add.setAutoRaise(True)
-        lbl_add = QLabel('Add Module')
-        lbl_add.setStyleSheet('color:#789; font-size:12px; font-weight:bold')
+        self.wd_add.setStyleSheet('font-size:12px; font-weight:bold; min-height: 11px;')
+
         self.wd_name = QLineEdit()
 
-        self.wd_add_asset = QToolButton()
+        self.wd_add_asset = QPushButton('Add Asset')
         self.wd_add_asset.setIcon(self.ICON_ADD_ASSET)
-        self.wd_add_asset.setAutoRaise(True)
-        lbl_add_asset = QLabel('Add Asset')
-        lbl_add_asset.setStyleSheet('color:#987; font-size:12px; font-weight:bold')
+        self.wd_add_asset.setStyleSheet('font-size:12px; font-weight:bold; min-height: 11px;')
         self.txt_add_asset = QLineEdit()
 
         _col = self.add_columns(stretch=[2, 2])
         _row = self.add_row(_col[0])
-        _row.addWidget(self.wd_add)
-        _row.addWidget(lbl_add)
-        _row.addWidget(self.wd_name)
+        _row.addWidget(self.wd_add, 2)
+        _row.addWidget(self.wd_name, 3)
 
         _row = self.add_row(_col[1])
-        _row.addWidget(self.wd_add_asset)
-        _row.addWidget(lbl_add_asset)
-        _row.addWidget(self.txt_add_asset)
+        _row.addWidget(self.wd_add_asset, 2)
+        _row.addWidget(self.txt_add_asset, 3)
 
         self.layout_asset = _row.parent()
         if Asset.get_assets():
@@ -1974,8 +1972,8 @@ class TemplateTreeWidget(QTreeWidget):
 
     FONT_SIZE = 11
     TREE_STYLE = 'QTreeView {selection-background-color: transparent; font-size: ' + str(FONT_SIZE) + ';}'
-    BRUSH_SELECTED_ADD = QtGui.QBrush(QtGui.QColor('#30778899'))
-    BRUSH_SELECTED_EDIT = QtGui.QBrush(QtGui.QColor('#30998877'))
+    BRUSH_SELECTED_ADD = QtGui.QBrush(QtGui.QColor('#406688aa'))
+    BRUSH_SELECTED_EDIT = QtGui.QBrush(QtGui.QColor('#40998877'))
     BRUSH_SELECTED = BRUSH_SELECTED_ADD
 
     sep = os.path.sep
@@ -3104,8 +3102,8 @@ class TemplateTreeItem(QTreeWidgetItem):
     BRUSH_DISABLED = QtGui.QBrush(QtGui.QColor("#666"))
     BRUSH_INVALID = QtGui.QBrush(QtGui.QColor('#e00'))
 
-    BRUSH_REF = QtGui.QBrush(QtGui.QColor("#ba8"))
-    BRUSH_REF_BG = QtGui.QBrush(QtGui.QColor("#10ccaa77"))
+    BRUSH_REF = QtGui.QBrush(QtGui.QColor("#8ab"))
+    BRUSH_REF_BG = QtGui.QBrush(QtGui.QColor("#1077aacc"))
 
     def __init__(self, item, parent=None):
         QTreeWidgetItem.__init__(self, parent)
