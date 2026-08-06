@@ -1982,7 +1982,7 @@ class TemplateTreeWidget(QTreeWidget):
     _path = os.path.abspath(__file__).split(sep)
     _path = sep.join(_path[:-3])
     _path = _path + sep + 'core' + sep + 'ui' + sep + 'pics'
-    _path = os.path.join(_path, "capy.png")
+    _path = os.path.join(_path, "mikan_splash.png")
     logo = QtGui.QPixmap(_path)
 
     tree_changed = QtCore.Signal()
@@ -3104,7 +3104,7 @@ class TemplateTreeItem(QTreeWidgetItem):
     BRUSH_DISABLED = QtGui.QBrush(QtGui.QColor("#666"))
     BRUSH_INVALID = QtGui.QBrush(QtGui.QColor('#e00'))
 
-    BRUSH_REF = QtGui.QBrush(QtGui.QColor("#ca7"))
+    BRUSH_REF = QtGui.QBrush(QtGui.QColor("#ba8"))
     BRUSH_REF_BG = QtGui.QBrush(QtGui.QColor("#10ccaa77"))
 
     def __init__(self, item, parent=None):
