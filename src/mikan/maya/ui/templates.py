@@ -1624,7 +1624,7 @@ class TemplateAddWidget(TemplateOpts, OptVarSettings):
 
         self.wd_add_asset = QPushButton('Add Asset')
         self.wd_add_asset.setIcon(self.ICON_ADD_ASSET)
-        self.wd_add_asset.setStyleSheet('font-size:12px; font-weight:bold; min-height: 18px;')
+        self.wd_add_asset.setStyleSheet('font-size:12px; font-weight:bold; max-height: 18px;')
 
         _row.addWidget(self.txt_add_asset, 1)
         _row.addWidget(self.wd_add_asset, 1)
@@ -1655,8 +1655,6 @@ class TemplateAddWidget(TemplateOpts, OptVarSettings):
         _col.addSpacing(4)
 
         # create options
-        _line = self.add_line(label='Create')
-        _line.setStyleSheet('color: #888; font-size: 12px; font-weight: bold;')
         self.box_add = self.add_column()
 
         _col = self.add_column()
@@ -1728,15 +1726,16 @@ class TemplateAddWidget(TemplateOpts, OptVarSettings):
 
         # get item
         module = self.get_current_template_modules()[0]
-        # if not isinstance(tpl, Template) and tpl == self.last_add_item:
-        #     return
-        # self.last_add_item = tpl
 
         # clean
         self.clear_layout(self.box_add)
         self.wd_adds.clear()
         if module is None:
             return
+
+        if module.template_data.get('guides', {}):
+            _line = self.add_line(label='Create', parent=self.box_add)
+            _line.setStyleSheet('color: #888; font-size: 12px; font-weight: bold;')
 
         # get template data
         _grid = self.add_grid(self.box_add)
