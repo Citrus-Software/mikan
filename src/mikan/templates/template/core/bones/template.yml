@@ -14,11 +14,13 @@ guides:
   number:
     value: 1
     min: 1
+    label: Bones Number
   root:
     value: [ 0, 0.5, 0 ]
+    label: Root Position
   transform:
     value: [ 0, 1, 0 ]
-
+    label: Segment Transform
 
 structure:
   chain: /*

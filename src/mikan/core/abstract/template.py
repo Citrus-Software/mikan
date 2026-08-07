@@ -273,6 +273,7 @@ class Template(object):
                                 opts[opt]['value'] = legacy_opts[opt]
 
                 # register
+                package.template_data['module'] = tpl_name
                 cls.modules[tpl_name] = package
 
         # renamed module for legacy

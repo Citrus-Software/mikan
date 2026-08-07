@@ -185,17 +185,20 @@ class StackWidget(QWidget):
         line = QFrame()
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
-        line.setStyleSheet('QFrame {color: #333;}')
         line.setObjectName('separator')
 
         if label:
             widget = QWidget()
             layout = QHBoxLayout(widget)
-            layout.setContentsMargins(8, 4, 0, 0)
+            layout.setContentsMargins(8, 0, 4, 0)
 
-            label = QLabel(str(label))
-            layout.addWidget(label)
-            layout.addWidget(line, stretch=1, alignment=Qt.AlignBottom)
+            label_widget = QLabel(str(label))
+            layout.addWidget(label_widget)
+
+            line_layout = QVBoxLayout()
+            line_layout.setContentsMargins(0, 7, 0, 0)
+            line_layout.addWidget(line)
+            layout.addLayout(line_layout, stretch=1)
 
             parent.addWidget(widget)
             return widget

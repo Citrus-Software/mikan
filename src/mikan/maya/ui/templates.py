@@ -405,7 +405,7 @@ class TemplateManager(QMainWindow, OptVarSettings):
         Nodes.get_asset_paths()
 
         # add
-        name = self.tab_add.wd_name.text()
+        name = self.tab_add.wd_name.value
         n = self.tab_add.wd_number.value
         tpl_type = self.tab_add.wd_type.value + '.' + self.tab_add.wd_subtype.value
 
@@ -444,7 +444,7 @@ class TemplateManager(QMainWindow, OptVarSettings):
                 if w.value != w.default:
                     tpl.set_opt(opt, w.value)
 
-            for opt, w in iteritems(self.tab_add.wd_custom_opts['']):
+            for opt, w in iteritems(self.tab_add.wd_custom_opts[tpl_type]):
                 if w.value != w.default:
                     tpl.set_opt(opt, w.value)
 
@@ -457,7 +457,7 @@ class TemplateManager(QMainWindow, OptVarSettings):
     def add_asset(self):
         Nodes.get_asset_paths()
 
-        name = filter_str(self.tab_add.txt_add_asset.text())
+        name = filter_str(self.tab_add.txt_add_asset.value)
         item = Asset.create(name)
         self.tree.add_item(item)
 
@@ -784,9 +784,11 @@ class TemplateOpts(StackWidget):
                         build_widgets = False
                     modules.add(tpl.template)
 
+                elif isinstance(tpl, ModuleType):
+                    module_name = tpl.template_data['module']
+
                 if build_widgets:
                     self.wd_custom_opts[module_name] = {}
-
                     line = self.add_line(self.box_opts, label=module_name)
                     line.setStyleSheet('color:#789; font-size:12px; font-weight:bold')
 
@@ -1595,8 +1597,10 @@ class TemplateModEdit(QTextEdit):
 
 
 class TemplateAddWidget(TemplateOpts, OptVarSettings):
-    ICON_ADD_ASSET = Icon('box', color='#888', tool=True)
-    ICON_ADD = Icon('bone', color='#888', tool=True)
+    COLOR_ASSET = '#fb5'
+    COLOR_TPL = '#5bf'
+    ICON_ADD_ASSET = Icon('box', color=COLOR_ASSET, tool=True)
+    ICON_ADD = Icon('cross', color=COLOR_TPL, tool=True)
 
     def __init__(self, parent=None):
         TemplateOpts.__init__(self, parent)
@@ -1611,46 +1615,54 @@ class TemplateAddWidget(TemplateOpts, OptVarSettings):
                 self.template_types[tpl] = []
             self.template_types[tpl].append(sub)
 
-        # build ui
+        # add asset
+        _col = self.add_column()
+        self.layout_asset = _col.parent()
 
-        self.wd_add = QPushButton('Add Module')
-        self.wd_add.setIcon(self.ICON_ADD)
-        self.wd_add.setStyleSheet('font-size:12px; font-weight:bold; min-height: 11px;')
-
-        self.wd_name = QLineEdit()
+        _row = self.add_row(_col)
+        self.txt_add_asset = StringPlugWidget(label='Asset Name')
 
         self.wd_add_asset = QPushButton('Add Asset')
         self.wd_add_asset.setIcon(self.ICON_ADD_ASSET)
-        self.wd_add_asset.setStyleSheet('font-size:12px; font-weight:bold; min-height: 11px;')
-        self.txt_add_asset = QLineEdit()
+        self.wd_add_asset.setStyleSheet('font-size:12px; font-weight:bold; min-height: 18px;')
 
-        _col = self.add_columns(stretch=[2, 2])
-        _row = self.add_row(_col[0])
-        _row.addWidget(self.wd_add, 2)
-        _row.addWidget(self.wd_name, 3)
+        _row.addWidget(self.txt_add_asset, 1)
+        _row.addWidget(self.wd_add_asset, 1)
 
-        _row = self.add_row(_col[1])
-        _row.addWidget(self.wd_add_asset, 2)
-        _row.addWidget(self.txt_add_asset, 3)
+        # add module
+        _line = self.add_line(label='Module')
+        _line.setStyleSheet('color: #888; font-size: 12px; font-weight: bold;')
 
-        self.layout_asset = _row.parent()
-        if Asset.get_assets():
-            self.layout_asset.hide()
+        self.wd_add = QPushButton('Add Module')
+        self.wd_add.setIcon(self.ICON_ADD)
+        self.wd_add.setStyleSheet('font-size:12px; font-weight:bold; max-height: 18px;')
 
-        self.wd_type = StringListPlugWidget(label='Type')
-        self.wd_subtype = StringListPlugWidget()
-
+        self.wd_name = StringPlugWidget(label='Name')
+        self.wd_type = StringListPlugWidget(label='Category')
+        self.wd_subtype = StringListPlugWidget(label='Type')
         self.wd_number = IntPlugWidget(label='Number', min_value=1, default=1)
 
         _grid = self.add_grid()
 
+        _grid.addWidget(self.wd_name, 0, 1)
+        _grid.addWidget(self.wd_number, 1, 1)
+
         _grid.addWidget(self.wd_type, 0, 0)
         _grid.addWidget(self.wd_subtype, 1, 0)
 
-        _grid.addWidget(self.wd_number, 0, 1)
+        _col = self.add_column(spacing=2)
+        _col.addWidget(self.wd_add)
+        _col.addSpacing(4)
+
+        # create options
+        _line = self.add_line(label='Create')
+        _line.setStyleSheet('color: #888; font-size: 12px; font-weight: bold;')
+        self.box_add = self.add_column()
+
+        _col = self.add_column()
+        _col.addSpacing(4)
 
         # collapse build/options
-        self.box_add = self.add_collapse('Create')
         self.box_opts = self.add_collapse('Options')
         self.box_opts.collapse.set_collapsed(True)
 
@@ -1770,7 +1782,8 @@ class TemplateAddWidget(TemplateOpts, OptVarSettings):
     def build_wd_name(self, *args):
         module = self.get_current_template_modules()[0]
         name = module.template_data['name']
-        self.wd_name.setText(name)
+
+        self.wd_name.set_value(name)
 
     def opt_type_changed(self):
         pass
