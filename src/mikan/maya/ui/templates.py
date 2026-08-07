@@ -1595,8 +1595,8 @@ class TemplateModEdit(QTextEdit):
 
 
 class TemplateAddWidget(TemplateOpts, OptVarSettings):
-    ICON_ADD_ASSET = Icon('cross', color='#888', tool=True)
-    ICON_ADD = Icon('cross', color='#888', tool=True)
+    ICON_ADD_ASSET = Icon('box', color='#888', tool=True)
+    ICON_ADD = Icon('bone', color='#888', tool=True)
 
     def __init__(self, parent=None):
         TemplateOpts.__init__(self, parent)
@@ -2553,10 +2553,6 @@ class TemplateTreeWidget(QTreeWidget):
 
     # toolbox menu -----------------------------------------------------------------------------------------------------
     def context_menu_group(self, point):
-        index = self.indexAt(point)
-        if not index.isValid():
-            return
-
         items = self.get_selected_items()
 
         # check conditions
@@ -2569,6 +2565,7 @@ class TemplateTreeWidget(QTreeWidget):
         has_mod = any([item.has_mod for item in items if isinstance(item, Helper)])
         has_hook = TemplateHook in types
         has_branch = any([item.is_branch() or item.is_branch_edit() for item in items if isinstance(item, Helper)])
+        is_root = not items or (single and items[0] is None)
 
         locked = False
         if single and (has_asset or has_template or has_helper):
@@ -2576,8 +2573,11 @@ class TemplateTreeWidget(QTreeWidget):
 
         # build menu
         menu = QMenu(self)
+        if is_root:
+            _act = menu.addAction('Add Asset')
+            _act.triggered.connect(self.add_asset)
 
-        if not has_hook:
+        if not has_hook and not is_root:
             _act = menu.addAction('Remove')
             _act.triggered.connect(self.delete_selected_items)
 
@@ -3055,6 +3055,10 @@ class TemplateTreeWidget(QTreeWidget):
                 node = item.get_template_root()
 
             Helper(node).scale(scale)
+
+    def add_asset(self):
+        item = Asset.create('asset')
+        self.add_item(item)
 
 
 class TemplateTreeDelegate(QItemDelegate):
