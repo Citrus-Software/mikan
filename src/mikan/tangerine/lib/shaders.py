@@ -324,7 +324,7 @@ def _build_switch_node(rig_node, data, mode='color'):
         return None
 
     max_index = max(keys)
-    switch_plug_name = None
+    switch_plug_name = data['plug']
     if not isinstance(data['plug'], str):
         switch_plug_name = f'switch_{data["plug"]}'
 
