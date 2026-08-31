@@ -694,7 +694,7 @@ class TangerineMaterialData(object):
         if 'layers' in color_data:
             return color_data
 
-        if isinstance(color_data, dict) and ('file' in color_data or 'skia' in color_data):
+        if isinstance(color_data, dict) and {'color', 'file', 'skia'} & color_data.keys():
             data.update(color_data)
         else:
             data['color'] = color_data
@@ -727,7 +727,7 @@ class TangerineMaterialData(object):
         if not input_node:
             value = plug.read()
             if isinstance(value, (list, tuple)) and len(value) == 3:
-                return {'color': round_list(linear_to_srgb(value), 3)}
+                return round_list(linear_to_srgb(value), 3)
             return value
 
         # upward connection
@@ -927,10 +927,18 @@ class TangerineMaterialData(object):
         data = {'layers': {}, 'blends': {}}
 
         # Layer 1 (Top) -> input 1
-        data['layers'][0] = self.resolve_plug(node['color1'], depth=depth)
+        color = self.resolve_plug(node['color1'], depth=depth)
+        if isinstance(color, (list, tuple)) and len(color) == 3:
+            data['layers'][0] = {'color': color}
+        else:
+            data['layers'][0] = color
 
         # Layer 2 (Base) -> input 2
-        data['layers'][1] = self.resolve_plug(node['color2'], depth=depth)
+        color = self.resolve_plug(node['color2'], depth=depth)
+        if isinstance(color, (list, tuple)) and len(color) == 3:
+            data['layers'][1] = {'color': color}
+        else:
+            data['layers'][1] = color
 
         # alpha blend
         data['blends'][0] = self.resolve_plug(node['blender'], depth=depth)
