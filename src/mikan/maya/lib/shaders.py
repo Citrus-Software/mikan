@@ -727,7 +727,7 @@ class TangerineMaterialData(object):
         if not input_node:
             value = plug.read()
             if isinstance(value, (list, tuple)) and len(value) == 3:
-                return round_list(linear_to_srgb(value), 3)
+                return {'color': round_list(linear_to_srgb(value), 3)}
             return value
 
         # upward connection
@@ -934,6 +934,13 @@ class TangerineMaterialData(object):
 
         # alpha blend
         data['blends'][0] = self.resolve_plug(node['blender'], depth=depth)
+
+        # fix skia alpha blend
+        _layer0 = data['layers'][0]
+        _blend = data['blends'][0]
+        if isinstance(_layer0, dict) and 'skia' in _layer0:
+            if isinstance(_blend, dict) and 'skia' in _blend:
+                del data['blends'][0]
 
         # TODO: compiler les blend récursif sur un unique layer
         return data
