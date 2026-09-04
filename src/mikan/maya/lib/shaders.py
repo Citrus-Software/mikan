@@ -694,7 +694,7 @@ class TangerineMaterialData(object):
         if 'layers' in color_data:
             return color_data
 
-        if isinstance(color_data, dict) and {'color', 'file', 'skia'} & color_data.keys():
+        if isinstance(color_data, dict) and {'color', 'file', 'skia'} & set(color_data.keys()):
             data.update(color_data)
         else:
             data['color'] = color_data
