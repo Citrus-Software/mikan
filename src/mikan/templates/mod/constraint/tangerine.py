@@ -139,14 +139,17 @@ class Mod(mk.Mod):
 
             if x:
                 # fix shortest
-                if kl.is_plug(x.get_plug('transform_shortest_in')):
-                    bw = x.transform_shortest_in.get_input()
-                    if kl.is_plug(bw):
-                        bw.set_value(True)
+                bw_in = x.transform_shortest_in.get_input()
+                if kl.is_plug(bw_in):
+                    # fix legacy
+                    bw = bw_in.get_node()
+                    if isinstance(bw, kl.BlendWeightedTransforms):
+                        x.transform_shortest_in.disconnect(False)
+                        x.transform_interp_in.disconnect(False)
+                    bw.transform_shortest_in.connect(x.transform_shortest_in)
+                    bw.transform_interp_in.connect(x.transform_interp_in)
 
-                bw = x.find('blend_weighted_transforms')
-                if bw:
-                    bw.transform_shortest_in.set_value(True)
+                x.transform_shortest_in.set_value(True)
 
                 # register
                 self.set_id(x, 'constraint.{}'.format(cmd))
