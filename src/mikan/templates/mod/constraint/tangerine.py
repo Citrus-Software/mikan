@@ -137,10 +137,16 @@ class Mod(mk.Mod):
                     kw['axes'] = re.sub(f'[{skip_scale}]', '', 'xyz')
                 x = scale_constraint(targets, node, **kw)
 
-            if x and x.get_plug('transform_shortest_in'):
-                bw = x.transform_shortest_in.get_input()
-                if bw is not None:
-                    bw.set_value(True)
-
             if x:
+                # fix shortest
+                if kl.is_plug(x.get_plug('transform_shortest_in')):
+                    bw = x.transform_shortest_in.get_input()
+                    if kl.is_plug(bw):
+                        bw.set_value(True)
+
+                bw = x.find('blend_weighted_transforms')
+                if bw:
+                    bw.transform_shortest_in.set_value(True)
+
+                # register
                 self.set_id(x, 'constraint.{}'.format(cmd))
