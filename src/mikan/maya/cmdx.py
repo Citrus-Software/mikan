@@ -207,6 +207,9 @@ def ls(*args, **kwargs):
 
 
 def list_history(node, type=None, future=False):
+    if not isinstance(node, Node):
+        node = encode(str(node))
+
     history_nodes = []
     visited_nodes = set()
 

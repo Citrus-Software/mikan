@@ -22,8 +22,10 @@ for geo in mc.ls(sl=1, et='transform'):
 
 def reset_bindpose():
     # old method
+    sl = mx.ls(sl=1)
+
     skins = set()
-    for node in mx.ls(sl=1):
+    for node in sl:
         skins.update(mx.list_history(node, type=mx.tSkinCluster))
 
     for skin in list(skins):
@@ -38,4 +40,4 @@ def reset_bindpose():
             mc.select(infs, r=1)
             mc.skinCluster(shape, infs, tsb=1, ibp=1)
 
-    mc.select(sel)
+    mc.select(sl)
