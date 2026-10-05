@@ -1158,43 +1158,48 @@ class TemplateEditWidget(TemplateOpts):
         pattern = self.search_edit.text()
 
         cursor = self.search_doc(doc, pattern)
-        self.mod_edit.setTextCursor(cursor)
+        if cursor:
+            self.mod_edit.setTextCursor(cursor)
+
+        self.mod_edit.setFocus()
 
     def search_all(self):
         doc = self.mod_edit.document()
         pattern = self.search_edit.text()
 
-        focus_widget = QApplication.focusWidget()
-
         cursor = self.search_doc(doc, pattern, loop=False)
         if cursor:
             self.mod_edit.setTextCursor(cursor)
+            self.mod_edit.setFocus()
+            return
+
+        current_item = self._tree.get_selected_item()
+        items = [x for x in self._tree.tree_items if isinstance(x, Helper) and (x.has_mod() or x.has_deformer())]
+        n = len(items)
+
+        if n == 1:
+            return self.search_current(loop=True)
+
+        i = items.index(current_item)
+        if i == 0:
+            search_items = items[1:]
+        elif i == len(items) - 1:
+            search_items = items[:-1]
         else:
-            current_item = self._tree.get_selected_item()
-            items = [x for x in self._tree.tree_items if isinstance(x, Helper) and (x.has_mod() or x.has_deformer())]
-            n = len(items)
-            if n == 1:
-                return self.search_current(loop=False)
+            search_items = items[i + 1:] + items[:i]
 
-            i = items.index(current_item)
-            if i == 0:
-                items = items[1:]
-            elif i == len(items) - 1:
-                items = items[:-1]
-            else:
-                items = items[i + 1:] + items[:i]
+        for item in search_items:
+            notes = item.node['notes'].read()
+            if pattern not in notes:
+                continue
 
-            for item in items:
-                notes = item.node['notes'].read()
-                if pattern not in notes:
-                    continue
-                self._tree.setCurrentItem(self._tree.tree_items[item])
+            self._tree.setCurrentItem(self._tree.tree_items[item])
+            self._manager.update_tabs()
 
-                self._manager.update_tabs()
-                focus_widget.setFocus()
-                return self.search_current(loop=False)
+            self.mod_edit.setFocus()
+            return self.search_current(loop=False)
 
-            self.search_current(loop=False)
+        self.mod_edit.setFocus()
 
     def search_doc(self, doc, pattern, loop=True):
         cursor = self.mod_edit.textCursor()
@@ -1208,7 +1213,8 @@ class TemplateEditWidget(TemplateOpts):
             else:
                 return
 
-        return cursor
+        if cursor.hasSelection():
+            return cursor
 
 
 class TemplateModEdit(QTextEdit):
