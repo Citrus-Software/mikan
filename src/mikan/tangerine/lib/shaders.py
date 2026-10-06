@@ -11,6 +11,8 @@ import subprocess
 from copy import deepcopy
 from contextlib import suppress
 
+from jad_pipe.tools.headsUpDisplayTool.headsUpDisplayTool import addPlayblastInfos
+
 if os.name == 'nt':
     import winreg
 
@@ -291,6 +293,14 @@ def _apply_alpha(shader, alpha_data, rig_node):
                     if _plug is None:
                         _plug = add_plug(rig_node, alpha_data[k], float, min_value=0, max_value=1)
                     alpha_data[k] = _plug
+
+            has_plug = False
+            for k in alpha_data:
+                if kl.is_plug(alpha_data[k]):
+                    has_plug = True
+                    break
+            if not has_plug:
+                alpha_data['parent'] = rig_node
 
             plug = connect_expr(op, **alpha_data)
 
