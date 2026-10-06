@@ -2072,19 +2072,36 @@ class Deformer(abstract.Deformer):
 
         if 'delta' in self.data:
             for i in self.data['delta']:
-                for b in self.data['delta'][i]:
-                    # unpack xyz
-                    delta = self.data['delta'][i][b].weights
+
+                # check data structure legacy
+                delta_group = self.data['delta'][i]
+                if isinstance(delta_group, dict):
+                    items = delta_group.items()
+                else:
+                    items = [(None, delta_group)]  # legacy
+
+                for ib, delta_obj in items:
+                    delta = delta_obj.weights
+
                     wx = delta[0::3]
                     wy = delta[1::3]
                     wz = delta[2::3]
+
                     dx = min(wx)
                     dy = min(wy)
                     dz = min(wz)
+
                     wx = convert_weightmap(WeightMap(wx) - dx) + dx
                     wy = convert_weightmap(WeightMap(wy) - dy) + dy
                     wz = convert_weightmap(WeightMap(wz) - dz) + dz
-                    dfm.data['delta'][i][b].weights = [item for sublist in zip(wx, wy, wz) for item in sublist]
+
+                    new_weights = [item for sublist in zip(wx, wy, wz) for item in sublist]
+
+                    # update new deformer
+                    if ib is not None:
+                        dfm.data['delta'][i][ib].weights = new_weights
+                    else:
+                        dfm.data['delta'][i].weights = new_weights
 
         # cleanup
         mx.delete(root)
