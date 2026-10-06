@@ -246,6 +246,10 @@ class Deformer(mk.Deformer):
         infid = self.node['matrix'].array_indices
 
         for i, bpm in iteritems(self.data.get('bind_pose_root', {})):
+            # check input
+            if not isinstance(bpm, mx.Node):
+                bpm = self.get_node(str(bpm))
+
             # remap index
             try:
                 _inf = self.get_node(self.data['infs'][i])
