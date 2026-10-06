@@ -20,24 +20,20 @@ if not skin:
 # get data
 grp = DeformerGroup.create(src)
 Deformer.toggle_layers(src, top=True)
-layers = Deformer.get_layers(src)
 
-skins = []
+deformers = []
 for dfm in grp.data:
     if dfm.deformer == 'skin':
         del dfm.data['maps']
-        skins.append(dfm)
+        deformers.append(dfm)
 
 # transfer skin
 for geo in dst:
-    for skin in skins:
-        dfm = skin.copy()
-        dfm.update_transform(geo)
-        dfm.bind()
 
-    cls = Deformer.get_class('skin')
-    for k in layers:
-        log.info('copy layer {} from "{}" to "{}"'.format(k, src, geo))
-        Deformer.toggle_layers(src, layer=k)
-        Deformer.toggle_layers(geo, layer=k)
-        mc.copySkinWeights(str(src), str(geo), sa='closestPoint', ia=['label', 'oneToOne'], noMirror=True)
+    for dfm in deformers:
+        new_dfm = dfm.copy()
+        new_dfm.update_transform(geo)
+        new_dfm.bind()
+
+        mc.copySkinWeights(ss=str(dfm.node), ds=str(new_dfm.node), sa='closestPoint', ia=['label', 'oneToOne'], noMirror=True)
+        log.info('copy layer "{}" to "{}"'.format(dfm.node, new_dfm.node))
