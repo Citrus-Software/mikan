@@ -111,6 +111,10 @@ class Mod(mk.Mod):
 
                     name = snake_to_pascal(k)
                     for i, node in enumerate(nodes):
+                        if node is None:
+                            log.warning('missing node for definition: {}'.format(name))
+                            continue
+
                         _name = 'hik_' + name
                         if i > 0:
                             _name = 'end_' + name
