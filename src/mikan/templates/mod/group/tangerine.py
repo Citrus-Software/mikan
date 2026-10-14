@@ -21,16 +21,30 @@ class Mod(mk.Mod):
         if not any(nodes):
             raise mk.ModArgumentError('node list is empty')
 
+        if 'name' not in self.data and 'tag' not in self.data:
+            raise mk.ModArgumentError('name or tag missing')
+
+        if 'parent' in self.data and not isinstance(self.data['parent'], (str, bool)):
+            raise mk.ModArgumentError('invalid parent')
+
         # tag, name
-        _id = self.get_template_id()
-        tag = self.data.get('tag', 'grp.{}'.format(_id.split('.')[0]))
+        tag = 'subgroups'
+        name = cleanup_str(self.data.get('name', ''), ' ')
+        subtag = self.data.get('tag', name)
 
-        default_name = tag
-        if default_name.startswith('vis.'):
-            default_name = default_name[4:]
+        if subtag.startswith('vis.'):
+            tag = 'vis'
+            subtag = subtag[4:]
 
-        name = cleanup_str(self.data.get('name', default_name), ' ')
-        name = ' '.join([name] + _id.split('.')[1:])
+        if not name:
+            name = subtag
+
+        branch_sfx = ''
+        tpl_id = self.get_template_id()
+        if '.' in tpl_id:
+            branch_sfx = ' '.join(tpl_id.split('.')[1:])
+        if branch_sfx:
+            name += ' ' + branch_sfx
 
         # create group
         grp = mk.Group.create(name)
@@ -38,11 +52,14 @@ class Mod(mk.Mod):
             if node is not None:
                 grp.add_member(node)
 
-        for parent in list(flatten_list([self.data.get('parent')])):
-            if parent and isinstance(parent, kl.Node):
-                if parent.get_dynamic_plug('gem_type') and parent.gem_type.get_value() == mk.Group.type_name:
-                    parent = mk.Group(parent)
-                    grp.add_parent(parent)
+        # parent
+        parent = self.data.get('parent', tpl_id)
+        if tag == 'subgroups' and parent:
+            if not isinstance(parent, str):
+                parent = tpl_id
+
+            add_plug(grp.node, 'gem_group_parent', str)
+            grp.node.gem_group_parent.set_value(parent)
 
         # vis groups
         vis = self.data.get('vis')
@@ -53,4 +70,4 @@ class Mod(mk.Mod):
             grp.node.rename(grp.node.get_name() + '_vis')
 
         # register
-        self.set_id(grp.node, tag, subtag='', prefix='')
+        self.set_id(grp.node, tag, subtag, prefix='')

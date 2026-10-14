@@ -2120,6 +2120,23 @@ class Template(abstract.Template):
                 if grp_root_branch != grp_root:
                     self.set_id(grp_root_branch.node, 'groups')
 
+            # subgroups
+            sub_grps = Nodes.get_id('{}{}::subgroups'.format(self.name, self.get_branch_id())) or []
+            for sub_grp in sub_grps:
+                if 'gem_group_parent' in sub_grp:
+                    sub_grp_parent_id = sub_grp['gem_group_parent'].read()
+                    if sub_grp_parent_id == 'all':
+                        sub_grp_parent = grp_all
+                    else:
+                        sub_grp_parent = Nodes.get_id('{}::groups'.format(sub_grp_parent_id))
+                        if not isinstance(sub_grp_parent, mx.Node):
+                            continue
+                        if 'gem_type' in sub_grp_parent and sub_grp_parent['gem_type'].read() == Group.type_name:
+                            continue
+                        sub_grp_parent = Group(sub_grp_parent)
+
+                    Group(sub_grp).add_parent(sub_grp_parent)
+
             # vis sub groups
             grp_vis = Nodes.get_id('{}{}::vis'.format(self.name, self.get_branch_id())) or []
             if isinstance(grp_vis, mx.Node):
