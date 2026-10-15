@@ -7,6 +7,7 @@ import mikan.maya.core as mk
 from mikan.core import ordered_load
 from mikan.core.tree import Tree
 from mikan.core.logger import create_logger
+from mikan.maya.lib.rig import copy_transform
 
 log = create_logger()
 
@@ -62,6 +63,16 @@ reference:
 
         leaf_right_leg1.leaf_right_leg2.leaf_right_leg3.leaf_right_leg4.leaf_right_leg5:
       leaf_right_up_leg1.leaf_right_up_leg2.leaf_right_up_leg3.leaf_right_up_leg4.leaf_right_up_leg5:
+
+  left_ankle_effector:
+  left_knee_effector:
+  right_ankle_effector:
+  right_knee_effector:
+    
+  left_wrist_effector:
+  left_elbow_effector:
+  right_wrist_effector:
+  right_elbow_effector:
 '''
 
 
@@ -130,8 +141,9 @@ class Mod(mk.Mod):
                             self.set_id(j, 'mocap.' + k)
 
                             # connect to hik
-                            j.add_attr(mx.Message('Character'))
-                            j['Character'] >> hik[name]
+                            if name in hik:
+                                j.add_attr(mx.Message('Character'))
+                                j['Character'] >> hik[name]
                         else:
                             j['v'] = False
 
@@ -139,6 +151,65 @@ class Mod(mk.Mod):
 
         # build skeleton hierarchy
         self.parent_children(Tree.rarefy(skeleton))
+
+        # build effector rig
+        for n in (0, 1):
+            for side in ('left', 'right'):
+                _root = ('hips', 'spine')[n]
+                _eff = side + ('_ankle_effector', '_wrist_effector')[n]
+                _j0 = side + ('_up_leg', '_arm')[n]
+                _j1 = side + ('_leg', '_fore_arm')[n]
+                _j2 = side + ('_foot', '_hand')[n]
+
+                aim0 = {'left': [0, -1, 0], 'right': [0, 1, 0]}[side]
+                aim1 = {
+                    'left': [[0, 0, 1], [0, 0, -1]][n],
+                    'right': [[0, 0, -1], [0, 0, 1]][n],
+                }[side]
+
+                do_rig = True
+                for k in (_root, _eff, _j0, _j1, _j2):
+                    if k not in self.mocap:
+                        do_rig = False
+                        break
+                if not do_rig:
+                    continue
+
+                root = self.mocap[_root][0]
+                eff = self.mocap[_eff][0]
+                j0 = self.mocap[_j0][0]
+                j1 = self.mocap[_j1][0]
+                j2 = self.mocap[_j2][0]
+
+                loc_root = mx.create_node(mx.tTransform, name='loc_root_' + _j1, parent=root)
+                loc_aim = mx.create_node(mx.tTransform, name='loc_aim_' + _j1, parent=loc_root)
+                loc_mid = mx.create_node(mx.tTransform, name='loc_mid_' + _j1, parent=loc_aim)
+
+                mc.delete(mc.parentConstraint(str(j0), str(loc_root)))
+                mc.pointConstraint(str(j0), str(loc_root))
+                mc.aimConstraint(
+                    str(j2),
+                    str(loc_aim),
+                    aim=aim0,
+                    u=[0, 0, 0],
+                    wut='none',
+                )
+
+                copy_transform(loc_aim, loc_root, r=1)
+
+                mc.pointConstraint(str(j0), str(j2), str(loc_mid))
+                mc.aimConstraint(
+                    str(j1),
+                    str(loc_mid),
+                    aim=aim1,
+                    u=[0, 0, 0],
+                    wut='none',
+                )
+
+                eff.add_attr(mx.Double('twist', keyable=True))
+                loc_mid['ry'] >> eff['twist']
+
+                mc.parentConstraint(str(j2), str(eff))
 
     def parent_children(self, data, parent=None, key=None):
 

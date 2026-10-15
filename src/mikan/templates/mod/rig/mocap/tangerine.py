@@ -1,13 +1,18 @@
 # coding: utf-8
 
 import meta_nodal_py as kl
+from meta_nodal_py.Imath import V3f
 
 import mikan.tangerine.core as mk
 from mikan.core import ordered_load
 from mikan.core.tree import Tree
 from mikan.core.logger import create_logger
 
-from mikan.tangerine.lib.commands import add_plug
+from mikan.tangerine.lib.commands import add_plug, copy_transform
+from mikan.tangerine.lib.rig import (
+    point_constraint, aim_constraint, parent_constraint,
+    create_srt_in, create_srt_out
+)
 
 log = create_logger()
 
@@ -63,6 +68,16 @@ reference:
 
         leaf_right_leg1.leaf_right_leg2.leaf_right_leg3.leaf_right_leg4.leaf_right_leg5:
       leaf_right_up_leg1.leaf_right_up_leg2.leaf_right_up_leg3.leaf_right_up_leg4.leaf_right_up_leg5:
+      
+  left_ankle_effector:
+  left_knee_effector:
+  right_ankle_effector:
+  right_knee_effector:
+    
+  left_wrist_effector:
+  left_elbow_effector:
+  right_wrist_effector:
+  right_elbow_effector:
 '''
 
 
@@ -138,6 +153,8 @@ class Mod(mk.Mod):
                             self.set_id(j, 'mocap.' + k)
                             grp.add_member(j)
 
+                            create_srt_in(j, keyable=True)
+
                         else:
                             j.show.set_value(False)
 
@@ -145,6 +162,64 @@ class Mod(mk.Mod):
 
         # build skeleton hierarchy
         self.parent_children(Tree.rarefy(skeleton))
+
+        # build effector rig
+        for n in (0, 1):
+            for side in ('left', 'right'):
+                _root = ('hips', 'spine')[n]
+                _eff = side + ('_ankle_effector', '_wrist_effector')[n]
+                _j0 = side + ('_up_leg', '_arm')[n]
+                _j1 = side + ('_leg', '_fore_arm')[n]
+                _j2 = side + ('_foot', '_hand')[n]
+
+                aim0 = {'left': V3f(0, -1, 0), 'right': V3f(0, 1, 0)}[side]
+                aim1 = {
+                    'left': (V3f(0, 0, 1), V3f(0, 0, -1))[n],
+                    'right': (V3f(0, 0, -1), V3f(0, 0, 1))[n],
+                }[side]
+
+                do_rig = True
+                for k in (_root, _eff, _j0, _j1, _j2):
+                    if k not in self.mocap:
+                        do_rig = False
+                        break
+                if not do_rig:
+                    continue
+
+                root = self.mocap[_root][0]
+                eff = self.mocap[_eff][0]
+                j0 = self.mocap[_j0][0]
+                j1 = self.mocap[_j1][0]
+                j2 = self.mocap[_j2][0]
+
+                loc_root = kl.SceneGraphNode(root, 'loc_root_' + _j1)
+                loc_aim = kl.SceneGraphNode(loc_root, 'loc_aim_' + _j1)
+                loc_mid = kl.SceneGraphNode(loc_aim, 'loc_mid_' + _j1)
+
+                copy_transform(j0, loc_root)
+                point_constraint(j0, loc_root)
+
+                aim_constraint(
+                    j2, loc_aim,
+                    aim_vector=aim0,
+                    up_vector=V3f(0, 0, 0)
+                )
+
+                copy_transform(loc_aim, loc_root, r=1)
+
+                point_constraint((j0, j2), loc_mid)
+
+                aim_constraint(
+                    j1, loc_mid,
+                    aim_vector=aim1,
+                    up_vector=V3f(0, 0, 0)
+                )
+
+                add_plug(eff, 'twist', float, keyable=True)
+                srt = create_srt_out(loc_mid, vectors=True)
+                eff.twist.connect(srt.find('rotate').y)
+
+                parent_constraint(j2, eff)
 
     def parent_children(self, data, parent=None, key=None):
 

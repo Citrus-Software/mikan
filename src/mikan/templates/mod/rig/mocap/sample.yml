@@ -77,3 +77,9 @@ rig.mocap:
   right_hand_pinky1: pinky.R::ctrls.1
   right_hand_pinky2: pinky.R::ctrls.2
   right_hand_pinky3: [pinky.R::ctrls.3, pinky.R::tip]
+
+
+  left_ankle_effector: arm.L::ctrls.ik
+  right_ankle_effector: arm.R::ctrls.ik
+  left_wrist_effector: leg.L::ctrls.ik
+  right_wrist_effector: leg.R::ctrls.ik
