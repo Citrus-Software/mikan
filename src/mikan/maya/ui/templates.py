@@ -765,13 +765,15 @@ class TemplateOpts(StackWidget):
         for tpl in templates:
             if isinstance(tpl, Template):
                 connect = True
-            elif isinstance(tpl, ModuleType):
+                template_data = tpl.template_data
+            elif isinstance(tpl, string_types):
                 connect = False
+                template_data = Template.modules[tpl].template_data
             else:
                 continue
 
             # rebuild custom opts
-            if 'opts' in tpl.template_data:
+            if 'opts' in template_data:
                 build_widgets = True
 
                 module_name = ''
@@ -784,8 +786,8 @@ class TemplateOpts(StackWidget):
                         build_widgets = False
                     modules.add(tpl.template)
 
-                elif isinstance(tpl, ModuleType):
-                    module_name = tpl.template_data['module']
+                elif isinstance(tpl, string_types):
+                    module_name = tpl
 
                 if build_widgets:
                     self.wd_custom_opts[module_name] = {}
@@ -793,11 +795,11 @@ class TemplateOpts(StackWidget):
                     line.setStyleSheet('color:#789; font-size:12px; font-weight:bold')
 
                     _cols = self.add_columns(self.box_opts)
-                    opts_number = len(tpl.template_data['opts']) - len(common_keys)
+                    opts_number = len(template_data['opts']) - len(common_keys)
                     row_count = 0
                     col_count = 0
 
-                for opt, data in iteritems(tpl.template_data['opts']):
+                for opt, data in iteritems(template_data['opts']):
                     yaml = data.get('yaml', False)
 
                     dv = data.get('value')
@@ -867,7 +869,7 @@ class TemplateOpts(StackWidget):
     def build_box_names(self):
 
         for tpl in self.get_current_template_modules():
-            if isinstance(tpl, (Template, ModuleType)):
+            if isinstance(tpl, (Template, string_types)):
                 break
         else:
             tpl = None
@@ -1725,19 +1727,20 @@ class TemplateAddWidget(TemplateOpts, OptVarSettings):
     def get_current_template_modules(self):
         tpl = self.wd_type.value
         sub = self.wd_subtype.value
-        tpl = tpl + '.' + sub
-        return [Template.modules[tpl]]
+        return [tpl + '.' + sub]
 
     def build_box_add(self):
 
         # get item
-        module = self.get_current_template_modules()[0]
+        module_name = self.get_current_template_modules()[0]
 
         # clean
         self.clear_layout(self.box_add)
         self.wd_adds.clear()
-        if module is None:
+        if module_name is None:
             return
+
+        module = Template.modules[module_name]
 
         if module.template_data.get('guides', {}):
             _line = self.add_line(label='Create', parent=self.box_add)
@@ -1785,7 +1788,8 @@ class TemplateAddWidget(TemplateOpts, OptVarSettings):
             self.wd_adds[opt] = w
 
     def build_wd_name(self, *args):
-        module = self.get_current_template_modules()[0]
+        module_name = self.get_current_template_modules()[0]
+        module = Template.modules[module_name]
         name = module.template_data['name']
 
         self.wd_name.set_value(name)
