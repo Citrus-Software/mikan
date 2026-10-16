@@ -150,6 +150,9 @@ class Mod(mk.Mod):
                             add_plug(j, 'gem_hook', str)
                             j.gem_hook.connect(node.gem_id)
 
+                            add_plug(j, 'controller', str)
+                            j.controller.connect(node.name)
+
                             self.set_id(j, 'mocap.' + k)
                             grp.add_member(j)
 
