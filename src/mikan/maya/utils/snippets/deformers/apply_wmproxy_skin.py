@@ -3,6 +3,7 @@
 from six import iteritems
 
 import maya.cmds as mc
+import maya.api.OpenMayaAnim as oma
 import mikan.maya.cmdx as mx
 
 from mikan.core.ui.widgets import BusyCursor
@@ -35,10 +36,27 @@ with timed_code('apply wmproxy:'):
             _dfm = prx.convert(geo)
             log.info('wm proxy converted to {}'.format(_dfm))
 
-            nodes = mx.list_history(geo, type=mx.tSkinCluster)
-            if nodes:
-                skin = nodes[0]
+            infs = []
+            for inf in prx.infs:
+                try:
+                    infs.append(Deformer.get_node(inf))
+                except:
+                    pass
 
+            # find skin node
+            for skin in mx.list_history(geo, type=mx.tSkinCluster):
+                fn = oma.MFnSkinCluster(skin.object())
+                _infs = [mx.Node(mdag.node()) for mdag in fn.influenceObjects()]
+
+                if not set(_infs).intersection(set(infs)):
+                    skin = None
+                else:
+                    break
+
+            if skin is None:
+                raise RuntimeError('no skincluster found with declared influences')
+
+            # merge to correct deformer
             layer = Deformer.get_current_layer(geo)
             grp = DeformerGroup.create(geo)['*->skin']
             for i, dfm in iteritems(grp):
