@@ -797,12 +797,15 @@ class Icon(QIcon):
     COLOR_HIGHLIGHT = QColor('#556')
     COLOR_DARKEN = QColor('#404030')
 
+    UI_DIR = os.path.join(os.path.dirname(__file__))
+    ICON_DIR = os.path.join(UI_DIR, 'icons')
+
     def __init__(self, *args, **kw):
         QtGui.QIcon.__init__(self)
 
         path = kw.get('path')
         if not path:
-            path = os.path.join(os.path.dirname(__file__), 'icons')
+            path = self.ICON_DIR
         path = os.path.join(path, '{}.svg'.format(args[0]))
         # path = ':/{}.svg'.format(args[0])
 

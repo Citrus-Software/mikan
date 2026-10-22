@@ -16,6 +16,7 @@ from mikan.core.prefs import Prefs, UserPrefs, find_maya_project_root
 from mikan.vendor.Qt import QtWidgets
 from mikan.vendor.Qt.QtCore import Qt, QSize
 from mikan.vendor.Qt.QtWidgets import QAction
+from mikan.vendor.Qt.QtGui import QIcon
 
 from mikan.maya.core import Template, Mod
 
@@ -53,7 +54,6 @@ class MikanUI(MayaDockMixin):
         MikanUI.instance = self
 
         self.setWindowTitle(MikanUI.TITLE)
-        self.setWindowFlags(Qt.Tool)
 
         # refresh prefs
         Prefs.reload()
@@ -82,6 +82,22 @@ class MikanUI(MayaDockMixin):
 
         # connect signals
         self.tabs.currentChanged.connect(self.tab_changed)
+
+    @classmethod
+    def start(cls):
+        ui = cls()
+        ui.run()
+
+        path = os.path.join(Icon.UI_DIR, 'pics')
+        path = os.path.join(path, 'icon32.png')
+        path = os.path.realpath(path)
+        icon = QIcon(path)
+
+        wc = ui.parent()
+        w = wc.window()
+        w.setWindowIcon(icon)
+
+        return ui
 
     def tab_changed(self, v):
         self.set_optvar('selected_main_tab', v)
