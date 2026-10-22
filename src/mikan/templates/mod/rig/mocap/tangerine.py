@@ -96,6 +96,9 @@ class Mod(mk.Mod):
 
     def run(self):
 
+        if 'reference' not in self.data or not isinstance(self.data['reference'], kl.SceneGraphNode):
+            raise mk.ModArgumentError('mocap reference undefined')
+
         # create group
         grp = mk.Group.create('mocap')
 
@@ -122,46 +125,47 @@ class Mod(mk.Mod):
         self.mocap = {}
 
         for k in keys:
-            if k in self.data:
-                if self.data[k] is not None:
-                    nodes = self.data[k]
-                    if isinstance(nodes, kl.Node):
-                        nodes = [nodes]
-                    keys[k]['node'] = nodes
+            if k not in self.data or self.data[k] is None:
+                continue
 
-                    self.mocap[k] = []
+            nodes = self.data[k]
+            if isinstance(nodes, kl.Node):
+                nodes = [nodes]
+            keys[k]['node'] = nodes
 
-                    name = snake_to_pascal(k)
-                    for i, node in enumerate(nodes):
-                        if node is None:
-                            log.warning('missing node for definition: {}'.format(name))
-                            continue
+            self.mocap[k] = []
 
-                        _name = 'hik_' + name
-                        if i > 0:
-                            _name = 'end_' + name
+            name = snake_to_pascal(k)
+            for i, node in enumerate(nodes):
+                if node is None:
+                    log.warning('missing node for definition: {}'.format(name))
+                    continue
 
-                        cls = kl.Joint
-                        if k == 'reference':
-                            cls = kl.SceneGraphNode
-                        j = cls(node, _name)
+                _name = 'hik_' + name
+                if i > 0:
+                    _name = 'end_' + name
 
-                        if i == 0:
-                            add_plug(j, 'gem_hook', str)
-                            j.gem_hook.connect(node.gem_id)
+                cls = kl.Joint
+                if k == 'reference':
+                    cls = kl.SceneGraphNode
+                j = cls(node, _name)
 
-                            add_plug(j, 'controller', str)
-                            j.controller.connect(node.name)
+                if i == 0:
+                    add_plug(j, 'gem_hook', str)
+                    j.gem_hook.connect(node.gem_id)
 
-                            self.set_id(j, 'mocap.' + k)
-                            grp.add_member(j)
+                    add_plug(j, 'controller', str)
+                    j.controller.connect(node.name)
 
-                            create_srt_in(j, keyable=True)
+                    self.set_id(j, 'mocap.' + k)
+                    grp.add_member(j)
 
-                        else:
-                            j.show.set_value(False)
+                    create_srt_in(j, keyable=True)
 
-                        self.mocap[k].append(j)
+                else:
+                    j.show.set_value(False)
+
+                self.mocap[k].append(j)
 
         # build skeleton hierarchy
         self.parent_children(Tree.rarefy(skeleton))
@@ -223,6 +227,27 @@ class Mod(mk.Mod):
                 eff.twist.connect(srt.find('rotate').y)
 
                 parent_constraint(j2, eff)
+
+        # build ui node
+        ui_mocap = kl.Node(self.mocap['reference'][0], 'ui_mocap')
+
+        for k in self.mocap:
+            if not self.mocap[k]:
+                continue
+
+            ctrl = self.data[k]
+            if isinstance(ctrl, (list, tuple)):
+                ctrl = ctrl[0]
+
+            add_plug(ctrl, 'ui_mocap', str)
+            ctrl.ui_mocap.connect(ui_mocap.name)
+
+            j = self.mocap[k][0]
+            add_plug(j, 'ui_mocap', str)
+            j.ui_mocap.connect(ui_mocap.name)
+
+            plug = add_plug(ui_mocap, k, str)
+            plug.connect(j.name)
 
     def parent_children(self, data, parent=None, key=None):
 

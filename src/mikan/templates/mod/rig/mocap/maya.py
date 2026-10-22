@@ -111,43 +111,44 @@ class Mod(mk.Mod):
         self.set_id(hik, 'hik')
 
         for k in keys:
-            if k in self.data:
-                if self.data[k] is not None:
-                    nodes = self.data[k]
-                    if isinstance(nodes, mx.Node):
-                        nodes = [nodes]
-                    keys[k]['node'] = nodes
+            if k not in self.data or self.data[k] is None:
+                continue
 
-                    self.mocap[k] = []
+            nodes = self.data[k]
+            if isinstance(nodes, mx.Node):
+                nodes = [nodes]
+            keys[k]['node'] = nodes
 
-                    name = snake_to_pascal(k)
-                    for i, node in enumerate(nodes):
-                        if node is None:
-                            log.warning('missing node for definition: {}'.format(name))
-                            continue
+            self.mocap[k] = []
 
-                        _name = 'hik_' + name
-                        if i > 0:
-                            _name = 'end_' + name
+            name = snake_to_pascal(k)
+            for i, node in enumerate(nodes):
+                if node is None:
+                    log.warning('missing node for definition: {}'.format(name))
+                    continue
 
-                        cls = mx.tJoint
-                        if k == 'reference':
-                            cls = mx.tTransform
-                        j = mx.create_node(cls, parent=node, name=_name)
-                        if i == 0:
-                            j.add_attr(mx.String('gem_hook'))
-                            node['gem_id'] >> j['gem_hook']
+                _name = 'hik_' + name
+                if i > 0:
+                    _name = 'end_' + name
 
-                            self.set_id(j, 'mocap.' + k)
+                cls = mx.tJoint
+                if k == 'reference':
+                    cls = mx.tTransform
+                j = mx.create_node(cls, parent=node, name=_name)
+                if i == 0:
+                    j.add_attr(mx.String('gem_hook'))
+                    node['gem_id'] >> j['gem_hook']
 
-                            # connect to hik
-                            if name in hik:
-                                j.add_attr(mx.Message('Character'))
-                                j['Character'] >> hik[name]
-                        else:
-                            j['v'] = False
+                    self.set_id(j, 'mocap.' + k)
 
-                        self.mocap[k].append(j)
+                    # connect to hik
+                    if name in hik:
+                        j.add_attr(mx.Message('Character'))
+                        j['Character'] >> hik[name]
+                else:
+                    j['v'] = False
+
+                self.mocap[k].append(j)
 
         # build skeleton hierarchy
         self.parent_children(Tree.rarefy(skeleton))
