@@ -11,8 +11,6 @@ import subprocess
 from copy import deepcopy
 from contextlib import suppress
 
-from jad_pipe.tools.headsUpDisplayTool.headsUpDisplayTool import addPlayblastInfos
-
 if os.name == 'nt':
     import winreg
 
