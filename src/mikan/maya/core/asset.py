@@ -106,20 +106,6 @@ class Asset(abstract.Asset):
 
     def init_cleanup(self, remove_constraints=False):
 
-        # cleanup lost nodes
-        nodes = mx.ls(et='network')
-        grp_nodes = []
-        for node in nodes:
-            if 'gem_group' in node and 'gem_type' in node and node['gem_type'].read() == Group.type_name:
-                grp = Group(node)
-                nodes = grp.get_all_nodes()
-                n = len(nodes)
-                if n == 0:
-                    grp_nodes.append(node)
-        if grp_nodes:
-            log.debug('removed {} empty groups'.format(len(grp_nodes)))
-            mx.delete(grp_nodes)
-
         # reset rig if any
         if 'gem_group' in self.node:
             grp = self.node['gem_group'].input()
@@ -243,6 +229,21 @@ class Asset(abstract.Asset):
                 curves.append(node)
         mx.delete(curves, ch=1)
 
+        # cleanup lost nodes
+        nodes = mx.ls(et='network')
+        grp_nodes = []
+        for node in nodes:
+            if 'gem_group' in node and 'gem_type' in node and node['gem_type'].read() == Group.type_name:
+                grp = Group(node)
+                nodes = grp.get_all_nodes()
+                n = len(nodes)
+                if n == 0:
+                    grp_nodes.append(node)
+        if grp_nodes:
+            log.debug('removed {} empty groups'.format(len(grp_nodes)))
+            mx.delete(grp_nodes)
+
+        # exit
         Nodes.rebuild()
         Nodes.current_asset = current_asset
 
