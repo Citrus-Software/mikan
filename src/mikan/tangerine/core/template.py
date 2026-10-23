@@ -1577,232 +1577,220 @@ class Template(abstract.Template):
 
     # grouping ---------------------------------------------------------------------------------------------------------
 
-    def build_groups(self):
+    def _get_global_group(self):
+        """Retrieves or creates the absolute master group 'all' and manages its hook."""
+        grp_all_node = Nodes.get_id('::group')
+        if grp_all_node:
+            return Group(grp_all_node)
 
-        # all group
-        grp_all = Nodes.get_id('::group')
-        if not grp_all:
-            grp_all = Group.create('all')
-            Nodes.set_id(grp_all.node, '::group')
+        # create if it doesn't exist
+        grp_all = Group.create('all')
+        Nodes.set_id(grp_all.node, '::group')
 
-            # connect group to default hook
-            hook = self.get_hook()
-            if not hook.get_dynamic_plug('gem_group'):
-                add_plug(hook, 'gem_group', str)
+        # connect to default hook
+        hook = self.get_hook()
+        if not hook.get_dynamic_plug('gem_group'):
+            add_plug(hook, 'gem_group', str)
 
-            hook.gem_group.connect(grp_all.node.gem_group)
-            grp_all.node.set_parent(hook)
+        hook.gem_group.connect(grp_all.node.gem_group)
+        grp_all.node.set_parent(hook)
 
-        else:
-            grp_all = Group(grp_all)
+        return grp_all
 
-        # create root group
+    def _get_root_group(self):
+        """Retrieves or creates the root group for the current module."""
         for grp_id in (f'{self.name}::group', f'::groups.{self.name}'):
             grp_root = Nodes.get_id(grp_id)
-            if grp_root:  # if root already exists (as root or main)
-                grp_root = Group(grp_root)
-        if not grp_root:
-            grp_root = Group.create(self.name)
+            if grp_root:
+                return Group(grp_root)
 
+        return Group.create(self.name)
+
+    def _resolve_parent_group(self, grp_all, grp_root):
+        """Determines the parent group and template parent (handles overrides)."""
         grp_parent = grp_all
-
         tpl_parent = self.get_parent()
+
+        # standard parent resolution
         if tpl_parent:
             grp_parent_node = Nodes.get_id(f'{tpl_parent.name}::group')
-            if grp_parent_node:
-                grp_parent = Group(grp_parent_node)
-            else:
+            if not grp_parent_node:
                 raise RuntimeError(f'unable to find group parent {tpl_parent.name} for {self}!')
+            grp_parent = Group(grp_parent_node)
 
-        # override parent group
+        # override via user options
         group = self.get_opt('group')
         if group:
-            _group = group if group != 'all' else ''
-            for grp_id in (f'{_group}::group', f'::groups.{group}'):
+            group_name = group if group != 'all' else ''
+
+            # search for the override group
+            for grp_id in (f'{group_name}::group', f'::groups.{group}'):
                 _group_node = Nodes.get_id(grp_id)
                 if _group_node:
-                    grp_group = Group(_group_node)
+                    grp_override = Group(_group_node)
                     break
+            else:
+                # create the override group if it doesn't exist
+                grp_override = grp_root if group == self.name else Group.create(group)
+                Nodes.set_id(grp_override.node, f'::groups.{group}')
+                grp_override.add_parent(grp_parent)
 
-            else:  # new main group
-                if group == self.name:
-                    grp_group = grp_root
-                else:
-                    grp_group = Group.create(group)
-                Nodes.set_id(grp_group.node, f'::groups.{group}')
-
-                grp_group.add_parent(grp_parent)
-
-            grp_parent = grp_group
+            # update parents with the override
+            grp_parent = grp_override
             _tpl_node = Nodes.get_id(group)
             if _tpl_node:
-                tpl_parent = Template(_tpl_node)
+                tpl_parent = Template(_tpl_node)  # fallback if the component exists
 
-        # merge
-        merge = self.get_opt('parent')
-        merge_parent = None
+        return grp_parent, tpl_parent
+
+    def _resolve_branch_group(self, grp_root, branch_id, tpl_parent, p_branches, merge):
+        """Resolves and creates the specific branch group (Left, Right...) and handles parent merging."""
+        if not branch_id:
+            return grp_root
+
+        grp_root_branch = Group.create(self.name + self.get_branch_suffix(' '))
+
         if tpl_parent:
             merge_parent = tpl_parent.get_opt('parent')
+            for p_branch in (b for b in p_branches if b):
+                if branch_id.startswith(p_branch):
+                    grp_parent_branch = Nodes.get_id(f'{tpl_parent.name}{p_branch}::groups')
+                    if grp_parent_branch:
+                        grp_parent_branch = Group(grp_parent_branch)
 
-        if merge_parent == 'merge down':
-            grp_root.merge(grp_parent)
-        else:
-            if grp_root != grp_parent:
-                if merge in {'parent', 'merge down'}:
-                    grp_root.add_parent(grp_parent)
-                elif merge == 'merge up':
-                    grp_parent.merge(grp_root)
-                    grp_root = grp_parent
+                        # apply branch merge logic
+                        if merge_parent == 'merge down':
+                            grp_root_branch.merge(grp_parent_branch)
+                        elif merge in {'parent', 'merge down'}:
+                            grp_root_branch.add_parent(grp_root)
+                            grp_root_branch.add_parent(grp_parent_branch)
+                        elif merge == 'merge up':
+                            grp_parent_branch.merge(grp_root_branch)
+                            grp_root_branch = grp_parent_branch
 
-        # branch groups
-        if tpl_parent:
-            p_branches = tpl_parent.get_branch_ids()
+        # ensure it has a parent
+        if not list(grp_root_branch.get_parents()):
+            grp_root_branch.add_parent(grp_root)
 
-        branch_ctrls = {}
-        flip_axis = self.get_sym_axis()
+        if grp_root_branch != grp_root:
+            self.set_id(grp_root_branch.node, 'groups')
 
-        for self.branches, self.root in self.get_branches():
-            if not Nodes.get_id(f'{self.name}::group'):
-                self.set_id(grp_root.node, 'group')
+        return grp_root_branch
 
-            grp_root_branch = grp_root
-
-            branch_id = self.get_branch_id()
-            if branch_id:
-                grp_root_branch = Group.create(self.name + self.get_branch_suffix(' '))
-
-                if tpl_parent:
-                    for p_branch in p_branches:
-                        if not p_branch:
-                            continue
-                        if branch_id.startswith(p_branch):
-                            grp_parent_branch = Nodes.get_id(f'{tpl_parent.name}{p_branch}::groups')
-                            if grp_parent_branch:
-                                grp_parent_branch = Group(grp_parent_branch)
-
-                                # merge
-                                if merge_parent == 'merge down':
-                                    grp_root_branch.merge(grp_parent_branch)
-                                else:
-                                    if merge in {'parent', 'merge down'}:
-                                        grp_root_branch.add_parent(grp_root)
-                                        grp_root_branch.add_parent(grp_parent_branch)
-                                    elif merge == 'merge up':
-                                        grp_parent_branch.merge(grp_root_branch)
-                                        grp_root_branch = grp_parent_branch
-
-                if not grp_root_branch.get_parents():
-                    grp_root_branch.add_parent(grp_root)
-                if grp_root_branch != grp_root:
-                    self.set_id(grp_root_branch.node, 'groups')
-
-            # subgroups
-            sub_grps = Nodes.get_id('{}{}::subgroups'.format(self.name, self.get_branch_id())) or []
-            for sub_grp in sub_grps:
-                if sub_grp.get_dynamic_plug('gem_group_parent'):
-                    sub_grp_parent_id = sub_grp.gem_group_parent.get_value()
-                    if sub_grp_parent_id == 'all':
-                        sub_grp_parent = grp_all
-                    else:
-                        sub_grp_parent = Nodes.get_id('{}::groups'.format(sub_grp_parent_id))
-                        if not isinstance(sub_grp_parent, kl.Node):
-                            continue
-                        if not sub_grp_parent.get_dynamic_plug('gem_type') or sub_grp_parent.gem_type.get_value() != Group.type_name:
-                            continue
-                        sub_grp_parent = Group(sub_grp_parent)
-
-                    Group(sub_grp).add_parent(sub_grp_parent)
-
-            # vis sub groups
-            grp_vis = Nodes.get_id(f'{self.name}{self.get_branch_id()}::vis') or []
-            if isinstance(grp_vis, kl.Node):
-                grp_vis = [grp_vis]
-
-            _grp = grp_root_branch
-            _tpl = self
-            while True:
-                if not Nodes.get_id(f'{_tpl.name}::ctrls'):
-                    _tpl = _tpl.get_parent()
-                    if not isinstance(_tpl, Template):
-                        _tpl = None
-                        break
-                else:
-                    break
-            if _tpl and _tpl != self:
-                _grp = Nodes.get_id('{}{}::groups'.format(_tpl.name, self.get_branch_id()))
-                if isinstance(_grp, list):
-                    _grp = _grp[0]
-                if not _grp:
-                    _grp = Nodes.get_id(f'{_tpl.name}::group')
-                if _grp and isinstance(_grp, kl.Node):
-                    _grp = Group(_grp)
-
-            for grp in grp_vis:
-                grp = Group(grp)
-                if _grp:
-                    _grp.connect_showhide(grp)
-                if grp.node.get_dynamic_plug('gem_vis'):
-                    for vis_id in grp.node.gem_vis.get_value().split(';'):
-                        if '::ctrls' not in vis_id:
-                            continue
-                        for vis_node in flatten_list([Nodes.get_id(vis_id)]):
-                            if vis_node:
-                                if not vis_node.get_plug('gem_type') or vis_node.gem_type.get_value() != Control.type_name:
-                                    Control.create(vis_node)
-                                Control(vis_node).connect_showhide(grp)
-
-            # controllers
-            ctrl_tag = f'{self.name}{branch_id}::ctrls'
-            nodes = Nodes.get_id(ctrl_tag)
-            if not nodes:
+    def _build_subgroups(self, grp_all, branch_id):
+        """Finds subgroups via tags and parents them appropriately."""
+        sub_grps = Nodes.get_id(f'{self.name}{branch_id}::subgroups') or []
+        for sub_grp in sub_grps:
+            if sub_grp.get_dynamic_plug('gem_group_parent') is None:
                 continue
 
-            # build mirror tables
-            sub_grps = {}
-            for node in nodes:
-                gem_id = Nodes.get_node_id(node, '::ctrls')
-                tpl_id, sep, ctrl_key = gem_id.partition('::')
-                tpl_id = tpl_id.split('.')
-                branch_keys = tpl_id[1:]
-                ctrl_key = '.'.join(ctrl_key.split('.')[1:])
+            sub_grp_parent_id = sub_grp.gem_group_parent.get_value()
+            if sub_grp_parent_id == 'all':
+                sub_grp_parent = grp_all
+            else:
+                sub_grp_parent = Nodes.get_id(f'{sub_grp_parent_id}::groups')
+                if not isinstance(sub_grp_parent, kl.Node):
+                    continue
+                if not sub_grp_parent.get_dynamic_plug('gem_type') or sub_grp_parent.gem_type.get_value() != Group.type_name:
+                    continue
+                sub_grp_parent = Group(sub_grp_parent)
 
-                if '.' in ctrl_key:
-                    # create subgroup
-                    sub_grp_name = tpl_id[0] + '_' + ctrl_key.replace('.', '_') + self.get_branch_suffix()
-                    sub_grp = sub_grps.get(sub_grp_name)
-                    if not sub_grp:
-                        sub_grp = Group.create(sub_grp_name)
-                        sub_grp.add_parent(grp_root_branch)
-                        sub_grps[sub_grp_name] = sub_grp
-                    sub_grp.add_members(node)
+            Group(sub_grp).add_parent(sub_grp_parent)
+
+    def _build_visibility_groups(self, grp_root_branch, branch_id):
+        """Resolves visibility groups and connects their show/hide logic."""
+        grp_vis_nodes = Nodes.get_id(f'{self.name}{branch_id}::vis') or []
+        if isinstance(grp_vis_nodes, kl.Node):
+            grp_vis_nodes = [grp_vis_nodes]
+
+        # find the nearest template parent containing controllers
+        _grp = grp_root_branch
+        _tpl = self
+        while _tpl:
+            if Nodes.get_id(f'{_tpl.name}::ctrls'):
+                break
+            _tpl = _tpl.get_parent() if isinstance(_tpl.get_parent(), Template) else None
+
+        # resolve target parent group if we moved up the template hierarchy
+        if _tpl and _tpl != self:
+            _grp = Nodes.get_id(f'{_tpl.name}{branch_id}::groups')
+            if isinstance(_grp, list):
+                _grp = _grp[0]
+            if not _grp:
+                _grp = Nodes.get_id(f'{_tpl.name}::group')
+            if _grp and isinstance(_grp, kl.Node):
+                _grp = Group(_grp)
+
+        # apply visibility connections
+        for grp_node in grp_vis_nodes:
+            grp = Group(grp_node)
+            if _grp:
+                _grp.connect_showhide(grp)
+
+            if grp.node.get_dynamic_plug('gem_vis'):
+                for vis_id in grp.node.gem_vis.get_value().split(';'):
+                    if '::ctrls' not in vis_id:
+                        continue
+                    for vis_node in flatten_list([Nodes.get_id(vis_id)]):
+                        if vis_node:
+                            if not vis_node.get_plug('gem_type') or vis_node.gem_type.get_value() != Control.type_name:
+                                Control.create(vis_node)
+                            Control(vis_node).connect_showhide(grp)
+
+    def _group_controllers(self, grp_root_branch, branch_id, branch_ctrls, flip_axis):
+        """Parses controller IDs to create sub-groups and populate mirror symmetry data."""
+        nodes = Nodes.get_id(f'{self.name}{branch_id}::ctrls')
+        if not nodes:
+            return
+
+        sub_grps = {}
+        for node in nodes:
+            gem_id = Nodes.get_node_id(node, '::ctrls')
+            tpl_id_str, _, ctrl_key_str = gem_id.partition('::')
+
+            tpl_id = tpl_id_str.split('.')
+            branch_keys = tpl_id[1:]
+            ctrl_key = '.'.join(ctrl_key_str.split('.')[1:])
+
+            # create hierarchical subgroup if the ctrl key contains a dot
+            if '.' in ctrl_key:
+                sub_grp_name = f"{tpl_id[0]}_{ctrl_key.replace('.', '_')}{self.get_branch_suffix()}"
+                sub_grp = sub_grps.get(sub_grp_name)
+                if not sub_grp:
+                    sub_grp = Group.create(sub_grp_name)
+                    sub_grp.add_parent(grp_root_branch)
+                    sub_grps[sub_grp_name] = sub_grp
+                sub_grp.add_members(node)
+            else:
+                grp_root_branch.add_member(node)
+
+            # store controller data for mirror setup
+            full_ctrl_key = f'{tpl_id[0]}.{ctrl_key}'
+            branch_ctrls.setdefault(full_ctrl_key, {})
+
+            if flip_axis == 'x':
+                for i, key in enumerate(branch_keys):
+                    if key in ('L', 'R'):
+                        common_key = list(branch_keys)
+                        common_key[i] = '@'
+                        common_key_str = '.'.join(common_key)
+
+                        branch_ctrls[full_ctrl_key].setdefault(common_key_str, {})
+                        branch_ctrls[full_ctrl_key][common_key_str][key] = node
+                        break
                 else:
-                    grp_root_branch.add_member(node)
+                    # runs if no 'L' or 'R' was found in branch_keys
+                    common_key_str = '.'.join(branch_keys)
+                    branch_ctrls[full_ctrl_key][common_key_str] = {'x': node}
 
-                ctrl_key = tpl_id[0] + '.' + ctrl_key
-                if ctrl_key not in branch_ctrls:
-                    branch_ctrls[ctrl_key] = {}
+                    ctrl_key
 
-                if flip_axis == 'x':
-
-                    for i, key in enumerate(branch_keys):
-                        if key in ('L', 'R'):
-                            common_key = branch_keys[:]
-                            common_key[i] = '@'
-                            common_key = '.'.join(common_key)
-                            if common_key not in branch_ctrls[ctrl_key]:
-                                branch_ctrls[ctrl_key][common_key] = {}
-                            branch_ctrls[ctrl_key][common_key][key] = node
-                            break
-
-                    if 'L' not in branch_keys and 'R' not in branch_keys:
-                        common_key = '.'.join(branch_keys)
-                        branch_ctrls[ctrl_key][common_key] = {'x': node}
-
-        # connect mirror controls
+    def _connect_mirror_controls(self, branch_ctrls):
+        """Iterates over parsed controller data to build mirror tables and attributes."""
         for _, data in branch_ctrls.items():
             for _, ctrls in data.items():
                 if 'L' in ctrls and 'R' in ctrls:
-                    attr = f'mirror_{flip_axis}s'
+                    attr = f'mirror_xs'
                     add_plug(ctrls['L'], attr, str, default_value='+x')
                     add_plug(ctrls['R'], attr, str, default_value='-x')
 
@@ -1817,11 +1805,6 @@ class Template(abstract.Template):
 
                 elif 'x' in ctrls:
                     Control.create_mirror_table(ctrls['x'], ctrls['x'], 'x')
-
-        # vis groups
-        grp_vis = Nodes.get_id(f'{self.name}::vis') or []
-        if isinstance(grp_vis, kl.Node):
-            grp_vis = [grp_vis]
 
     def build_virtual_dag_hook(self):
         data = self.template_data.get('hierarchy', {})

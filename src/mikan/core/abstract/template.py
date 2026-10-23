@@ -1301,12 +1301,80 @@ class Template(object):
     # hierarchy ----------------------------------------------------------------
 
     def build_groups(self):
-        """Build the group hierarchy for this template.
+        """Main orchestrator for building the group hierarchy and mirror data."""
 
-        Note:
-            This is a placeholder. Override in subclasses.
-        """
-        pass
+        # base hierarchy resolution
+        grp_all = self._get_global_group()
+        grp_root = self._get_root_group()
+
+        grp_parent, tpl_parent = self._resolve_parent_group(grp_all, grp_root)
+        grp_root = self._apply_group_merge_logic(grp_root, grp_parent, tpl_parent)
+
+        merge = self.get_opt('parent')
+        p_branches = tpl_parent.get_branch_ids() if tpl_parent else []
+
+        branch_ctrls = {}
+        flip_axis = self.get_sym_axis()
+
+        # per-branch processing
+        for self.branches, self.root in self.get_branches():
+            # tag fallback
+            if not Nodes.get_id('{}::group'.format(self.name)):
+                self.set_id(grp_root.node, 'group')
+
+            branch_id = self.get_branch_id()
+
+            # branch hierarchy
+            grp_root_branch = self._resolve_branch_group(grp_root, branch_id, tpl_parent, p_branches, merge)
+
+            # sub-components
+            self._build_subgroups(grp_all, branch_id)
+            self._build_visibility_groups(grp_root_branch, branch_id)
+            self._group_controllers(grp_root_branch, branch_id, branch_ctrls, flip_axis)
+
+        # connect symmetries globally once all branches are processed
+        self._connect_mirror_controls(branch_ctrls)
+
+    def _get_global_group(self):
+        """Retrieves or creates the absolute master group 'all' and manages its hook."""
+
+    def _get_root_group(self):
+        """Retrieves or creates the root group for the current module."""
+
+    def _resolve_parent_group(self, grp_all, grp_root):
+        """Determines the parent group and template parent (handles overrides)."""
+        return None, None
+
+    def _apply_group_merge_logic(self, grp_root, grp_parent, tpl_parent):
+        """Applies the merge rules (merge up, merge down, parent)."""
+        merge_opt = self.get_opt('parent')
+        merge_parent_opt = tpl_parent.get_opt('parent') if tpl_parent else None
+
+        if merge_parent_opt == 'merge down':
+            grp_root.merge(grp_parent)
+        elif grp_parent != grp_root:
+            if merge_opt in {'parent', 'merge down'}:
+                grp_root.add_parent(grp_parent)
+            elif merge_opt == 'merge up':
+                grp_parent.merge(grp_root)
+                grp_root = grp_parent  # the parent absorbs the root
+
+        return grp_root
+
+    def _resolve_branch_group(self, grp_root, branch_id, tpl_parent, p_branches, merge):
+        """Resolves and creates the specific branch group (Left, Right...) and handles parent merging."""
+
+    def _build_subgroups(self, grp_all, branch_id):
+        """Finds subgroups via tags and parents them appropriately."""
+
+    def _build_visibility_groups(self, grp_root_branch, branch_id):
+        """Resolves visibility groups and connects their show/hide logic."""
+
+    def _group_controllers(self, grp_root_branch, branch_id, branch_ctrls, flip_axis):
+        """Parses controller IDs to create sub-groups and populate mirror symmetry data."""
+
+    def _connect_mirror_controls(self, branch_ctrls):
+        """Iterates over parsed controller data to build mirror tables and attributes."""
 
     def build_virtual_dag(self):
         """Build the virtual DAG connections for pickwalk.
