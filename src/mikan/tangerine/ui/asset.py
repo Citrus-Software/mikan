@@ -10,6 +10,7 @@ from PySide2 import QtGui, QtWidgets
 from PySide2.QtCore import Qt
 
 import meta_nodal_py as kl
+from mikan.tangerine.lib.anim import anim_match_FK_with_modifier
 from tang_core import profile as cp
 from tang_core.callbacks import Callbacks
 from tang_core.selection import modifiers_to_selection_mode
@@ -157,6 +158,21 @@ def _is_asset_node(document, node):
     except AttributeError:
         return False
 
+def _get_mocap_rig_root(asset_node):
+    for controller in _get_all_controllers_in_asset(asset_node):
+        if controller.get_dynamic_plug('ui_mocap'):
+            ui_mocap_node = controller.get_dynamic_plug('ui_mocap').get_input().get_node()
+            reference_plug = ui_mocap_node.get_dynamic_plug('reference')
+            if reference_plug:
+                return reference_plug.get_input().get_node()
+
+    return None
+
+def _prepare_rig_for_mocap_import(asset_node, modifier):
+    for controller in _get_all_controllers_in_asset(asset_node):
+        if p := controller.get_dynamic_plug('ui_match_ikfk'):
+            menu_node = p.get_input().get_node()
+            anim_match_FK_with_modifier(menu_node, modifier)
 
 class AssetCallbacks:
     # for right-click menu
@@ -174,6 +190,8 @@ class AssetCallbacks:
     cb.before_unload_asset = _before_unload_asset
     cb.get_asset_node = _get_asset_node
     cb.is_asset_node = _is_asset_node
+    cb.get_mocap_rig_root = _get_mocap_rig_root
+    cb.prepare_rig_for_mocap_import = _prepare_rig_for_mocap_import
     try:
         cb.after_load_asset = dynamic.after_load_asset
     except AttributeError:

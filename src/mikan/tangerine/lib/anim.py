@@ -71,47 +71,51 @@ def anim_match_FK(node):
             return
 
     with find_doc().modify("FK match") as modifier:
-        current_frame = modifier.document.current_frame
+        anim_match_FK_with_modifier(node, modifier)
 
-        xfos = []
-        srts = []
-        switch = node.switch.get_input()
 
-        plug_fk = node.fk
-        _vector = node.find('fk')  # legacy
-        if _vector:
-            plug_fk = _vector.input
+def anim_match_FK_with_modifier(node, modifier):
+    current_frame = modifier.document.current_frame
 
-        fks = [plug_fk[i].get_input().get_node() for i in range(plug_fk.get_size()) if plug_fk[i].get_input()]
-        for c in fks:
-            srt = c.find('transform')
-            srts.append(srt)
-            xfo = c.world_transform.get_value(current_frame)
-            xfos.append(xfo)
+    xfos = []
+    srts = []
+    switch = node.switch.get_input()
 
-        set_animated_plug_value(switch, 0.0, modifier)
+    plug_fk = node.fk
+    _vector = node.find('fk')  # legacy
+    if _vector:
+        plug_fk = _vector.input
 
-        for xfo, srt, fk in zip(xfos, srts, fks):
-            wim = fk.parent_world_transform.get_value(current_frame).inverse()
-            xfo = xfo * wim
+    fks = [plug_fk[i].get_input().get_node() for i in range(plug_fk.get_size()) if plug_fk[i].get_input()]
+    for c in fks:
+        srt = c.find('transform')
+        srts.append(srt)
+        xfo = c.world_transform.get_value(current_frame)
+        xfos.append(xfo)
 
-            ro = srt.rotate_order.get_value(current_frame)
+    set_animated_plug_value(switch, 0.0, modifier)
+
+    for xfo, srt, fk in zip(xfos, srts, fks):
+        wim = fk.parent_world_transform.get_value(current_frame).inverse()
+        xfo = xfo * wim
+
+        ro = srt.rotate_order.get_value(current_frame)
+        r = xfo.rotation(ro)
+
+        if isinstance(srt, kl.SRTToJointTransform):
+            joro = srt.joint_orient_rotate_order.get_value()
+            jo = srt.joint_orient_rotate.get_value()
+
+            _jo = M44f().setRotation(jo, joro)
+            _r = M44f().setRotation(r, ro)
+            xfo = _r * _jo.inverse()
             r = xfo.rotation(ro)
 
-            if isinstance(srt, kl.SRTToJointTransform):
-                joro = srt.joint_orient_rotate_order.get_value()
-                jo = srt.joint_orient_rotate.get_value()
+        srt_plugs = [fk.rx, fk.ry, fk.rz]
+        srt_values = [r.x, r.y, r.z]
 
-                _jo = M44f().setRotation(jo, joro)
-                _r = M44f().setRotation(r, ro)
-                xfo = _r * _jo.inverse()
-                r = xfo.rotation(ro)
-
-            srt_plugs = [fk.rx, fk.ry, fk.rz]
-            srt_values = [r.x, r.y, r.z]
-
-            for plug, value in zip(srt_plugs, srt_values):
-                set_animated_plug_value(plug, value, modifier)
+        for plug, value in zip(srt_plugs, srt_values):
+            set_animated_plug_value(plug, value, modifier)
 
 
 def anim_match_IK(node):
