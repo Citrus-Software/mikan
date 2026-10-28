@@ -23,7 +23,7 @@ LOGGER_NAME = 'mikan'
 __all__ = [
     'create_logger', 'SafeHandler', 'get_formatter',
     'timed_code', 'set_time_logging', 'get_date_str',
-    'get_version',
+    'get_version', 'get_level',
     'MultiTimer'
 ]
 
@@ -284,6 +284,16 @@ def get_date_str():
     Gtime = time.gmtime()
     hour_offset = 2
     return time.strftime(" %a, %d %b %Y {}:%M:%S ".format(Gtime.tm_hour + hour_offset), Gtime)
+
+
+def get_level(name=None):
+    if not name:
+        name = LOGGER_NAME
+
+    logger = logging.getLogger(name)
+    level_int = logger.getEffectiveLevel()
+
+    return logging.getLevelName(level_int)
 
 
 def get_version():

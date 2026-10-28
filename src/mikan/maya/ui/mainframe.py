@@ -15,7 +15,7 @@ from mikan.core.prefs import Prefs, UserPrefs, find_maya_project_root
 
 from mikan.vendor.Qt import QtWidgets
 from mikan.vendor.Qt.QtCore import Qt, QSize
-from mikan.vendor.Qt.QtWidgets import QAction
+from mikan.vendor.Qt.QtWidgets import QAction, QActionGroup
 from mikan.vendor.Qt.QtGui import QIcon
 
 from mikan.maya.core import Template, Mod
@@ -231,6 +231,22 @@ class MikanUI(MayaDockMixin):
             if icon:
                 act.setIcon(icon)
 
+            # add radio buttons
+            group_name = item.get('group')
+            if group_name:
+                try:
+                    parent._action_groups
+                except:
+                    parent._action_groups = {}
+
+                if group_name not in parent._action_groups:
+                    ag = QActionGroup(parent)
+                    ag.setExclusive(True)
+                    parent._action_groups[group_name] = ag
+
+                parent._action_groups[group_name].addAction(act)
+                act.setCheckable(True)
+
             # add checkbox
             if callable(toggle):
 
@@ -267,11 +283,13 @@ class MikanUI(MayaDockMixin):
         # get paths
         sep = os.path.sep
         base_path = os.path.abspath(__file__).split(sep)
+        path_prefs = sep.join(base_path[:-1]) + sep + 'prefs.yml'
         path_tools = sep.join(base_path[:-1]) + sep + 'tools.yml'
         path_help = sep.join(base_path[:-1]) + sep + 'help.yml'
 
         # get prefs
         menu_items = []
+        menu_items.append(('&Settings', path_prefs))
         menu_items.append(('&Tools', path_tools))
         menu_items += UserPrefs.get('user_menu_paths', [])
 

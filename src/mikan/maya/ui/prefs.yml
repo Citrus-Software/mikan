@@ -1,0 +1,72 @@
+# settings menu
+
+- name: Menu Editor
+  py: |
+    from mikan.maya.utils.menu_bar_editor import MenuBarEditorUI
+    MenuBarEditorUI().show()
+
+- separator: 'Logger'
+
+- name: 'Timed Code'
+  toggle: |
+    def check_state():
+        import mikan.core.logger
+        return mikan.core.logger.debug_timings
+  py: |
+    import mikan.core.logger
+    new_state = not mikan.core.logger.debug_timings
+    mikan.core.logger.set_time_logging(new_state)
+  help: Toggles elapsed time logging
+
+
+- separator: on
+
+- name: 'Log Level: DEBUG'
+  group: level
+  toggle: |
+    def check_state():
+        from mikan.core.logger import get_level
+        return get_level() == 'DEBUG'
+  py: |
+    import mikan.core.logger
+    mikan.core.logger.create_logger(level='DEBUG')
+    mikan.core.logger.create_logger('mikan.pose', level='DEBUG')
+
+- name: 'Log Level: INFO'
+  group: level
+  toggle: |
+    def check_state():
+        from mikan.core.logger import get_level
+        return get_level() == 'INFO'
+  py: |
+    import mikan.core.logger
+    mikan.core.logger.create_logger(level='INFO')
+    mikan.core.logger.create_logger('mikan.pose', level='INFO')
+
+
+- separator: on
+
+- name: Colored Script Editor
+  toggle: |
+    from mikan.maya.ui.widgets import maya_syntax_highlighter_toggle_state
+  py: |
+    from mikan.maya.ui.widgets import toggle_maya_syntax_highlighter
+    toggle_maya_syntax_highlighter()
+  help: Toggles colored log levels and comments in the Script Editor
+
+
+- separator: 'Dev'
+
+- name: 'Debug: VS Code (debugpy)'
+  py: |
+    import debugpy
+    import sys
+    debugpy.configure(python=sys.executable)
+    debugpy.listen(('0.0.0.0', 3500))
+  help: Enables remote Python debugging (VS Code, port 3500)
+
+- name: 'Debug: PyCharm (pydevd)'
+  py: |
+    import pydevd_pycharm
+    pydevd_pycharm.settrace('localhost', port=3500, suspend=False, stdoutToServer=True, stderrToServer=True)
+  help: Connects Python debugger to PyCharm (port 3500)
