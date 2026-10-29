@@ -1,143 +1,132 @@
 # toolbox menu
 
-- name: rig
+- name: Rig
   menu:
 
     - separator: Template
 
-    - name: create control sets
+    - name: Create Control Sets
       file: $snippets/create_ctrl_sets.py
 
-    - name: fix template pivots
-      file: $snippets/fix_template_pivots.py
+    - name: Fix Template Pivots
       help: Remove pivot values from template
+      file: $snippets/fix_template_pivots.py
 
-    - name: snap template from rig
+    - name: Snap Template from Rig
       file: $snippets/snap_template.py
-
 
     - separator: Misc.
 
-    - name: snap toolbox
+    - name: Snap Toolbox
       py: |
         from mikan.maya.utils.snap import SnapUI2
         SnapUI2(mikan_ui=MikanUI).show()
 
-    - name: create joints from cvs
+    - name: Create Joints from CVs
       file: $snippets/joints_from_cvs.py
 
-    - name: retarget template
+    - name: Retarget Template
       py: |
         from mikan.maya.utils.ui_auto import FunctionAutoUI
         _ui = FunctionAutoUI("mikan/maya/utils/retarget_template.py", "retarget_template")
         _ui.show()
 
-
     - separator: on
-    - name: get anim curve mod
+    - name: Get Anim Curve Mod
       file: $snippets/export_driven_keys_to_mod.py
 
-
     - separator: on
-    - name: mesh to rig
+    - name: Mesh to Rig
       py: |
         from mikan.maya.utils.ui_auto import FunctionAutoUI
         _ui = FunctionAutoUI("mikan/maya/utils/topology_utils/mesh_to_rig.py", None, advance_setting_collapse=False)
         _ui.show()
 
     - separator: Anim
-    - name: save anim
-      file: $snippets/check/save_anim.py
 
-    - name: fix dagmenu
+    - name: Reload DAG Menu
       py: |
         from mikan.maya.ui.dagmenu import DagMenu
         DagMenu.reload()
 
 
-- name: export
+- name: Export
   menu:
     - name: Set Tangerine Path
       file: $snippets/export/set_tangerine_path.py
 
-    - name: Save shader data
+    - name: Save Shader Data
       file: $snippets/export/save_shader_data.py
 
-    - name: Export Blueprint abc
+    - name: Export Blueprint ABC
       file: $snippets/export/export_blueprint.py
 
     - name: Run Tangerine
       file: $snippets/export/run_tangerine.py
 
 
-- separator: on
+- separator: Deformers
 
-- name: cluster
+- name: Cluster
   menu: $ui/menus/cluster.yml
 
-
-- name: skin
+- name: Skin
   menu: $ui/menus/skin.yml
 
-
-- name: non linear
+- name: Non Linear
   menu:
-    - name: 'add non linear to controller'
+    - name: Add Non Linear to Controller
       menu:
-        - name: 'bend'
+        - name: Bend
           py: |
             import mikan.maya.cmdx as mx
             from mikan.maya.lib.rig import add_nonlinear
-
             for obj in mx.ls(sl=True):
               add_nonlinear(obj, 'bend')
-        - name: 'flare'
+
+        - name: Flare
           py: |
             import mikan.maya.cmdx as mx
             from mikan.maya.lib.rig import add_nonlinear
-
             for obj in mx.ls(sl=True):
               add_nonlinear(obj, 'flare')
-        - name: 'sine'
+
+        - name: Sine
           py: |
             import mikan.maya.cmdx as mx
             from mikan.maya.lib.rig import add_nonlinear
-
             for obj in mx.ls(sl=True):
               add_nonlinear(obj, 'sine')
-        - name: 'squash'
+
+        - name: Squash
           py: |
             import mikan.maya.cmdx as mx
             from mikan.maya.lib.rig import add_nonlinear
-
             for obj in mx.ls(sl=True):
               add_nonlinear(obj, 'squash')
-        - name: 'twist'
+
+        - name: Twist
           py: |
             import mikan.maya.cmdx as mx
             from mikan.maya.lib.rig import add_nonlinear
-
             for obj in mx.ls(sl=True):
               add_nonlinear(obj, 'twist')
-        - name: 'wave'
+
+        - name: Wave
           py: |
             import mikan.maya.cmdx as mx
             from mikan.maya.lib.rig import add_nonlinear
-
             for obj in mx.ls(sl=True):
               add_nonlinear(obj, 'wave')
 
-    - name: 'reroot handle'
+    - name: Reroot Handle
+      help: Transfer handle from the first selected transform to the second
       py: |
         from mikan.maya.lib.rig import transfer_nonlinear
         transfer_nonlinear()
-      help: Transfer handle from the first selected transform to the second
 
-
-- name: deformers
-  menu:
-    - name: assign deformer tool
-      py: |
-        from mikan.maya.utils.deformer_utils import *
-        AssignDeformerHandlesUI().show()
-      help: Opens a tool to assign the chosen deformers to the selected geometry
+- name: Bind Deformers
+  help: Opens a tool to assign the chosen deformers to the selected geometry
+  py: |
+    from mikan.maya.utils.deformer_utils import *
+    AssignDeformerHandlesUI().show()

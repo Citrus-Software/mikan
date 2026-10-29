@@ -289,14 +289,15 @@ class MikanUI(MayaDockMixin):
 
         # get prefs
         menu_items = []
-        menu_items.append(('&Settings', path_prefs))
         menu_items.append(('&Tools', path_tools))
+
         menu_items += UserPrefs.get('user_menu_paths', [])
 
         _menu_items = Prefs.get('menu_paths', {})
         for k in _menu_items:
             menu_items.append([k, _menu_items[k]])
 
+        menu_items.append(('&Settings', path_prefs))
         menu_items.append(('&Help', path_help))
 
         # remove duplicates

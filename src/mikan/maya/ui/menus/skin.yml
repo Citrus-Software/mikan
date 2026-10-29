@@ -1,110 +1,110 @@
 # skin deformer menu
 
-- name: skin to hook
+- name: Skin to Hook
   file: $snippets/skin_to_hook.py
   help: Select vertices with skin weights and objects to hook in any order
 
 
 - separator: on
 
-- name: transfer skin
+- name: Transfer Skin
+  help: Copies the skinCluster from the first selected geometry to the others
   file: $snippets/deformers/ttSkinAs.mel
   mel: ttSkinAs();
   debug: on
-  help: Copies the skinCluster from the first selected geometry to the others
 
-- name: combine skinned meshes
-  file: $snippets/deformers/combine_skin.py
+- name: Combine Skinned Meshes
   help: Generates a single skinned mesh by combining the selected skinned meshes
+  file: $snippets/deformers/combine_skin.py
 
-- name: reset bindpose
-  file: $snippets/deformers/reset_bindpose.py
+- name: Reset Bindpose
   help: Reset bind pre matrix of selected skinCluster from current pose
+  file: $snippets/deformers/reset_bindpose.py
 
-- name: repeat flood
+- name: Repeat Flood
+  help: In paint mode, push the button flood n times. Useful for skin smoothing with a selection of vertices.
   file: $snippets/deformers/repeat_flood.py
-  help: In paint mode, push the button flood n times. Usefull for skin smoothing with a selection of vertices.
 
-- name: cleanup joints color
+- name: Cleanup Joints Color
+  help: Removes custom color settings from all joints
   py: |
     import mikan.maya.cmdx as mx
     for j in mx.ls(et='joint'):
       j['useObjectColor'] = False
-  help: Removes custom color settings from all joints
 
 
 - separator: Symmetry
 
-- name: init sym map (points)
+- name: Init Sym Map (Points)
+  help: Build sym map of selected meshes for smart mirror
   file: $snippets/deformers/smart_mirror.py
   py: build_mirror_tables()
-  help: Build sym map of selected meshes for smart mirror
 
-- name: init sym map (middle edge)
+- name: Init Sym Map (Middle Edge)
+  help: Build sym map of selected meshes for smart mirror (edge flow algo)
   file: $snippets/deformers/smart_mirror.py
   py: build_mirror_tables_topology()
-  help: Build sym map of selected meshes for smart mirror ( edge flow aglo )
 
-- name: smart mirror skin (L to R)
+- name: Smart Mirror Skin (L > R)
+  help: Select meshes with generated sym map in any pose
   file: $snippets/deformers/smart_mirror.py
   py: smart_mirror('skin')
-  help: Select meshes with generated sym map in any pose
 
-- name: smart mirror skin (R to L)
+- name: Smart Mirror Skin (R > L)
+  help: Select meshes with generated sym map in any pose
   file: $snippets/deformers/smart_mirror.py
   py: smart_mirror('skin', -1)
-  help: Select meshes with generated sym map in any pose
 
 
 - separator: Layers
 
-- name: switch skin layer
-  file: $snippets/deformers/switch_skin_layer.py
+- name: Switch Skin Layer
   help: Toggles the skin layer display of the selected geometries
+  file: $snippets/deformers/switch_skin_layer.py
   max_version: 2023
 
-- name: bind skin layer
+- name: Bind Skin Layer
   file: $snippets/deformers/bind_skin_layers.py
   max_version: 2023
 
-- name: copy skin layers
+- name: Copy Skin Layers
   file: $snippets/deformers/copy_skin_layers.py
 
-- name: add influences
+- name: Add Influences
   file: $snippets/deformers/add_influence_layer.py
   py: add_influence_layer()
   max_version: 2023
 
-- name: remove unused influences
+- name: Remove Unused Influences
   file: $snippets/deformers/remove_unused_layers.py
   py: remove_unused_influence_layer()
   max_version: 2023
 
-- name: mirror skin maya (L to R)
+- name: Mirror Skin Maya (L > R)
   file: $snippets/deformers/mirror_skin_layer.py
   py: mirror_skin_layer()
 
-- name: mirror skin maya (R to L)
+- name: Mirror Skin Maya (R > L)
   file: $snippets/deformers/mirror_skin_layer.py
   py: mirror_skin_layer(True)
 
-- name: intermediate layer shapes
+- name: Intermediate Layer Shapes
   menu:
-    - name: remove shape layers
+    - name: Remove Layer Shapes
       file: $snippets/deformers/edit_layers.py
       py: _remove_layers()
-    - name: inject shape layers
+    - name: Inject Layer Shapes
       file: $snippets/deformers/edit_layers.py
       py: _inject_layers()
 
-    - name: switch skin layer
-      file: $snippets/deformers/switch_skin_layer.py
+    - name: Switch Skin Layer
       help: Toggles the skin layer display of the selected geometries
+      file: $snippets/deformers/switch_skin_layer.py
       version: 2024
 
 
 - separator: Weight maps
 
-- name: apply wmproxy to skin
+- name: Apply WMProxy to Skin
+  help: Select skinned meshes and NURBS object with nmap configuration in any order
   file: $snippets/deformers/apply_wmproxy_skin.py
-  help: Select skinned meshes and nurbs object with nmap configuration in any order
