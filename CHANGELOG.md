@@ -5,6 +5,35 @@ All notable changes to this project will be documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.10] 2026-10-29
+
+### Added
+
+- Added complete support for `mod.rig.mocap` module, including effector rig, UI integration, and Tangerine build support.
+- Added custom Maya outliner colors for template nodes to improve hierarchy readability.
+
+### Changed
+
+- Overhauled the Template UI (updated styling, backgrounds, context menus, and the "add" tab).
+- Reorganized the main menus and moved settings to a dedicated menubar submenu.
+- Reordered fields in the Posing Editor for better UX.
+- Updated `mod.group` parenting logic.
+- Ensured transform rotation blends use the slerp shortest arc in Tangerine.
+- Increased animation curve data precision in the mod generator.
+- Enhanced Tangerine shader exports, including automatic JPG conversion for UDIM path styles.
+
+### Fixed
+
+- Fixed a regression with the "copy skin layers" tool in Maya 2024 and above.
+- Fixed deformer transfer in Maya to correctly handle the new `deformer.blend` delta structure.
+- Fixed target skin detection during NURBS to weightmaps conversion.
+- Fixed the bake action in Tangerine to prevent re-baking already baked controllers.
+- Fixed orient type constraints in Tangerine to ensure "shortest mode" is correctly enabled.
+- Fixed legacy connections for blend weighted transform nodes in Tangerine.
+- Fixed UI search behavior to prevent cursor reset on empty searches and properly restore editor focus.
+- Fixed contextual help regex to properly match dotted command names.
+- Fixed input type validation for the `list_history` command.
+
 ## [1.0.9] - 2026-07-12
 
 ### Added
