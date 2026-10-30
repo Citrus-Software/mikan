@@ -7,7 +7,7 @@
     ptvsd.enable_attach(address=('0.0.0.0', 3500), redirect_output=True)
 
 - name: build abc
-  file: $scripts\build_abc.py
+  file: $scripts/build_abc.py
 
 - name: reload
   py: |
