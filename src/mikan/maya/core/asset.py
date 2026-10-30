@@ -728,6 +728,13 @@ class Asset(abstract.Asset):
             # exit
             self.set_version()
 
+        # wake up evaluation manager
+        if mc.about(apiVersion=True) < 20190000:
+            mc.evaluationManager(invalidate=True)
+            current_time = mc.currentTime(q=True)
+            mc.currentTime(current_time, update=True)
+            mc.refresh(force=True)
+
         monitor.report()
         if monitor.errors:
             log.info(u'make: job\'s done! 🧐')
