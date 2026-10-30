@@ -44,4 +44,4 @@ class Deformer(mk.Deformer):
     @staticmethod
     def hook(node, xfo, hook):
         if hook == 'level':
-            node.level
+            return node.level

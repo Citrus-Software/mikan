@@ -27,8 +27,17 @@ class Deformer(mk.Deformer):
         # build
         smooth = mc.polySmooth(str(self.geometry))
         self.node = mx.encode(smooth[0])
+
+        name = '_'.join(self.transform.name().split('_')[1:])
+        if not name:
+            name = self.transform.name()
+        self.node.rename('subdiv_{}'.format(name))
+
         self.node['divisions'] = self.data['level']
-        self.node['keepBorders'] = False
+        if 'keepBorders' in self.node:
+            self.node['keepBorders'] = False
+        if 'keepBorder' in self.node:
+            self.node['keepBorder'] = False
         self.node['smoothUVs'] = True
 
         # update i/o
@@ -37,4 +46,4 @@ class Deformer(mk.Deformer):
     @staticmethod
     def hook(node, xfo, hook):
         if hook == 'level':
-            node['divisions']
+            return node['divisions']
