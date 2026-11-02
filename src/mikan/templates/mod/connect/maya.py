@@ -5,6 +5,7 @@ from six import string_types
 import mikan.maya.cmdx as mx
 
 import mikan.maya.core as mk
+from mikan.core.prefs import Prefs
 from mikan.maya.lib.connect import *
 from mikan.core.logger import create_logger
 
@@ -64,19 +65,22 @@ class Mod(mk.Mod):
         if not inputs:
             raise mk.ModArgumentError('input list not valid')
 
-        if 'time' in inputs:
-            i = inputs.index('time')
-            inputs[i] = mx.encode('time1')['outTime']
-        if 'frame' in inputs:
-            i = inputs.index('frame')
-            inputs[i] = mx.encode('time1')['outTime']
-
         op = self.data.get('op', self.data.get('operation'))
         if op and op not in {'add', 'sub', 'mult', 'div', 'remap', 'reverse'}:
             raise mk.ModArgumentError('invalid operator ({})'.format(op))
         if op == 'remap':
             if not all(x in self.data for x in {'min_old', 'max_old', 'min', 'max'}):
                 raise mk.ModArgumentError('remap keyword missing (min_old, max_old, min, max)')
+
+        merge_default = Prefs.get('mod/connect/merge', False)
+        merge = self.data.get('merge', merge_default)
+
+        if 'time' in inputs:
+            i = inputs.index('time')
+            inputs[i] = mx.encode('time1')['outTime']
+        if 'frame' in inputs:
+            i = inputs.index('frame')
+            inputs[i] = mx.encode('time1')['outTime']
 
         # checks
         n = len(inputs)
@@ -87,7 +91,7 @@ class Mod(mk.Mod):
 
         for plug in plugs:
             n = len(inputs)
-            if plug.input() is not None:
+            if merge and plug.input() is not None:
                 n += 1
 
             if n > 1 and op is None:
@@ -101,11 +105,13 @@ class Mod(mk.Mod):
         for plug_in in plugs:
 
             # bridge connection
-            input0 = plug_in.input(plug=True)
-            if isinstance(input0, mx.Plug):
-                if input0.node().is_a(mx.tUnitConversion):
-                    _input = input0.node()['input'].input(plug=True)
-                    input0 = _input
+            input0 = None
+            if merge:
+                input0 = plug_in.input(plug=True)
+                if isinstance(input0, mx.Plug):
+                    if input0.node().is_a(mx.tUnitConversion):
+                        _input = input0.node()['input'].input(plug=True)
+                        input0 = _input
 
             # clamp
             if 'clamp' in self.data:

@@ -3,6 +3,7 @@
 import meta_nodal_py as kl
 
 import mikan.tangerine.core as mk
+from mikan.core.prefs import Prefs
 from mikan.tangerine.lib.commands import add_plug
 from mikan.tangerine.lib.connect import *
 from mikan.tangerine.lib.rig import *
@@ -65,13 +66,8 @@ class Mod(mk.Mod):
         if not inputs:
             raise mk.ModArgumentError('input list not valid')
 
-        # time
-        for i, _input in enumerate(inputs):
-            if not isinstance(_input, str):
-                continue
-            if _input == 'time' or _input == 'frame':
-                time = kl.CurrentFrame(plugs[0].get_node(), 'time')
-                inputs[i] = time.result
+        merge_default = Prefs.get('mod/connect/merge', False)
+        merge = self.data.get('merge', merge_default)
 
         op = self.data.get('op', self.data.get('operation'))
         if op and op not in {'add', 'sub', 'mult', 'div', 'remap', 'reverse'}:
@@ -79,6 +75,14 @@ class Mod(mk.Mod):
         if op == 'remap':
             if not all(x in self.data for x in {'min_old', 'max_old', 'min', 'max'}):
                 raise mk.ModArgumentError('remap keyword missing (min_old, max_old, min, max)')
+
+        # time
+        for i, _input in enumerate(inputs):
+            if not isinstance(_input, str):
+                continue
+            if _input == 'time' or _input == 'frame':
+                time = kl.CurrentFrame(plugs[0].get_node(), 'time')
+                inputs[i] = time.result
 
         # checks
         n = len(inputs)
@@ -89,7 +93,7 @@ class Mod(mk.Mod):
 
         for plug in plugs:
             n = len(inputs)
-            if plug.get_input() is not None:
+            if merge and plug.get_input() is not None:
                 n += 1
 
             if n > 1 and op is None:
@@ -103,7 +107,9 @@ class Mod(mk.Mod):
         for plug_in in plugs:
 
             # bridge connection
-            input0 = plug_in.get_input()
+            input0 = None
+            if merge:
+                input0 = plug_in.get_input()
 
             # clamp
             if 'clamp' in self.data:
