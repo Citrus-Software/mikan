@@ -4,6 +4,7 @@ import yaml
 from copy import deepcopy
 
 import meta_nodal_py as kl
+from gemini.meta_nodal import connect_add
 
 from mikan.core import abstract
 from mikan.core.logger import create_logger
@@ -323,17 +324,20 @@ class Deformer(abstract.Deformer):
         ids = {}
         name = Deformer.get_unique_name(xfo, root=root)
 
+        # geometry ids
         for node in Deformer.get_geo_deformers(xfo):
             if node.get_dynamic_plug('gem_deformer'):
                 for tag in (node.gem_deformer.get_value() or '').split(';'):
                     if tag.startswith(name):
                         ids[tag.split('->')[-1]] = node
 
+        # shape ids
         for node in [shp for shp in xfo.get_children() if isinstance(shp, kl.Geometry)]:
             if node.get_dynamic_plug('gem_deformer'):
                 for tag in (node.gem_deformer.get_value() or '').split(';'):
                     ids[tag.split('->')[-1]] = node
 
+        # default ids
         if 'shape' not in ids:
             for node in xfo.get_children():
                 if isinstance(node, kl.Geometry) and node.show.get_value():
@@ -377,7 +381,15 @@ class Deformer(abstract.Deformer):
 
                 ids['source'] = source
 
+        # alembic ids
+        for node in [shp for shp in xfo.get_children() if isinstance(shp, kl.AnimatedGeometryReader)]:
+            ids['abc'] = node
+            break
+
+        # transform ids
         ids['xfo'] = xfo
+
+        # exit
         return ids
 
     @staticmethod
@@ -530,9 +542,32 @@ class Deformer(abstract.Deformer):
 
     @staticmethod
     def get_deformer_plug(dfm, xfo, hook):
+        # mikan deformers
         cls = Deformer.get_cls_from_node(dfm)
         if cls:
             return cls.hook(dfm, xfo, hook)
+
+        # other nodes
+        if isinstance(dfm, kl.AnimatedGeometryReader):
+            if hook in {'frame', 'time'}:
+                time_plug = dfm.get_dynamic_plug('time')
+                if time_plug is None:
+                    # rig custom time
+                    dfm.hold.set_value(True)
+                    time_plug = add_plug(dfm, 'time', float)
+                    add_plug(dfm, '_offset', float)
+                    connect_add(dfm.time, dfm._offset, dfm.offset)
+                return time_plug
+
+            elif hook == 'offset':
+                time_plug = dfm.get_dynamic_plug('time')
+                if time_plug is None:
+                    return dfm.offset
+                else:
+                    return dfm._offset
+
+            elif hook == 'speed':
+                return dfm.speed
 
     @staticmethod
     def get_unique_name(node, root=None):

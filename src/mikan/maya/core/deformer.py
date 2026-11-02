@@ -944,7 +944,21 @@ class Deformer(abstract.Deformer):
                             ids['source'] = node
                             break
 
+        # alembic ids
+        abc = mx.list_history(xfo, type='AlembicNode')
+        if abc and len(abc) == 1:
+            abc = abc[0]
+            output = mx.list_history(abc, future=1)
+
+            for k in ('source', 'shape'):
+                if k in ids and ids[k] in output:
+                    ids['abc'] = abc
+                    break
+
+        # transform ids
         ids['xfo'] = xfo
+
+        # exit
         return ids
 
     @staticmethod
@@ -1254,9 +1268,32 @@ class Deformer(abstract.Deformer):
             xfo = mx.encode(str(xfo))
         if not isinstance(dfm, mx.Node):
             dfm = mx.encode(str(dfm))
+
+        # mikan deformers
         cls = Deformer.get_cls_from_node(dfm)
         if cls:
             return cls.hook(dfm, xfo, hook)
+
+        # other nodes
+        if dfm.is_a('AlembicNode'):
+            if hook in {'frame', 'time'}:
+                return dfm['time']
+
+            elif hook == 'offset':
+                if '_offset' not in dfm or dfm['_offset'].input() is None:
+                    rev = mx.create_node(mx.tMultDoubleLinear, name='_rev#')
+                    rev['input2'] = -1
+                    rev['output'] >> dfm['offset']
+                    if '_offset' not in dfm:
+                        dfm.add_attr(mx.Message('_offset'))
+                    rev['message'] >> dfm['_offset']
+                else:
+                    rev = dfm['_offset'].input()
+
+                return rev['input1']
+
+            elif hook == 'speed':
+                return dfm['speed']
 
     @staticmethod
     def get_unique_name(node, root=None):
