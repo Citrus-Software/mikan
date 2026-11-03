@@ -68,6 +68,7 @@ class Mod(mk.Mod):
 
         merge_default = Prefs.get('mod/connect/merge', False)
         merge = self.data.get('merge', merge_default)
+        force = bool(self.data.get('force', False))
 
         op = self.data.get('op', self.data.get('operation'))
         if op and op not in {'add', 'sub', 'mult', 'div', 'remap', 'reverse'}:
@@ -80,7 +81,7 @@ class Mod(mk.Mod):
         for i, _input in enumerate(inputs):
             if not isinstance(_input, str):
                 continue
-            if _input == 'time' or _input == 'frame':
+            if _input in {'time', 'frame'}:
                 time = kl.CurrentFrame(plugs[0].get_node(), 'time')
                 inputs[i] = time.result
 
@@ -88,13 +89,16 @@ class Mod(mk.Mod):
         n = len(inputs)
         if not n:
             raise mk.ModArgumentError('no input to connect')
-        if not all([kl.is_plug(i) or isinstance(i, (float, int)) for i in inputs]):
+        if not all(kl.is_plug(i) or isinstance(i, (float, int)) for i in inputs):
             raise mk.ModArgumentError('invalid inputs!')
 
         for plug in plugs:
             n = len(inputs)
-            if merge and plug.get_input() is not None:
-                n += 1
+            if plug.get_input() is not None:
+                if merge:
+                    n += 1
+                elif not force:
+                    raise mk.ModArgumentError('plug is already connected')
 
             if n > 1 and op is None:
                 raise mk.ModArgumentError('too much inputs or no operator defined')

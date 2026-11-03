@@ -65,6 +65,8 @@ class Mod(mk.Mod):
         if not inputs:
             raise mk.ModArgumentError('input list not valid')
 
+        inputs = [mx.encode('time1')['outTime'] if i in {'time', 'frame'} else i for i in inputs]
+
         op = self.data.get('op', self.data.get('operation'))
         if op and op not in {'add', 'sub', 'mult', 'div', 'remap', 'reverse'}:
             raise mk.ModArgumentError('invalid operator ({})'.format(op))
@@ -74,25 +76,22 @@ class Mod(mk.Mod):
 
         merge_default = Prefs.get('mod/connect/merge', False)
         merge = self.data.get('merge', merge_default)
-
-        if 'time' in inputs:
-            i = inputs.index('time')
-            inputs[i] = mx.encode('time1')['outTime']
-        if 'frame' in inputs:
-            i = inputs.index('frame')
-            inputs[i] = mx.encode('time1')['outTime']
+        force = bool(self.data.get('force', False))
 
         # checks
         n = len(inputs)
         if not n:
             raise mk.ModArgumentError('no input to connect')
-        if not all([isinstance(i, (mx.Plug, float, int)) for i in inputs]):
+        if not all(isinstance(i, (mx.Plug, float, int)) for i in inputs):
             raise mk.ModArgumentError('invalid inputs!')
 
         for plug in plugs:
             n = len(inputs)
-            if merge and plug.input() is not None:
-                n += 1
+            if plug.input() is not None:
+                if merge:
+                    n += 1
+                elif not force:
+                    raise mk.ModArgumentError('plug is already connected')
 
             if n > 1 and op is None:
                 raise mk.ModArgumentError('too much inputs or no operator defined')

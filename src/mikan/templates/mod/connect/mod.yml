@@ -1,2 +1,8 @@
 desc: Establishes a connection between two plugs, optionally applying basic math operations.
 help: https://citrus-software.github.io/mikan-docs/references/mod/connect
+
+legacy:
+  merge:
+    default: false
+    help: |
+      Preserves the existing connection on the target plug by including it in the mathematical operation.
