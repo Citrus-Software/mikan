@@ -43,4 +43,4 @@ class Mod(mk.Mod):
         else:
             sfx = ''
 
-        helper.rename(str(helper), 'cv_' + name + sfx)
+        helper.rename('cv_' + name + sfx)
