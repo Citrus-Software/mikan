@@ -295,8 +295,16 @@ class Deformer(mk.Deformer):
         elif hook.startswith('target.'):
             hook = hook.split('.')[1]
 
+            is_spline_in = False
+            if bs.mesh_in.get_input() is None:
+                if bs.spline_in.get_input() is not None:
+                    is_spline_in = True
+
             if re_is_int.match(hook):
-                return bs.shapes_in[int(hook)]
+                if is_spline_in:
+                    return bs.spline_shapes_in[int(hook)]
+                else:
+                    return bs.shapes_in[int(hook)]
             else:
                 pass
 
@@ -330,11 +338,20 @@ class Deformer(mk.Deformer):
         if bs.get_dynamic_plug(plug_weight_name):
             raise mk.DeformerError('weight index already exists')
 
+        is_spline_in = False
+        if bs.mesh_in.get_input() is None:
+            if bs.spline_in.get_input() is not None:
+                is_spline_in = True
+
         if in_between:
             if index >= bs.weights_in.get_size():
                 bs.weights_in.resize(index + 1)
-                bs.shapes_in.resize(index + 1)
-                bs.references_in.resize(index + 1)
+                if is_spline_in:
+                    bs.spline_shapes_in.resize(index + 1)
+                    bs.spline_references_in.resize(index + 1)
+                else:
+                    bs.shapes_in.resize(index + 1)
+                    bs.references_in.resize(index + 1)
 
                 bs.shapes_deltas_in.resize(index + 1)
                 bs.shapes_vertex_indices_in.resize(index + 1)
@@ -344,13 +361,24 @@ class Deformer(mk.Deformer):
             plug_weight.set_value(weight)
             bs.weights_in[index].connect(plug_weight)
 
-        plug_target = bs.shapes_in[index]
+        if is_spline_in:
+            plug_target = bs.spline_shapes_in[index]
+        else:
+            plug_target = bs.shapes_in[index]
+
+        bs_in = bs.mesh_in
+        if is_spline_in:
+            bs_in = bs.spline_in
+
         if target:
             plug_target.connect(target)
         else:
-            plug_target.connect(bs.mesh_in)
+            plug_target.connect(bs_in)
 
-        bs.references_in[index].connect(bs.mesh_in)
+        if is_spline_in:
+            bs.spline_references_in[index].connect(bs_in)
+        else:
+            bs.references_in[index].connect(bs_in)
 
         return plug_target
 
