@@ -280,7 +280,6 @@ class Mod(mk.Mod):
             else:
                 if percent:
                     poc['turnOnPercentage'] = percent
-                    u /= shp['max'].read()
                 plug.write(u)
                 plug >> poc['parameter']
 

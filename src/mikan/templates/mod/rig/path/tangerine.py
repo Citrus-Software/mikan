@@ -249,7 +249,6 @@ class Mod(mk.Mod):
             else:
                 if percent:
                     connect_mult(plug, max_u, poc.u_in)
-                    u /= max_u
                 else:
                     poc.u_in.connect(plug)
                 plug.set_value(u)
