@@ -570,10 +570,16 @@ class Deformer(abstract.Deformer):
                 return dfm.speed
 
     @staticmethod
-    def get_unique_name(node, root=None):
+    def get_unique_name(node, root=None, loop=False):
         for k, n in Deformer._nodes.items():
             if n == node:
                 return k
+
+        if not loop:
+            Deformer.cache_nodes()
+            return Deformer.get_unique_name(node, root=root, loop=True)
+        else:
+            raise RuntimeError('something went wrong in the node list compute cache')
 
         # TODO: check si le root est bien un parent du node?
 
