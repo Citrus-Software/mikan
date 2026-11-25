@@ -43,9 +43,6 @@ class Mod(mk.Mod):
             else:
                 nodes = []
 
-        if not nodes:
-            raise mk.ModArgumentError('no nodes to attach to path')
-
         if 'geo' not in self.data:
             raise mk.ModArgumentError('geometry not defined')
 
@@ -72,11 +69,24 @@ class Mod(mk.Mod):
             raise mk.ModArgumentError('invalid node for closest projection')
 
         # args
-        parent = self.data.get('parent', nodes[0].parent())
-
-        do_hook = bool(self.data.get('hook', True))
+        do_hook = bool(self.data.get('hook', True)) and bool(nodes)
         do_snap = bool(self.data.get('snap', False))
         do_orient = self.data.get('rotate', True) and self.data.get('orient', True)
+
+        dry = not nodes
+        if 'parent' not in self.data or 'u' not in self.data:
+            dry = False
+        if do_hook or do_snap:
+            dry = False
+
+        if not nodes and not dry:
+            raise mk.ModArgumentError('no nodes to attach to path')
+
+        parent = self.data.get('parent')
+        if not dry:
+            parent = parent or nodes[0].parent()
+        else:
+            nodes = [None]
 
         percent = bool(self.data.get('percent', False))
         io = bool(self.data.get('io', False))
@@ -87,6 +97,14 @@ class Mod(mk.Mod):
         parametric = not self.data.get('length', length_mode)
         if closest:
             parametric = True
+
+        u = self.data.get('u')
+        if u is not None and not isinstance(u, (float, int)) and 'attach' not in self.data and 'closest' not in self.data:
+            raise mk.ModArgumentError('invalid u parameter')
+
+        attach = self.data.get('attach')
+        if attach is not None and not isinstance(attach, mx.DagNode):
+            raise mk.ModArgumentError('invalid attach node')
 
         # vectors
         fwd_vector = self.data.get('forward_vector', [1, 0, 0])
@@ -124,23 +142,22 @@ class Mod(mk.Mod):
         for node in nodes:
 
             # args
-            u = self.data.get('u')
+            _u = u
             if not isinstance(u, (float, int)):
-                attach = self.data.get('attach', node)  # legacy?
-                u = get_closest_point_on_curve(shp, attach, parameter=True)
+                _u = get_closest_point_on_curve(shp, attach or node, parameter=True)
 
             if shp_up:
                 up_object = Mod.create_path(
                     node, shp_up,
                     parent=parent, name=name.replace('path_', 'path_up_'), legacy=legacy,
-                    u=u, parametric=parametric, percent=percent, io=io,
+                    u=_u, parametric=parametric, percent=percent, io=io,
                     closest=closest, debug_mode=debug_mode
                 )
 
             path = Mod.create_path(
                 node, shp,
                 do_orient, parent, name, legacy,
-                u, parametric, percent, io, fwd_vector,
+                _u, parametric, percent, io, fwd_vector,
                 up_vector, up_object, up_object_vector,
                 closest, debug_mode
             )
@@ -190,8 +207,9 @@ class Mod(mk.Mod):
             if percent or not parametric:
                 max_u = 1
             if legacy == 0:
-                node.add_attr(mx.Double('u', keyable=True, min=0, max=max_u))
-                plug = node['u']
+                _node = node or path
+                _node.add_attr(mx.Double('u', keyable=True, min=0, max=max_u))
+                plug = _node['u']
             else:
                 path.add_attr(mx.Double('u', keyable=True, min=0, max=max_u))
                 plug = path['u']

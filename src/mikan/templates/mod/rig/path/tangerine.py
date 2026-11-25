@@ -43,9 +43,6 @@ class Mod(mk.Mod):
             else:
                 nodes = []
 
-        if not nodes:
-            raise mk.ModArgumentError('no nodes to attach to path')
-
         if 'geo' not in self.data:
             raise mk.ModArgumentError('geometry not defined')
 
@@ -71,13 +68,27 @@ class Mod(mk.Mod):
             raise mk.ModArgumentError('invalid node for closest projection')
 
         # args
-        parent = self.data.get('parent', nodes[0].get_parent())
-
-        do_hook = bool(self.data.get('hook', True))
+        do_hook = bool(self.data.get('hook', True)) and bool(nodes)
         do_snap = bool(self.data.get('snap', False))
         do_orient = self.data.get('rotate', True) and self.data.get('orient', True)
 
+        dry = not nodes
+        if 'parent' not in self.data or 'u' not in self.data:
+            dry = False
+        if do_hook or do_snap:
+            dry = False
+
+        if not nodes and not dry:
+            raise mk.ModArgumentError('no nodes to attach to path')
+
+        parent = self.data.get('parent')
+        if not dry:
+            parent = parent or nodes[0].get_parent()
+        else:
+            nodes = [None]
+
         percent = bool(self.data.get('percent', False))
+        io = bool(self.data.get('io', False))
 
         length_mode = False
         if legacy == 0:
@@ -86,7 +97,13 @@ class Mod(mk.Mod):
         if closest:
             parametric = True
 
-        io = bool(self.data.get('io', False))
+        u = self.data.get('u')
+        if u is not None and not isinstance(u, (float, int)) and 'attach' not in self.data and 'closest' not in self.data:
+            raise mk.ModArgumentError('invalid u parameter')
+
+        attach = self.data.get('attach')
+        if attach is not None and not isinstance(attach, kl.SceneGraphNode):
+            raise mk.ModArgumentError('invalid attach node')
 
         # update curve geometry
         for curve in [cv for cv in (shp, shp_up) if cv]:
@@ -132,7 +149,7 @@ class Mod(mk.Mod):
         for node in nodes:
 
             # get u
-            u = self.data.get('u')
+            _u = u
             if not isinstance(u, (float, int)):
                 _closest = kl.Closest(node, 'closest')
                 _closest.legacy.set_value(2)
@@ -146,7 +163,7 @@ class Mod(mk.Mod):
 
                 attach = self.data.get('attach', node)
                 _closest.transform_in.connect(attach.world_transform)
-                u = _closest.u_out.get_value()
+                _u = _closest.u_out.get_value()
                 _closest.remove_from_parent()
 
             # build path locator
@@ -154,13 +171,13 @@ class Mod(mk.Mod):
                 up_object = Mod.create_path(
                     node, shp_up,
                     parent=parent, name=name.replace('path_', 'path_up_'), legacy=legacy,
-                    u=u, parametric=parametric, percent=percent, io=io
+                    u=_u, parametric=parametric, percent=percent, io=io
                 )
 
             path = Mod.create_path(
                 node, shp,
                 do_orient, parent, name, legacy,
-                u, parametric, percent, io,
+                _u, parametric, percent, io,
                 fwd_vector, up_vector, up_object, up_object_vector,
                 closest
             )
@@ -230,7 +247,8 @@ class Mod(mk.Mod):
                 max_u = 1
 
             if legacy == 0:
-                plug = add_plug(node, 'u', float, k=True, min_value=0, max_value=max_u)
+                _node = node or path
+                plug = add_plug(_node, 'u', float, k=True, min_value=0, max_value=max_u)
             else:
                 plug = add_plug(path, 'u', float, k=True, min_value=0, max_value=max_u)
 
