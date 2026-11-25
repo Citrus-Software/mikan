@@ -133,10 +133,14 @@ class Mod(mk.Mod):
             up_vector *= -1
 
         # path
-        name = 'path_{}#'.format(xfo)
+        name = 'path_{}'.format(xfo)
         tpl = self.get_template()
         if tpl:
-            name = 'path_{}#'.format(tpl.name)
+            name = 'path_{}'.format(tpl.name)
+        if 'name' in self.data:
+            name = 'path_{}'.format(self.data['name'].replace('.', '_').replace(' ', '_'))
+        if not name[-1].isdigit():
+            name += '#'
 
         # build loop
         for node in nodes:
